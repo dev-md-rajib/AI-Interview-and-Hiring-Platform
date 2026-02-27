@@ -1,0 +1,121 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-dark-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-dark-900 text-gray-100 font-sans antialiased;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-dark-800;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-dark-border rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-primary-600;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-primary-600 text-white font-semibold px-4 py-2 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-primary:hover:not(:disabled) { background-color: #4338ca; }
+  .btn-primary:active:not(:disabled) { transform: scale(0.95); }
+
+  .btn-secondary {
+    @apply bg-dark-card border border-dark-border text-gray-300 font-semibold px-4 py-2 rounded-lg transition-all duration-200;
+  }
+  .btn-secondary:hover { @apply border-primary-500 text-white; }
+  .btn-secondary:active { transform: scale(0.95); }
+
+  .btn-danger {
+    @apply bg-danger-600 text-white font-semibold px-4 py-2 rounded-lg transition-all duration-200;
+  }
+  .btn-danger:hover { background-color: #b91c1c; }
+  .btn-danger:active { transform: scale(0.95); }
+
+  .card {
+    @apply bg-dark-card border border-dark-border rounded-xl p-6 shadow-lg;
+  }
+
+  .input {
+    @apply w-full bg-dark-800 border border-dark-border text-gray-100 placeholder-gray-500 rounded-lg px-4 py-2.5 transition-colors duration-200;
+    outline: none;
+  }
+  .input:focus {
+    @apply border-primary-500;
+    box-shadow: 0 0 0 1px #6366f1;
+  }
+
+  .label {
+    @apply block text-sm font-medium text-gray-300 mb-1.5;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .badge-primary {
+    @apply badge bg-primary-900 text-primary-300;
+  }
+
+  .badge-success {
+    @apply badge bg-emerald-900 text-emerald-300;
+  }
+
+  .badge-danger {
+    @apply badge bg-red-900 text-red-300;
+  }
+
+  .badge-warning {
+    @apply badge bg-yellow-900 text-yellow-300;
+  }
+
+  .badge-gray {
+    @apply badge bg-gray-800 text-gray-300;
+  }
+
+  .section-title {
+    @apply text-xl font-bold text-white mb-4;
+  }
+
+  .stat-card {
+    @apply card flex flex-col gap-2;
+  }
+
+  .glow-border {
+    @apply border border-primary-500;
+    box-shadow: 0 0 15px rgba(99, 102, 241, 0.15);
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    background: linear-gradient(to right, #818cf8, #34d399);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .bg-gradient-brand {
+    @apply bg-gradient-to-br from-primary-600 to-primary-800;
+  }
+}
