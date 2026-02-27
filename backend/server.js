@@ -19,6 +19,7 @@ const interviewRoutes = require('./src/routes/interviews');
 const jobRoutes = require('./src/routes/jobs');
 const adminRoutes = require('./src/routes/admin');
 const messageRoutes = require('./src/routes/messages');
+const contestRoutes = require('./src/routes/contests');
 
 // Connect DB
 connectDB();
@@ -38,7 +39,7 @@ app.use(helmet({ crossOriginResourcePolicy: false }));
 
 // CORS
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  origin: [process.env.CLIENT_URL || 'http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
 }));
@@ -78,6 +79,7 @@ app.use('/api/interviews', interviewRoutes);
 app.use('/api/jobs', jobRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/messages', messageRoutes);
+app.use('/api/contests', contestRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

@@ -19,6 +19,8 @@ const InterviewResult = lazy(() => import('./pages/candidate/InterviewResult'));
 const JobBoard = lazy(() => import('./pages/candidate/JobBoard'));
 const MyApplications = lazy(() => import('./pages/candidate/MyApplications'));
 const MyInterviews = lazy(() => import('./pages/candidate/MyInterviews'));
+const CandidateContests = lazy(() => import('./pages/candidate/Contests'));
+const ContestRoom = lazy(() => import('./pages/candidate/ContestRoom'));
 
 // Recruiter pages (lazy loaded)
 const RecruiterDashboard = lazy(() => import('./pages/recruiter/Dashboard'));
@@ -27,6 +29,9 @@ const MyJobs = lazy(() => import('./pages/recruiter/MyJobs'));
 const CandidateSearch = lazy(() => import('./pages/recruiter/CandidateSearch'));
 const CandidateView = lazy(() => import('./pages/recruiter/CandidateView'));
 const JobApplications = lazy(() => import('./pages/recruiter/JobApplications'));
+const RecruiterContestList = lazy(() => import('./pages/recruiter/ContestList'));
+const CreateContest = lazy(() => import('./pages/recruiter/CreateContest'));
+const ContestResults = lazy(() => import('./pages/recruiter/ContestResults'));
 
 // Admin pages (lazy loaded)
 const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'));
@@ -95,6 +100,8 @@ export default function App() {
               <Route path="applications" element={<MyApplications />} />
               <Route path="history" element={<MyInterviews />} />
               <Route path="messages" element={<Messages />} />
+              <Route path="contests" element={<CandidateContests />} />
+              <Route path="contests/:id/attempt" element={<ContestRoom />} />
             </Route>
 
             {/* Recruiter routes */}
@@ -107,6 +114,10 @@ export default function App() {
               <Route path="candidates" element={<CandidateSearch />} />
               <Route path="candidates/:id" element={<CandidateView />} />
               <Route path="messages" element={<Messages />} />
+              <Route path="contests" element={<RecruiterContestList />} />
+              <Route path="contests/new" element={<CreateContest />} />
+              <Route path="contests/:id/edit" element={<CreateContest />} />
+              <Route path="contests/:id/results" element={<ContestResults />} />
             </Route>
 
             {/* Admin routes */}

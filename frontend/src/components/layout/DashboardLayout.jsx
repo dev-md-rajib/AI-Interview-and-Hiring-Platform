@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import {
   HiHome, HiUser, HiBriefcase, HiChatAlt2, HiClipboardList,
   HiChartBar, HiCog, HiLogout, HiMenuAlt3, HiX, HiAcademicCap,
-  HiSearch, HiDocumentText, HiQuestionMarkCircle,
+  HiSearch, HiDocumentText, HiQuestionMarkCircle, HiStar,
 } from 'react-icons/hi';
 
 const getNavItems = (role, basePath) => {
@@ -15,6 +15,7 @@ const getNavItems = (role, basePath) => {
     { to: `${basePath}/history`, icon: HiClipboardList, label: 'Interview History' },
     { to: `${basePath}/jobs`, icon: HiBriefcase, label: 'Job Board' },
     { to: `${basePath}/applications`, icon: HiDocumentText, label: 'My Applications' },
+    { to: `${basePath}/contests`, icon: HiStar, label: 'Contests' },
     { to: `${basePath}/messages`, icon: HiChatAlt2, label: 'Messages' },
   ];
   if (role === 'RECRUITER') return [
@@ -22,6 +23,7 @@ const getNavItems = (role, basePath) => {
     { to: `${basePath}/jobs`, icon: HiBriefcase, label: 'My Jobs' },
     { to: `${basePath}/jobs/new`, icon: HiDocumentText, label: 'Post a Job' },
     { to: `${basePath}/candidates`, icon: HiSearch, label: 'Find Candidates' },
+    { to: `${basePath}/contests`, icon: HiStar, label: 'Contests' },
     { to: `${basePath}/messages`, icon: HiChatAlt2, label: 'Messages' },
   ];
   if (role === 'ADMIN') return [
