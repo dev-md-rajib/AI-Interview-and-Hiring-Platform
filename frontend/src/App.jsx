@@ -15,6 +15,8 @@ const CandidateProfile = lazy(() => import('./pages/candidate/Profile'));
 const EditProfile = lazy(() => import('./pages/candidate/EditProfile'));
 const InterviewStart = lazy(() => import('./pages/candidate/InterviewStart'));
 const InterviewRoom = lazy(() => import('./pages/candidate/InterviewRoom'));
+const AIAgentInterviewRoom = lazy(() => import('./pages/candidate/AIAgentInterviewRoom'));
+const InterviewTeamRoom = lazy(() => import('./pages/candidate/InterviewTeamRoom'));
 const InterviewResult = lazy(() => import('./pages/candidate/InterviewResult'));
 const JobBoard = lazy(() => import('./pages/candidate/JobBoard'));
 const MyApplications = lazy(() => import('./pages/candidate/MyApplications'));
@@ -94,6 +96,8 @@ export default function App() {
               <Route path="profile" element={<CandidateProfile />} />
               <Route path="profile/edit" element={<EditProfile />} />
               <Route path="interview" element={<InterviewStart />} />
+              <Route path="interview/ai-agent/:id" element={<AIAgentInterviewRoom />} />
+              <Route path="interview/team" element={<InterviewTeamRoom />} />
               <Route path="interview/:id" element={<InterviewRoom />} />
               <Route path="interview/:id/result" element={<InterviewResult />} />
               <Route path="jobs" element={<JobBoard />} />

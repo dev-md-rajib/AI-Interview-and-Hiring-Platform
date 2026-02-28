@@ -5,7 +5,7 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || 'placeholder'
 
 const getModel = () => {
   try {
-    return genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    return genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
   } catch (e) {
     logger.warn('Gemini model init failed, using fallback questions');
     return null;
