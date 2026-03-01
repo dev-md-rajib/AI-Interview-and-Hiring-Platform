@@ -18,9 +18,10 @@ export default function Messages() {
 
   useEffect(() => {
     api.get('/messages/conversations').then(({ data }) => {
-      setConversations(data.conversations || []);
+      const sorted = (data.conversations || []).sort((a, b) => new Date(b.lastMessageAt) - new Date(a.lastMessageAt));
+      setConversations(sorted);
       if (state?.conversationId) {
-        const found = data.conversations?.find((c) => c._id === state.conversationId);
+        const found = sorted.find((c) => c._id === state.conversationId);
         if (found) setActiveConv(found);
       }
     }).finally(() => setLoading(false));
@@ -40,7 +41,10 @@ export default function Messages() {
       const { data } = await api.post(`/messages/${activeConv._id}`, { content: newMsg });
       setMessages((m) => [...m, data.message]);
       setNewMsg('');
-      setConversations((c) => c.map((conv) => conv._id === activeConv._id ? { ...conv, lastMessage: newMsg } : conv));
+      setConversations((c) => {
+        const updated = c.map((conv) => conv._id === activeConv._id ? { ...conv, lastMessage: newMsg, lastMessageAt: new Date().toISOString() } : conv);
+        return updated.sort((a, b) => new Date(b.lastMessageAt) - new Date(a.lastMessageAt));
+      });
     } catch { toast.error('Failed to send message'); }
     finally { setSending(false); }
   };
@@ -60,11 +64,20 @@ export default function Messages() {
             : conversations.map((conv) => {
               const other = getOtherParticipant(conv);
               return (
-                <div key={conv._id} onClick={() => setActiveConv(conv)} className={`flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-dark-800 transition-colors ${activeConv?._id === conv._id ? 'bg-dark-800 border-l-2 border-primary-500' : ''}`}>
+                <div key={conv._id} onClick={() => { setActiveConv(conv); setConversations(c => c.map(x => x._id === conv._id ? { ...x, unreadCount: 0 } : x)); }} className={`flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-dark-800 transition-colors ${activeConv?._id === conv._id ? 'bg-dark-800 border-l-2 border-primary-500' : ''}`}>
                   <div className="w-9 h-9 rounded-full bg-primary-700 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">{other?.name?.[0]?.toUpperCase()}</div>
-                  <div className="min-w-0">
-                    <p className="text-white text-sm font-medium truncate">{other?.name}</p>
-                    <p className="text-gray-500 text-xs truncate">{conv.lastMessage || 'Start conversation'}</p>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex justify-between items-center mb-0.5">
+                      <p className="text-white text-sm font-medium truncate">{other?.name}</p>
+                      {conv.unreadCount > 0 && activeConv?._id !== conv._id && (
+                        <span className="bg-danger-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0">
+                          {conv.unreadCount > 99 ? '99+' : conv.unreadCount}
+                        </span>
+                      )}
+                    </div>
+                    <p className={`text-xs truncate ${conv.unreadCount > 0 && activeConv?._id !== conv._id ? 'text-white font-medium' : 'text-gray-500'}`}>
+                      {conv.lastMessage || 'Start conversation'}
+                    </p>
                   </div>
                 </div>
               );

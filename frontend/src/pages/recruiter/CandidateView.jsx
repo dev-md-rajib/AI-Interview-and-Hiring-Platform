@@ -24,7 +24,7 @@ export default function CandidateView() {
   if (loading) return <div className="flex justify-center h-64 items-center"><div className="w-8 h-8 border-3 border-primary-500/30 border-t-primary-500 rounded-full animate-spin" /></div>;
   if (!data) return <div className="text-center py-16 text-gray-400">Profile not found</div>;
 
-  const { profile, interviewHistory } = data;
+  const { profile, interviewHistory, levelVerdicts } = data;
 
   return (
     <div className="max-w-3xl mx-auto animate-fade-in space-y-6">
@@ -70,18 +70,40 @@ export default function CandidateView() {
         )}
       </div>
 
+      {/* Level Achievements */}
+      {levelVerdicts?.length > 0 && (
+        <div className="card">
+          <h2 className="section-title">Highest Level Verdicts</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {levelVerdicts.map((lv) => (
+              <div key={`lv-${lv.level}`} className="p-4 rounded-xl bg-dark-800/50 border border-primary-500/20 hover:border-primary-500/50 transition-colors">
+                <div className="flex justify-between items-start mb-2">
+                  <span className="text-lg font-bold text-white text-gradient">L{lv.level} Passed</span>
+                  <span className="text-2xl font-black text-primary-400">{lv.totalScore}%</span>
+                </div>
+                <div className="text-sm text-gray-400 mb-2">Stack: <span className="text-white">{lv.stack}</span></div>
+                <div className="inline-flex items-center px-2 py-1 rounded text-xs font-semibold bg-dark-700 text-gray-300 border border-dark-600">
+                  Evaluated by: {lv.evaluator}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {interviewHistory?.length > 0 && (
         <div className="card">
           <h2 className="section-title">Interview Results</h2>
           <table className="w-full text-sm">
             <thead className="text-gray-400 uppercase text-xs border-b border-dark-border">
-              <tr>{['Stack', 'Level', 'Score', 'Result', 'Date'].map((h) => <th key={h} className="text-left pb-2 pr-4">{h}</th>)}</tr>
+              <tr>{['Stack', 'Level', 'Evaluator', 'Score', 'Result', 'Date'].map((h) => <th key={h} className="text-left pb-2 pr-4">{h}</th>)}</tr>
             </thead>
             <tbody className="divide-y divide-dark-border">
               {interviewHistory.map((iv) => (
                 <tr key={iv._id}>
                   <td className="py-2 pr-4 text-white">{iv.stack}</td>
                   <td className="py-2 pr-4 text-gray-400">L{iv.level}</td>
+                  <td className="py-2 pr-4 text-gray-400">{iv.evaluator}</td>
                   <td className="py-2 pr-4 font-bold text-primary-400">{iv.totalScore}%</td>
                   <td className="py-2 pr-4">{iv.passed ? <span className="badge-success">Passed</span> : <span className="badge-danger">Failed</span>}</td>
                   <td className="py-2 text-gray-400">{new Date(iv.completedAt).toLocaleDateString()}</td>

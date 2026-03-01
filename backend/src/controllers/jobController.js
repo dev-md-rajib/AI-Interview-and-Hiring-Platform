@@ -2,6 +2,7 @@ const Job = require('../models/Job');
 const Application = require('../models/Application');
 const CandidateProfile = require('../models/CandidateProfile');
 const Interview = require('../models/Interview');
+const AiAgentInterview = require('../models/AiAgentInterview');
 
 // @desc    Create a job
 // @route   POST /api/jobs
@@ -22,8 +23,13 @@ const getJobs = async (req, res, next) => {
   try {
     const { stack, level, remote, page = 1, limit = 20 } = req.query;
     const query = { status: 'Open' };
-    if (stack) query.requiredStack = { $in: [new RegExp(stack, 'i')] };
-    if (level) query.requiredLevel = parseInt(level);
+    
+    if (stack || level) {
+      query.requirements = { $elemMatch: {} };
+      if (stack) query.requirements.$elemMatch.stack = new RegExp(stack, 'i');
+      if (level) query.requirements.$elemMatch.level = parseInt(level);
+    }
+    
     if (remote !== undefined) query.isRemote = remote === 'true';
 
     const skip = (page - 1) * limit;
@@ -107,31 +113,66 @@ const applyToJob = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Job not available' });
     }
 
-    // Check eligibility: candidate must have passed required level
-    const passedInterview = await Interview.findOne({
-      candidate: req.user._id,
-      level: job.requiredLevel,
-      status: 'completed',
-      passed: true,
-      totalScore: { $gte: job.minScore },
-    });
+    // Check eligibility logic for multi-stack requirements
+    let missingRequirements = [];
+    let requirementScores = []; // Keep track of best scores for match calculation
 
-    if (!passedInterview) {
+    if (job.requirements && job.requirements.length > 0) {
+      for (const reqObj of job.requirements) {
+        const query = {
+          candidate: req.user._id,
+          stack: new RegExp(reqObj.stack, 'i'),
+          level: { $gte: reqObj.level },
+          status: 'completed',
+          passed: true,
+          totalScore: { $gte: reqObj.minScore }
+        };
+
+        const stdBest = await Interview.findOne(query).sort({ totalScore: -1 });
+        const aiBest = await AiAgentInterview.findOne(query).sort({ totalScore: -1 });
+
+        let bestInterview = null;
+        if (stdBest && aiBest) bestInterview = stdBest.totalScore > aiBest.totalScore ? stdBest : aiBest;
+        else if (stdBest) bestInterview = stdBest;
+        else if (aiBest) bestInterview = aiBest;
+
+        if (!bestInterview) {
+          missingRequirements.push(`${reqObj.stack} (Level ${reqObj.level}+, ${reqObj.minScore}%+)`);
+        } else {
+          requirementScores.push(bestInterview.totalScore);
+        }
+      }
+    }
+
+    if (missingRequirements.length > 0) {
       return res.status(403).json({
         success: false,
-        message: `You must pass Level ${job.requiredLevel} interview with a minimum score of ${job.minScore} to apply.`,
+        message: `You do not meet all requirements. Missing passed interviews for: ${missingRequirements.join(', ')}`,
       });
     }
 
     // Calculate match score
     const profile = await CandidateProfile.findOne({ user: req.user._id });
     let matchScore = 0;
+    
     if (profile) {
       const candidateStacks = profile.expertise.map((e) => e.toLowerCase());
-      const requiredStacks = job.requiredStack.map((s) => s.toLowerCase());
-      const matched = requiredStacks.filter((s) => candidateStacks.includes(s));
-      const skillMatchPct = requiredStacks.length > 0 ? (matched.length / requiredStacks.length) * 40 : 0;
-      const scoreComponent = (passedInterview.totalScore / 100) * 40;
+      
+      let skillMatchPct = 100; // Default if no requirements
+      let scoreComponent = 0;
+      
+      if (job.requirements && job.requirements.length > 0) {
+        const requiredStacks = job.requirements.map(req => req.stack.toLowerCase());
+        const matched = requiredStacks.filter((s) => candidateStacks.includes(s));
+        skillMatchPct = (matched.length / requiredStacks.length) * 40;
+        
+        const avgScore = requirementScores.reduce((sum, val) => sum + val, 0) / requirementScores.length;
+        scoreComponent = (avgScore / 100) * 40;
+      } else {
+        scoreComponent = 40; // Max score component if job has zero interview requirements
+        skillMatchPct = 40; 
+      }
+
       const expComponent = Math.min(profile.yearsOfExperience / Math.max(job.experienceRequired, 1), 1) * 20;
       matchScore = Math.round(skillMatchPct + scoreComponent + expComponent);
     }

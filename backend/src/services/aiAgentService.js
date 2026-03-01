@@ -45,7 +45,7 @@ const getLevelSpec = (level) => LEVEL_SPECS[level] || LEVEL_SPECS[1];
 // NOTE: gemini-1.5-flash is NOT available on this key's project.
 // NOTE: gemini-2.0-flash quota is currently exhausted.
 function getModel() {
-  return genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+  return genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' });
 }
 
 /* ─── System Prompt ───────────────────────────────────────── */

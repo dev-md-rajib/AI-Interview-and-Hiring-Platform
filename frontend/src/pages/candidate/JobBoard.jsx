@@ -61,19 +61,29 @@ export default function JobBoard() {
                   <h2 className="text-white font-bold text-lg group-hover:text-primary-400 transition-colors">{job.title}</h2>
                   <p className="text-gray-400 text-sm">{job.recruiter?.name}</p>
                 </div>
-                <span className="badge-primary">Level {job.requiredLevel}</span>
               </div>
 
               <p className="text-gray-400 text-sm mb-4 line-clamp-2">{job.description}</p>
 
-              <div className="flex flex-wrap gap-2 mb-4">
-                {job.requiredStack?.map((s) => <span key={s} className="badge-gray">{s}</span>)}
-              </div>
+              {job.requirements && job.requirements.length > 0 && (
+                <div className="mb-4">
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Requirements</span>
+                  <div className="flex flex-wrap gap-2">
+                    {job.requirements.map((req, i) => (
+                      <div key={i} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-dark-800 border border-dark-border">
+                        <span className="text-white text-sm font-medium">{req.stack}</span>
+                        <span className="text-primary-400 text-xs font-bold px-1.5 py-0.5 rounded bg-primary-500/10">L{req.level}</span>
+                        <span className="text-gray-400 text-xs">{req.minScore}%+</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div className="flex items-center gap-4 text-xs text-gray-500 mb-4">
                 <span className="flex items-center gap-1"><HiLocationMarker />{job.isRemote ? 'Remote' : (job.location || 'On-site')}</span>
                 {job.salaryMin && <span className="flex items-center gap-1"><HiCurrencyDollar />{job.salaryMin}–{job.salaryMax}k</span>}
-                <span className="flex items-center gap-1"><HiAcademicCap />Min score: {job.minScore}%</span>
+                <span className="flex items-center gap-1"><HiBriefcase />{job.experienceRequired}+ years</span>
               </div>
 
               <button

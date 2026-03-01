@@ -5,9 +5,13 @@ const jobSchema = new mongoose.Schema(
     recruiter: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     title: { type: String, required: true, trim: true },
     description: { type: String, required: true },
-    requiredStack: [{ type: String }],
-    requiredLevel: { type: Number, enum: [1, 2, 3], required: true },
-    minScore: { type: Number, default: 70 },
+    requirements: [
+      {
+        stack: { type: String, required: true },
+        level: { type: Number, enum: [1, 2, 3], required: true },
+        minScore: { type: Number, required: true, default: 70 },
+      },
+    ],
     experienceRequired: { type: Number, default: 0 },
     salaryMin: { type: Number },
     salaryMax: { type: Number },

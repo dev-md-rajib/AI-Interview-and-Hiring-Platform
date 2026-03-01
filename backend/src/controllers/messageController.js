@@ -48,10 +48,44 @@ const getOrCreateConversation = async (req, res, next) => {
 // @access  Private
 const getMyConversations = async (req, res, next) => {
   try {
-    const conversations = await Conversation.find({ participants: req.user._id })
+    const rawConversations = await Conversation.find({ participants: req.user._id })
       .populate('participants', 'name email profileImage role')
       .sort({ lastMessageAt: -1 });
+      
+    const conversations = await Promise.all(
+      rawConversations.map(async (conv) => {
+        const unreadCount = await Message.countDocuments({
+          conversation: conv._id,
+          sender: { $ne: req.user._id },
+          read: false
+        });
+        return { ...conv.toObject(), unreadCount };
+      })
+    );
+      
     res.status(200).json({ success: true, conversations });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// @desc    Get total unread messages count
+// @route   GET /api/messages/unread
+// @access  Private
+const getUnreadCount = async (req, res, next) => {
+  try {
+    // Find all conversations user is part of
+    const convs = await Conversation.find({ participants: req.user._id }).select('_id');
+    const convIds = convs.map(c => c._id);
+    
+    // Count unread messages inside those conversations sent by others
+    const count = await Message.countDocuments({
+      conversation: { $in: convIds },
+      sender: { $ne: req.user._id },
+      read: false
+    });
+    
+    res.status(200).json({ success: true, count });
   } catch (err) {
     next(err);
   }
@@ -121,4 +155,4 @@ const sendMessage = async (req, res, next) => {
   }
 };
 
-module.exports = { getOrCreateConversation, getMyConversations, getMessages, sendMessage };
+module.exports = { getOrCreateConversation, getMyConversations, getMessages, sendMessage, getUnreadCount };

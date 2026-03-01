@@ -6,6 +6,7 @@ const Application = require('../models/Application');
 const InterviewLevel = require('../models/InterviewLevel');
 const QuestionBank = require('../models/QuestionBank');
 const ActivityLog = require('../models/ActivityLog');
+const AiAgentInterview = require('../models/AiAgentInterview');
 
 // @desc    Get platform analytics
 // @route   GET /api/admin/analytics
@@ -169,22 +170,72 @@ const deleteQuestion = async (req, res, next) => {
 // @access  Private (ADMIN, RECRUITER)
 const searchCandidates = async (req, res, next) => {
   try {
-    const { stack, level, minScore, maxScore, minExp, availability, page = 1, limit = 20 } = req.query;
+    const { minExp, availability, page = 1, limit = 20, requirements } = req.query;
 
-    // Find candidates matching interview criteria
-    const interviewQuery = { status: 'completed', passed: true };
-    if (level) interviewQuery.level = parseInt(level);
-    if (minScore || maxScore) {
-      interviewQuery.totalScore = {};
-      if (minScore) interviewQuery.totalScore.$gte = parseInt(minScore);
-      if (maxScore) interviewQuery.totalScore.$lte = parseInt(maxScore);
+    let passedCandidates = null; // null means no restrictions yet
+
+    // Handle new multi-stack requirements array
+    if (requirements) {
+      try {
+        const reqs = JSON.parse(requirements); // Array of {stack, level, minScore}
+        if (Array.isArray(reqs) && reqs.length > 0) {
+          
+          let candidateSets = [];
+          
+          for (const req of reqs) {
+            const query = { status: 'completed', passed: true };
+            if (req.stack) query.stack = new RegExp(req.stack, 'i');
+            if (req.level) query.level = parseInt(req.level);
+            if (req.minScore) {
+              query.totalScore = { $gte: parseInt(req.minScore) };
+            }
+            
+            // Find candidates matching this specific requirement in BOTH standard and AI interviews
+            const stdMatches = await Interview.distinct('candidate', query);
+            const aiMatches = await AiAgentInterview.distinct('candidate', query);
+            
+            // Combine and unique the candidates who satisfied THIS requirement
+            const matchesForThisReq = [...new Set([...stdMatches.map(id => id.toString()), ...aiMatches.map(id => id.toString())])];
+            candidateSets.push(matchesForThisReq);
+          }
+
+          // Intersect all sets - candidate must satisfy ALL requirements
+          if (candidateSets.length > 0) {
+            passedCandidates = candidateSets.reduce((a, b) => a.filter(c => b.includes(c)));
+          }
+        }
+      } catch (e) {
+        console.error("Failed to parse requirements", e);
+      }
     }
 
-    const passedCandidates = await Interview.distinct('candidate', interviewQuery);
-
     // Build profile query
-    const profileQuery = { user: { $in: passedCandidates } };
-    if (stack) profileQuery.expertise = { $in: [new RegExp(stack, 'i')] };
+    const profileQuery = {};
+    if (passedCandidates !== null) {
+      profileQuery.user = { $in: passedCandidates };
+    }
+    
+    // For backwards compatibility / legacy single-stack search (if used by other parts of the app)
+    const { stack, level, minScore, maxScore } = req.query;
+    if (!requirements && (stack || level || minScore || maxScore)) {
+        const legacyQuery = { status: 'completed', passed: true };
+        if (level) legacyQuery.level = parseInt(level);
+        if (minScore || maxScore) {
+          legacyQuery.totalScore = {};
+          if (minScore) legacyQuery.totalScore.$gte = parseInt(minScore);
+          if (maxScore) legacyQuery.totalScore.$lte = parseInt(maxScore);
+        }
+        
+        let legacyCandidates = [];
+        if (Object.keys(legacyQuery).length > 2) {
+           const stdLegacy = await Interview.distinct('candidate', legacyQuery);
+           const aiLegacy = await AiAgentInterview.distinct('candidate', legacyQuery);
+           legacyCandidates = [...new Set([...stdLegacy.map(id => id.toString()), ...aiLegacy.map(id => id.toString())])];
+           profileQuery.user = { $in: legacyCandidates };
+        }
+        if (stack) profileQuery.expertise = { $in: [new RegExp(stack, 'i')] };
+    }
+
     if (minExp) profileQuery.yearsOfExperience = { $gte: parseInt(minExp) };
     if (availability) profileQuery.availability = availability;
 
@@ -197,12 +248,22 @@ const searchCandidates = async (req, res, next) => {
       CandidateProfile.countDocuments(profileQuery),
     ]);
 
-    // Enrich with best interview score
+    // Enrich with best interview score (from both sources)
     const enriched = await Promise.all(
       profiles.map(async (p) => {
-        const bestInterview = await Interview.findOne({ candidate: p.user._id, status: 'completed', passed: true })
+        const stdBest = await Interview.findOne({ candidate: p.user._id, status: 'completed', passed: true })
           .sort({ totalScore: -1 })
           .select('level totalScore stack');
+          
+        const aiBest = await AiAgentInterview.findOne({ candidate: p.user._id, status: 'completed', passed: true })
+          .sort({ totalScore: -1 })
+          .select('level totalScore stack');
+
+        let bestInterview = null;
+        if (stdBest && aiBest) bestInterview = stdBest.totalScore > aiBest.totalScore ? stdBest : aiBest;
+        else if (stdBest) bestInterview = stdBest;
+        else if (aiBest) bestInterview = aiBest;
+
         return { ...p.toObject(), bestInterview };
       })
     );

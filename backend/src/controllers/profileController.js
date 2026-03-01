@@ -1,5 +1,6 @@
 const CandidateProfile = require('../models/CandidateProfile');
 const Interview = require('../models/Interview');
+const AiAgentInterview = require('../models/AiAgentInterview');
 
 // @desc    Get my candidate profile
 // @route   GET /api/profile/me
@@ -11,12 +12,45 @@ const getMyProfile = async (req, res, next) => {
       profile = await CandidateProfile.create({ user: req.user._id });
     }
 
-    // Attach interview history
-    const interviewHistory = await Interview.find({ candidate: req.user._id, status: 'completed' })
+    // Attach interview history (combine both types)
+    const standardHistory = await Interview.find({ candidate: req.user._id, status: 'completed' })
       .select('level stack totalScore passed completedAt feedback')
-      .sort({ completedAt: -1 });
+      .lean();
+    const aiHistory = await AiAgentInterview.find({ candidate: req.user._id, status: 'completed' })
+      .select('level stack totalScore passed completedAt feedback')
+      .lean();
 
-    res.status(200).json({ success: true, profile, interviewHistory });
+    const formattedStandard = standardHistory.map(iv => ({ ...iv, evaluator: 'Normal Query' }));
+    const formattedAi = aiHistory.map(iv => ({ ...iv, evaluator: 'AI Agent' }));
+
+    const interviewHistory = [...formattedStandard, ...formattedAi].sort(
+      (a, b) => new Date(b.completedAt) - new Date(a.completedAt)
+    );
+
+    // Calculate Highest Priority Verdicts per Level
+    const evaluatorPriority = { 'Human Team': 3, 'AI Agent': 2, 'Normal Query': 1 };
+    
+    const passedInterviews = interviewHistory.filter(iv => iv.passed);
+    const levelVerdictsMap = {};
+
+    passedInterviews.forEach(iv => {
+      const currentHighest = levelVerdictsMap[iv.level];
+      if (!currentHighest) {
+        levelVerdictsMap[iv.level] = iv;
+      } else {
+        const currentPrio = evaluatorPriority[currentHighest.evaluator] || 0;
+        const newPrio = evaluatorPriority[iv.evaluator] || 0;
+        
+        // If higher priority evaluator, OR same priority but higher score, replace it.
+        if (newPrio > currentPrio || (newPrio === currentPrio && iv.totalScore > currentHighest.totalScore)) {
+          levelVerdictsMap[iv.level] = iv;
+        }
+      }
+    });
+
+    const levelVerdicts = Object.values(levelVerdictsMap).sort((a, b) => a.level - b.level);
+
+    res.status(200).json({ success: true, profile, interviewHistory, levelVerdicts });
   } catch (err) {
     next(err);
   }
@@ -105,11 +139,44 @@ const getPublicProfile = async (req, res, next) => {
 
     if (!profile) return res.status(404).json({ success: false, message: 'Profile not found' });
 
-    const interviewHistory = await Interview.find({ candidate: req.params.userId, status: 'completed' })
+    const standardHistory = await Interview.find({ candidate: req.params.userId, status: 'completed' })
       .select('level stack totalScore passed completedAt')
-      .sort({ completedAt: -1 });
+      .lean();
+    const aiHistory = await AiAgentInterview.find({ candidate: req.params.userId, status: 'completed' })
+      .select('level stack totalScore passed completedAt')
+      .lean();
 
-    res.status(200).json({ success: true, profile, interviewHistory });
+    const formattedStandard = standardHistory.map(iv => ({ ...iv, evaluator: 'Normal Query' }));
+    const formattedAi = aiHistory.map(iv => ({ ...iv, evaluator: 'AI Agent' }));
+
+    const interviewHistory = [...formattedStandard, ...formattedAi].sort(
+      (a, b) => new Date(b.completedAt) - new Date(a.completedAt)
+    );
+
+    // Calculate Highest Priority Verdicts per Level
+    const evaluatorPriority = { 'Human Team': 3, 'AI Agent': 2, 'Normal Query': 1 };
+    
+    const passedInterviews = interviewHistory.filter(iv => iv.passed);
+    const levelVerdictsMap = {};
+
+    passedInterviews.forEach(iv => {
+      const currentHighest = levelVerdictsMap[iv.level];
+      if (!currentHighest) {
+        levelVerdictsMap[iv.level] = iv;
+      } else {
+        const currentPrio = evaluatorPriority[currentHighest.evaluator] || 0;
+        const newPrio = evaluatorPriority[iv.evaluator] || 0;
+        
+        // If higher priority evaluator, OR same priority but higher score, replace it.
+        if (newPrio > currentPrio || (newPrio === currentPrio && iv.totalScore > currentHighest.totalScore)) {
+          levelVerdictsMap[iv.level] = iv;
+        }
+      }
+    });
+
+    const levelVerdicts = Object.values(levelVerdictsMap).sort((a, b) => a.level - b.level);
+
+    res.status(200).json({ success: true, profile, interviewHistory, levelVerdicts });
   } catch (err) {
     next(err);
   }

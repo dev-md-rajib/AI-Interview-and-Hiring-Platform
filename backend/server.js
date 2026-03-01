@@ -53,12 +53,6 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-// Auth rate limiter (stricter)
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 20,
-  message: { success: false, message: 'Too many auth attempts, please try again later.' },
-});
 
 // Body parsing
 app.use(express.json({ limit: '10mb' }));
@@ -74,7 +68,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(activityLogger);
 
 // Routes
-app.use('/api/auth', authLimiter, authRoutes);
+app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/interviews', interviewRoutes);
 app.use('/api/interviews/ai-agent', aiAgentInterviewRoutes);

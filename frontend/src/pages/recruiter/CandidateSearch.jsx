@@ -1,18 +1,33 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../services/api';
-import { HiSearch, HiFilter } from 'react-icons/hi';
+import { HiSearch, HiFilter, HiPlus, HiTrash } from 'react-icons/hi';
+
+const STACKS = ['JavaScript', 'TypeScript', 'React', 'Vue.js', 'Angular', 'Node.js', 'Python', 'Java', 'PHP', 'SQL', 'MongoDB', 'Docker', 'AWS', 'Go', 'C#'];
 
 export default function CandidateSearch() {
   const [candidates, setCandidates] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
-  const [filters, setFilters] = useState({ stack: '', level: '', minScore: '', maxScore: '', minExp: '', availability: '' });
+  const [requirements, setRequirements] = useState([{ id: Date.now(), stack: '', level: '1', minScore: '' }]);
+  const [filters, setFilters] = useState({ minExp: '', availability: '' });
+
+  const addReq = () => setRequirements([...requirements, { id: Date.now(), stack: '', level: '1', minScore: '' }]);
+  const removeReq = (id) => setRequirements(requirements.filter(r => r.id !== id));
+  const updateReq = (id, field, value) => setRequirements(requirements.map(r => r.id === id ? { ...r, [field]: value } : r));
 
   const search = async () => {
     setLoading(true);
     setSearched(true);
-    const params = new URLSearchParams(Object.entries(filters).filter(([, v]) => v));
+    
+    // Filter out empty requirements
+    const validReqs = requirements.filter(r => r.stack).map(({ stack, level, minScore }) => ({ stack, level: Number(level), minScore: minScore ? Number(minScore) : 0 }));
+    
+    const queryObj = { ...Object.fromEntries(Object.entries(filters).filter(([, v]) => v)) };
+    if (validReqs.length > 0) queryObj.requirements = JSON.stringify(validReqs);
+    
+    const params = new URLSearchParams(queryObj);
+    
     try { const { data } = await api.get(`/admin/candidates/search?${params}`); setCandidates(data.candidates || []); }
     catch { setCandidates([]); }
     finally { setLoading(false); }
@@ -22,31 +37,58 @@ export default function CandidateSearch() {
     <div className="animate-fade-in">
       <h1 className="text-2xl font-bold text-white mb-6">Find Candidates</h1>
 
-      <div className="card mb-6 grid grid-cols-2 md:grid-cols-3 gap-4">
-        {[
-          { key: 'stack', placeholder: 'Tech Stack (e.g. React)', label: 'Stack' },
-          { key: 'minScore', placeholder: 'Min score %', label: 'Min Score', type: 'number' },
-          { key: 'maxScore', placeholder: 'Max score %', label: 'Max Score', type: 'number' },
-          { key: 'minExp', placeholder: 'Min years', label: 'Experience', type: 'number' },
-        ].map(({ key, placeholder, label, type = 'text' }) => (
-          <div key={key}>
-            <label className="label">{label}</label>
-            <input type={type} className="input" placeholder={placeholder} value={filters[key]} onChange={(e) => setFilters((f) => ({ ...f, [key]: e.target.value }))} />
+      <div className="card mb-6 space-y-4">
+        <div>
+          <div className="flex justify-between items-center mb-2">
+            <h2 className="text-white font-semibold">Stack Requirements</h2>
+            <button onClick={addReq} className="btn-secondary text-xs px-3 py-1.5 flex items-center gap-1"><HiPlus /> Add Requirement</button>
           </div>
-        ))}
-        <div>
-          <label className="label">Level</label>
-          <select className="input" value={filters.level} onChange={(e) => setFilters((f) => ({ ...f, level: e.target.value }))}>
-            <option value="">All</option>
-            <option value="1">Level 1</option><option value="2">Level 2</option><option value="3">Level 3</option>
-          </select>
+          
+          <div className="space-y-3">
+            {requirements.map((req) => (
+              <div key={req.id} className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end bg-dark-800/50 p-3 rounded-lg border border-dark-border">
+                <div className="md:col-span-5">
+                  <label className="label text-xs">Require Stack</label>
+                  <select className="input text-sm" value={req.stack} onChange={(e) => updateReq(req.id, 'stack', e.target.value)}>
+                    <option value="">Select Stack</option>
+                    {STACKS.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+                <div className="md:col-span-3">
+                  <label className="label text-xs">Min Level</label>
+                  <select className="input text-sm" value={req.level} onChange={(e) => updateReq(req.id, 'level', e.target.value)}>
+                    <option value="1">Level 1 (Junior)</option>
+                    <option value="2">Level 2 (Mid)</option>
+                    <option value="3">Level 3 (Senior)</option>
+                  </select>
+                </div>
+                <div className="md:col-span-3">
+                  <label className="label text-xs">Min Score (%)</label>
+                  <input type="number" min="0" max="100" className="input text-sm" placeholder="70" value={req.minScore} onChange={(e) => updateReq(req.id, 'minScore', e.target.value)} />
+                </div>
+                <div className="md:col-span-1 flex justify-end">
+                  <button onClick={() => removeReq(req.id)} className="w-10 h-10 flex items-center justify-center rounded-lg bg-danger-500/10 text-danger-400 hover:bg-danger-500 hover:text-white transition-colors" disabled={requirements.length === 1}>
+                    <HiTrash />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
-        <div>
-          <label className="label">Availability</label>
-          <select className="input" value={filters.availability} onChange={(e) => setFilters((f) => ({ ...f, availability: e.target.value }))}>
-            <option value="">All</option>
-            <option value="Available">Available</option><option value="Open to Offers">Open to Offers</option>
-          </select>
+
+        <div className="pt-4 border-t border-dark-border grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="label">Min Experience (years)</label>
+            <input type="number" className="input" placeholder="Min years" value={filters.minExp} onChange={(e) => setFilters(f => ({ ...f, minExp: e.target.value }))} />
+          </div>
+          <div>
+            <label className="label">Availability</label>
+            <select className="input" value={filters.availability} onChange={(e) => setFilters((f) => ({ ...f, availability: e.target.value }))}>
+              <option value="">All</option>
+              <option value="Available">Available</option>
+              <option value="Open to Offers">Open to Offers</option>
+            </select>
+          </div>
         </div>
         <div className="col-span-2 md:col-span-3">
           <button onClick={search} disabled={loading} className="btn-primary flex items-center gap-2 px-8">

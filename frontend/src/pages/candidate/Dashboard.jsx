@@ -20,6 +20,7 @@ export default function CandidateDashboard() {
   const { user } = useAuth();
   const [profile, setProfile] = useState(null);
   const [interviews, setInterviews] = useState([]);
+  const [stats, setStats] = useState({ total: 0, passed: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -30,17 +31,17 @@ export default function CandidateDashboard() {
           api.get('/interviews/my'),
         ]);
         setProfile(profileRes.data.profile);
-        setInterviews(interviewRes.data.interviews?.slice(0, 5) || []);
+        const allInterviews = interviewRes.data.interviews || [];
+        setStats({
+          total: allInterviews.length,
+          passed: allInterviews.filter(i => i.passed).length
+        });
+        setInterviews(allInterviews.slice(0, 5));
       } catch { /* ignore */ }
       finally { setLoading(false); }
     };
     fetchData();
   }, []);
-
-  const passedInterviews = interviews.filter((i) => i.passed).length;
-  const avgScore = interviews.length > 0
-    ? Math.round(interviews.reduce((s, i) => s + (i.totalScore || 0), 0) / interviews.length)
-    : 0;
 
   if (loading) return (
     <div className="flex items-center justify-center h-64">
@@ -70,8 +71,8 @@ export default function CandidateDashboard() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard icon={HiAcademicCap} label="Current Level" value={`L${profile?.currentLevel || 0}`} color="bg-primary-600" />
         <StatCard icon={HiChartBar} label="Overall Score" value={`${profile?.overallScore || 0}%`} color="bg-accent-500" />
-        <StatCard icon={HiClipboardList} label="Interviews" value={interviews.length} color="bg-blue-600" />
-        <StatCard icon={HiCheckCircle} label="Passed" value={passedInterviews} color="bg-emerald-600" />
+        <StatCard icon={HiClipboardList} label="Interviews" value={stats.total} color="bg-blue-600" />
+        <StatCard icon={HiCheckCircle} label="Passed" value={stats.passed} color="bg-emerald-600" />
       </div>
 
       {/* Interview levels */}

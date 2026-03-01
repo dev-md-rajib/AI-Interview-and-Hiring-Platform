@@ -24,6 +24,7 @@ export default function CandidateProfile() {
   const { user } = useAuth();
   const [profile, setProfile] = useState(null);
   const [history, setHistory] = useState([]);
+  const [levelVerdicts, setLevelVerdicts] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -32,6 +33,7 @@ export default function CandidateProfile() {
         const { data } = await api.get('/profile/me');
         setProfile(data.profile);
         setHistory(data.interviewHistory || []);
+        setLevelVerdicts(data.levelVerdicts || []);
       } catch { toast.error('Failed to load profile'); }
       finally { setLoading(false); }
     };
@@ -119,6 +121,27 @@ export default function CandidateProfile() {
         </div>
       )}
 
+      {/* Level Achievements */}
+      {levelVerdicts.length > 0 && (
+        <div className="card">
+          <h2 className="section-title">Highest Level Verdicts</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {levelVerdicts.map((lv) => (
+              <div key={`lv-${lv.level}`} className="p-4 rounded-xl bg-dark-800/50 border border-primary-500/20 hover:border-primary-500/50 transition-colors">
+                <div className="flex justify-between items-start mb-2">
+                  <span className="text-lg font-bold text-white text-gradient">L{lv.level} Passed</span>
+                  <span className="text-2xl font-black text-primary-400">{lv.totalScore}%</span>
+                </div>
+                <div className="text-sm text-gray-400 mb-2">Stack: <span className="text-white">{lv.stack}</span></div>
+                <div className="inline-flex items-center px-2 py-1 rounded text-xs font-semibold bg-dark-700 text-gray-300 border border-dark-600">
+                  Evaluated by: {lv.evaluator}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Interview History */}
       {history.length > 0 && (
         <div className="card">
@@ -126,13 +149,14 @@ export default function CandidateProfile() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="text-gray-400 uppercase text-xs border-b border-dark-border">
-                <tr>{['Stack', 'Level', 'Score', 'Result', 'Date'].map((h) => <th key={h} className="text-left pb-2 pr-4">{h}</th>)}</tr>
+                <tr>{['Stack', 'Level', 'Evaluator', 'Score', 'Result', 'Date'].map((h) => <th key={h} className="text-left pb-2 pr-4">{h}</th>)}</tr>
               </thead>
               <tbody className="divide-y divide-dark-border">
                 {history.map((iv) => (
                   <tr key={iv._id} className="hover:bg-dark-800/30">
                     <td className="py-3 pr-4 text-white">{iv.stack}</td>
                     <td className="py-3 pr-4 text-gray-400">L{iv.level}</td>
+                    <td className="py-3 pr-4 text-gray-400">{iv.evaluator}</td>
                     <td className="py-3 pr-4 font-bold text-primary-400">{iv.totalScore}%</td>
                     <td className="py-3 pr-4">{iv.passed ? <span className="badge-success">Passed</span> : <span className="badge-danger">Failed</span>}</td>
                     <td className="py-3 text-gray-400">{iv.completedAt ? new Date(iv.completedAt).toLocaleDateString() : '-'}</td>

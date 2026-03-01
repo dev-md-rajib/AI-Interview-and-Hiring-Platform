@@ -1,4 +1,5 @@
 const Interview = require('../models/Interview');
+const AiAgentInterview = require('../models/AiAgentInterview');
 const InterviewLevel = require('../models/InterviewLevel');
 const CandidateProfile = require('../models/CandidateProfile');
 const { generateQuestions, scoreAnswer, generateFeedback } = require('../services/aiService');
@@ -7,25 +8,41 @@ const logger = require('../config/logger');
 // Check if candidate is eligible for a level
 const checkEligibility = async (candidateId, level) => {
   if (level === 1) return { eligible: true };
+  const prevLevel = level - 1;
 
   // Must have passed previous level
-  const prevPassed = await Interview.findOne({
+  const prevPassedStandard = await Interview.findOne({
     candidate: candidateId,
-    level: level - 1,
+    level: prevLevel,
     status: 'completed',
     passed: true,
   });
 
-  if (!prevPassed) {
-    return { eligible: false, reason: `You must pass Level ${level - 1} first` };
+  const prevPassedAi = await AiAgentInterview.findOne({
+    candidate: candidateId,
+    level: prevLevel,
+    status: 'completed',
+    passed: true,
+  });
+
+  const passedAny = prevPassedStandard || prevPassedAi;
+
+  if (!passedAny) {
+    return { eligible: false, reason: `You must pass Level ${prevLevel} first` };
   }
 
-  const levelConfig = await InterviewLevel.findOne({ level: level - 1 });
-  if (levelConfig && prevPassed.totalScore < levelConfig.minimumPassScore) {
-    return {
-      eligible: false,
-      reason: `Minimum score of ${levelConfig.minimumPassScore} required for Level ${level - 1}`,
-    };
+  const levelConfig = await InterviewLevel.findOne({ level: prevLevel });
+  if (levelConfig) {
+    const highestScore = Math.max(
+      prevPassedStandard ? prevPassedStandard.totalScore : 0,
+      prevPassedAi ? prevPassedAi.totalScore : 0
+    );
+    if (highestScore < levelConfig.minimumPassScore) {
+      return {
+        eligible: false,
+        reason: `Minimum score of ${levelConfig.minimumPassScore} required for Level ${prevLevel}`,
+      };
+    }
   }
 
   return { eligible: true };
@@ -280,10 +297,23 @@ const getInterviewResult = async (req, res, next) => {
 // @access  Private (CANDIDATE)
 const getMyInterviews = async (req, res, next) => {
   try {
-    const interviews = await Interview.find({ candidate: req.user._id })
+    const standardInterviews = await Interview.find({ candidate: req.user._id })
       .select('level stack totalScore passed status startedAt completedAt')
-      .sort({ createdAt: -1 });
-    res.status(200).json({ success: true, count: interviews.length, interviews });
+      .lean();
+      
+    const aiAgentInterviews = await AiAgentInterview.find({ candidate: req.user._id })
+      .select('level stack totalScore passed status startedAt completedAt')
+      .lean();
+
+    const combined = [
+      ...standardInterviews.map((i) => ({ ...i, mode: 'Standard' })),
+      ...aiAgentInterviews.map((i) => ({ ...i, mode: 'AI Agent' }))
+    ];
+
+    // Sort descending by startedAt or createdAt
+    combined.sort((a, b) => new Date(b.startedAt || b.createdAt) - new Date(a.startedAt || a.createdAt));
+
+    res.status(200).json({ success: true, count: combined.length, interviews: combined });
   } catch (err) {
     next(err);
   }

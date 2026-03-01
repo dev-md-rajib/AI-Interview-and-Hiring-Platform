@@ -202,6 +202,18 @@ const endAiAgentInterview = async (req, res, next) => {
     interview.conceptScore = evaluation.conceptScore || evaluation.totalScore;
     await interview.save();
 
+    // Update candidate profile if passed
+    if (evaluation.passed) {
+      const CandidateProfile = require('../models/CandidateProfile');
+      await CandidateProfile.findOneAndUpdate(
+        { user: req.user._id },
+        {
+          $max: { currentLevel: interview.level },
+          $max: { overallScore: evaluation.totalScore },
+        }
+      );
+    }
+
     logger.info(`AI agent interview ${interview._id} evaluated. Score: ${evaluation.totalScore}, Passed: ${evaluation.passed}`);
 
     res.status(200).json({

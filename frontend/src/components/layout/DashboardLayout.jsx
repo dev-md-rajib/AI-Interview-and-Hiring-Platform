@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
+import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import {
   HiHome, HiUser, HiBriefcase, HiChatAlt2, HiClipboardList,
@@ -41,9 +42,25 @@ export default function DashboardLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [totalUnread, setTotalUnread] = useState(0);
+  const [seenCount, setSeenCount] = useState(0);
 
   const basePath = user?.role === 'ADMIN' ? '/admin' : user?.role === 'RECRUITER' ? '/recruiter' : '/candidate';
   const navItems = getNavItems(user?.role, basePath);
+
+  useEffect(() => {
+    if (!user) return;
+    const fetchUnread = () => {
+      api.get('/messages/unread').then(({ data }) => {
+        const count = data.count || 0;
+        setTotalUnread(count);
+        if (count === 0) setSeenCount(0);
+      }).catch(() => {});
+    };
+    fetchUnread();
+    const interval = setInterval(fetchUnread, 30000);
+    return () => clearInterval(interval);
+  }, [user]);
 
   const handleLogout = () => {
     logout();
@@ -52,6 +69,10 @@ export default function DashboardLayout() {
 
   const isActive = (to, exact) => {
     if (exact) return location.pathname === to;
+    
+    // Prevent "My Jobs" (/jobs) from being active when "Post a Job" (/jobs/new) is active
+    if (to.endsWith('/jobs') && location.pathname.endsWith('/jobs/new')) return false;
+
     return location.pathname.startsWith(to) && (to !== basePath || location.pathname === to);
   };
 
@@ -93,11 +114,21 @@ export default function DashboardLayout() {
             <Link
               key={to}
               to={to}
-              onClick={() => setSidebarOpen(false)}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${isActive(to, exact) ? 'bg-primary-600 text-white shadow-lg shadow-primary-500/20' : 'text-gray-400 hover:bg-dark-800 hover:text-white'}`}
+              onClick={() => {
+                setSidebarOpen(false);
+                if (label === 'Messages') setSeenCount(totalUnread);
+              }}
+              className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${isActive(to, exact) ? 'bg-primary-600 text-white shadow-lg shadow-primary-500/20' : 'text-gray-400 hover:bg-dark-800 hover:text-white'}`}
             >
-              <Icon className="w-5 h-5 flex-shrink-0" />
-              {label}
+              <div className="flex items-center gap-3">
+                <Icon className="w-5 h-5 flex-shrink-0" />
+                {label}
+              </div>
+              {label === 'Messages' && totalUnread > seenCount && (
+                <span className="bg-danger-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                  {totalUnread - seenCount > 99 ? '99+' : totalUnread - seenCount}
+                </span>
+              )}
             </Link>
           ))}
         </nav>
