@@ -54,8 +54,47 @@ const login = async (req, res, next) => {
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
 
+    if (user.isBanned) {
+      return res.status(403).json({
+        success: false,
+        message: 'Account suspended',
+        isBanned: true,
+        banReason: user.banReason,
+        appealStatus: user.appealStatus
+      });
+    }
+
     logger.info(`User logged in: ${email}`);
     sendTokenResponse(user, 200, res);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// @desc    Submit ban appeal
+// @route   POST /api/auth/appeal
+// @access  Public
+const submitAppeal = async (req, res, next) => {
+  try {
+    const { email, appealText } = req.body;
+    if (!email || !appealText) {
+      return res.status(400).json({ success: false, message: 'Email and appeal text are required' });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    if (!user.isBanned) {
+      return res.status(400).json({ success: false, message: 'User is not banned' });
+    }
+
+    user.appealText = appealText;
+    user.appealStatus = 'Pending';
+    await user.save();
+
+    res.status(200).json({ success: true, message: 'Appeal submitted successfully', appealStatus: 'Pending' });
   } catch (err) {
     next(err);
   }
@@ -112,4 +151,4 @@ const updateProfile = async (req, res, next) => {
   }
 };
 
-module.exports = { register, login, getMe, updatePassword, updateProfile };
+module.exports = { register, login, getMe, updatePassword, updateProfile, submitAppeal };

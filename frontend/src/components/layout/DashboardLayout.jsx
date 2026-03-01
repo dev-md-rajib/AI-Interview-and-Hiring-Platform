@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import {
   HiHome, HiUser, HiBriefcase, HiChatAlt2, HiClipboardList,
   HiChartBar, HiCog, HiLogout, HiMenuAlt3, HiX, HiAcademicCap,
-  HiSearch, HiDocumentText, HiQuestionMarkCircle, HiStar,
+  HiSearch, HiDocumentText, HiQuestionMarkCircle, HiStar, HiExclamation
 } from 'react-icons/hi';
 
 const getNavItems = (role, basePath) => {
@@ -33,6 +33,7 @@ const getNavItems = (role, basePath) => {
     { to: `${basePath}/questions`, icon: HiQuestionMarkCircle, label: 'Question Bank' },
     { to: `${basePath}/users`, icon: HiUser, label: 'Users' },
     { to: `${basePath}/candidates`, icon: HiSearch, label: 'Candidates' },
+    { to: `${basePath}/reports`, icon: HiExclamation, label: 'Reports & Appeals' },
   ];
   return [];
 };
@@ -44,21 +45,31 @@ export default function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [totalUnread, setTotalUnread] = useState(0);
   const [seenCount, setSeenCount] = useState(0);
+  const [totalMatched, setTotalMatched] = useState(0);
+  const [seenMatched, setSeenMatched] = useState(0);
 
   const basePath = user?.role === 'ADMIN' ? '/admin' : user?.role === 'RECRUITER' ? '/recruiter' : '/candidate';
   const navItems = getNavItems(user?.role, basePath);
 
   useEffect(() => {
     if (!user) return;
-    const fetchUnread = () => {
+    const fetchData = () => {
       api.get('/messages/unread').then(({ data }) => {
         const count = data.count || 0;
         setTotalUnread(count);
         if (count === 0) setSeenCount(0);
       }).catch(() => {});
+
+      if (user.role === 'CANDIDATE') {
+        api.get('/jobs/matched-count').then(({ data }) => {
+          const count = data.count || 0;
+          setTotalMatched(count);
+          if (count === 0) setSeenMatched(0);
+        }).catch(() => {});
+      }
     };
-    fetchUnread();
-    const interval = setInterval(fetchUnread, 30000);
+    fetchData();
+    const interval = setInterval(fetchData, 30000);
     return () => clearInterval(interval);
   }, [user]);
 
@@ -117,6 +128,7 @@ export default function DashboardLayout() {
               onClick={() => {
                 setSidebarOpen(false);
                 if (label === 'Messages') setSeenCount(totalUnread);
+                if (label === 'Job Board') setSeenMatched(totalMatched);
               }}
               className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${isActive(to, exact) ? 'bg-primary-600 text-white shadow-lg shadow-primary-500/20' : 'text-gray-400 hover:bg-dark-800 hover:text-white'}`}
             >
@@ -127,6 +139,11 @@ export default function DashboardLayout() {
               {label === 'Messages' && totalUnread > seenCount && (
                 <span className="bg-danger-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
                   {totalUnread - seenCount > 99 ? '99+' : totalUnread - seenCount}
+                </span>
+              )}
+              {label === 'Job Board' && totalMatched > seenMatched && (
+                <span className="bg-accent-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                  {totalMatched - seenMatched > 99 ? '99+' : totalMatched - seenMatched}
                 </span>
               )}
             </Link>

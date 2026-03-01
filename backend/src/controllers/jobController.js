@@ -128,8 +128,15 @@ const applyToJob = async (req, res, next) => {
           totalScore: { $gte: reqObj.minScore }
         };
 
-        const stdBest = await Interview.findOne(query).sort({ totalScore: -1 });
-        const aiBest = await AiAgentInterview.findOne(query).sort({ totalScore: -1 });
+        let stdBest = null;
+        let aiBest = null;
+
+        if (reqObj.method !== 'AI') {
+          stdBest = await Interview.findOne(query).sort({ totalScore: -1 });
+        }
+        if (reqObj.method !== 'Standard') {
+          aiBest = await AiAgentInterview.findOne(query).sort({ totalScore: -1 });
+        }
 
         let bestInterview = null;
         if (stdBest && aiBest) bestInterview = stdBest.totalScore > aiBest.totalScore ? stdBest : aiBest;
@@ -137,7 +144,8 @@ const applyToJob = async (req, res, next) => {
         else if (aiBest) bestInterview = aiBest;
 
         if (!bestInterview) {
-          missingRequirements.push(`${reqObj.stack} (Level ${reqObj.level}+, ${reqObj.minScore}%+)`);
+          const methodText = reqObj.method === 'Standard' ? ' (Human Interview)' : reqObj.method === 'AI' ? ' (AI Agent)' : '';
+          missingRequirements.push(`${reqObj.stack}${methodText} (Level ${reqObj.level}+, ${reqObj.minScore}%+)`);
         } else {
           requirementScores.push(bestInterview.totalScore);
         }
@@ -260,4 +268,78 @@ const updateApplicationStatus = async (req, res, next) => {
   }
 };
 
-module.exports = { createJob, getJobs, getJob, updateJob, deleteJob, getMyJobs, applyToJob, getMyApplications, getJobApplications, updateApplicationStatus };
+// @desc    Get matched unapplied jobs count for candidate
+// @route   GET /api/jobs/matched-count
+// @access  Private (CANDIDATE)
+const getMatchedJobsCount = async (req, res, next) => {
+  try {
+    // 1. Get IDs of jobs candidate already applied to
+    const appliedJobIds = await Application.find({ candidate: req.user._id }).distinct('job');
+    
+    // 2. Fetch all currently open jobs excluding ones already applied to
+    const openJobs = await Job.find({ 
+      status: 'Open',
+      _id: { $nin: appliedJobIds }
+    });
+
+    if (!openJobs.length) {
+      return res.status(200).json({ success: true, count: 0 });
+    }
+
+    // 3. Pre-fetch all passed interviews for this candidate
+    const passedStd = await Interview.find({
+      candidate: req.user._id,
+      status: 'completed',
+      passed: true
+    }).select('stack level totalScore');
+
+    const passedAi = await AiAgentInterview.find({
+      candidate: req.user._id,
+      status: 'completed',
+      passed: true
+    }).select('stack level totalScore');
+
+    const allPassed = [...passedStd, ...passedAi];
+
+    // 4. Check eligibility for each open job
+    let matchedCount = 0;
+
+    for (const job of openJobs) {
+      if (!job.requirements || job.requirements.length === 0) {
+        // If a job has no requirements, assume eligible
+        matchedCount++;
+        continue;
+      }
+
+      let meetsAll = true;
+      for (const reqObj of job.requirements) {
+        // Determine which pool to check based on the required method
+        let searchPool = allPassed;
+        if (reqObj.method === 'Standard') searchPool = passedStd;
+        else if (reqObj.method === 'AI') searchPool = passedAi;
+
+        // Find if candidate has ANY passed interview meeting this specific requirement in the allowed pool
+        const matchedInterview = searchPool.find(i => 
+          i.stack.toLowerCase() === reqObj.stack.toLowerCase() &&
+          i.level >= reqObj.level &&
+          i.totalScore >= reqObj.minScore
+        );
+        
+        if (!matchedInterview) {
+          meetsAll = false;
+          break; // Optimization: fail fast if one requirement isn't met
+        }
+      }
+
+      if (meetsAll) {
+        matchedCount++;
+      }
+    }
+
+    res.status(200).json({ success: true, count: matchedCount });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { createJob, getJobs, getJob, updateJob, deleteJob, getMyJobs, applyToJob, getMyApplications, getJobApplications, updateApplicationStatus, getMatchedJobsCount };

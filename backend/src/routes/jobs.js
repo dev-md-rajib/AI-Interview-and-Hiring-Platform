@@ -3,6 +3,7 @@ const router = express.Router();
 const {
   createJob, getJobs, getJob, updateJob, deleteJob, getMyJobs,
   applyToJob, getMyApplications, getJobApplications, updateApplicationStatus,
+  getMatchedJobsCount,
 } = require('../controllers/jobController');
 const { protect, authorize } = require('../middleware/auth');
 
@@ -10,6 +11,7 @@ const { protect, authorize } = require('../middleware/auth');
 router.get('/', protect, getJobs);
 router.get('/my', protect, authorize('RECRUITER'), getMyJobs);
 router.get('/applications/my', protect, authorize('CANDIDATE'), getMyApplications);
+router.get('/matched-count', protect, authorize('CANDIDATE'), getMatchedJobsCount);
 router.get('/:id', protect, getJob);
 router.post('/', protect, authorize('RECRUITER'), createJob);
 router.put('/:id', protect, authorize('RECRUITER', 'ADMIN'), updateJob);

@@ -21,6 +21,7 @@ const jobRoutes = require('./src/routes/jobs');
 const adminRoutes = require('./src/routes/admin');
 const messageRoutes = require('./src/routes/messages');
 const contestRoutes = require('./src/routes/contests');
+const reportRoutes = require('./src/routes/reports');
 
 // Connect DB
 connectDB();
@@ -76,6 +77,7 @@ app.use('/api/jobs', jobRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/contests', contestRoutes);
+app.use('/api/reports', reportRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

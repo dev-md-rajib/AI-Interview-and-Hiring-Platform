@@ -40,6 +40,7 @@ const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'));
 const LevelManager = lazy(() => import('./pages/admin/LevelManager'));
 const QuestionBank = lazy(() => import('./pages/admin/QuestionBank'));
 const UserManager = lazy(() => import('./pages/admin/UserManager'));
+const AdminReports = lazy(() => import('./pages/admin/Reports'));
 
 // Shared pages
 const Messages = lazy(() => import('./pages/shared/Messages'));
@@ -131,6 +132,7 @@ export default function App() {
               <Route path="questions" element={<QuestionBank />} />
               <Route path="users" element={<UserManager />} />
               <Route path="candidates" element={<CandidateSearch />} />
+              <Route path="reports" element={<AdminReports />} />
             </Route>
 
             <Route path="*" element={<NotFound />} />

@@ -2,7 +2,16 @@ const express = require('express');
 const router = express.Router();
 const {
   getAnalytics, getAllUsers, verifyRecruiter, createOrUpdateLevel, getLevels,
-  addQuestion, getQuestions, deleteQuestion, searchCandidates,
+  addQuestion,
+  getQuestions,
+  deleteQuestion,
+  searchCandidates,
+  getReports,
+  resolveReport,
+  getAppeals,
+  resolveAppeal,
+  getBannedUsers,
+  unbanUser
 } = require('../controllers/adminController');
 const { protect, authorize } = require('../middleware/auth');
 
@@ -20,5 +29,14 @@ router.delete('/questions/:id', protect, authorize('ADMIN'), deleteQuestion);
 
 // Recruiter and Admin can search candidates
 router.get('/candidates/search', protect, authorize('RECRUITER', 'ADMIN'), searchCandidates);
+
+router.get('/reports', protect, authorize('ADMIN'), getReports);
+router.put('/reports/:id', protect, authorize('ADMIN'), resolveReport);
+
+router.get('/appeals', protect, authorize('ADMIN'), getAppeals);
+router.put('/appeals/:userId', protect, authorize('ADMIN'), resolveAppeal);
+
+router.get('/banned-users', protect, authorize('ADMIN'), getBannedUsers);
+router.put('/banned-users/:id/unban', protect, authorize('ADMIN'), unbanUser);
 
 module.exports = router;

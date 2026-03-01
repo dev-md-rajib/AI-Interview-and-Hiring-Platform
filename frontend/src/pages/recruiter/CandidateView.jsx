@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
-import { HiMail, HiExternalLink } from 'react-icons/hi';
+import { HiMail, HiFlag, HiX } from 'react-icons/hi';
 import toast from 'react-hot-toast';
 
 export default function CandidateView() {
@@ -9,6 +9,8 @@ export default function CandidateView() {
   const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isReporting, setIsReporting] = useState(false);
+  const [reportReason, setReportReason] = useState('');
 
   useEffect(() => {
     api.get(`/profile/${id}`).then(({ data }) => setData(data)).finally(() => setLoading(false));
@@ -19,6 +21,18 @@ export default function CandidateView() {
       const { data: convData } = await api.post('/messages/conversation', { recipientId: id });
       navigate('/recruiter/messages', { state: { conversationId: convData.conversation._id } });
     } catch { toast.error('Failed to open message'); }
+  };
+
+  const submitReport = async () => {
+    if (!reportReason.trim()) return toast.error('Please enter a reason');
+    try {
+      await api.post('/reports/candidate', { candidateId: id, reason: reportReason });
+      toast.success('Candidate reported successfully');
+      setIsReporting(false);
+      setReportReason('');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to report candidate');
+    }
   };
 
   if (loading) return <div className="flex justify-center h-64 items-center"><div className="w-8 h-8 border-3 border-primary-500/30 border-t-primary-500 rounded-full animate-spin" /></div>;
@@ -44,7 +58,10 @@ export default function CandidateView() {
               </div>
             </div>
           </div>
-          <button onClick={startConversation} className="btn-primary flex items-center gap-2"><HiMail /> Message</button>
+          <div className="flex items-center gap-3">
+            <button onClick={() => setIsReporting(true)} className="btn-secondary text-danger-400 hover:text-danger-300 hover:border-danger-500/50 flex items-center gap-2"><HiFlag /> Report</button>
+            <button onClick={startConversation} className="btn-primary flex items-center gap-2"><HiMail /> Message</button>
+          </div>
         </div>
         {profile?.bio && <p className="text-gray-300 mt-4 border-t border-dark-border pt-4">{profile.bio}</p>}
       </div>
@@ -111,6 +128,28 @@ export default function CandidateView() {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {isReporting && (
+        <div className="fixed inset-0 bg-dark-900/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="bg-dark-800 rounded-2xl border border-dark-border max-w-md w-full p-6 space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-xl font-bold text-white flex items-center gap-2"><HiFlag className="text-danger-500" /> Report Candidate</h3>
+              <button onClick={() => setIsReporting(false)} className="text-gray-400 hover:text-white"><HiX className="w-6 h-6" /></button>
+            </div>
+            <p className="text-gray-400 text-sm">Please provide a valid reason for reporting this candidate. False flags will be penalized.</p>
+            <textarea
+              className="input h-32 resize-none"
+              placeholder="Why are you reporting this user?"
+              value={reportReason}
+              onChange={(e) => setReportReason(e.target.value)}
+            />
+            <div className="flex justify-end gap-3 pt-2">
+              <button onClick={() => setIsReporting(false)} className="btn-secondary px-4 py-2">Cancel</button>
+              <button onClick={submitReport} className="bg-danger-600 hover:bg-danger-500 text-white px-4 py-2 rounded-lg font-medium transition-colors">Submit Report</button>
+            </div>
+          </div>
         </div>
       )}
     </div>

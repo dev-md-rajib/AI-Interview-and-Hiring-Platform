@@ -11,7 +11,7 @@ export default function PostJob() {
   const navigate = useNavigate();
   const { id } = useParams(); // id = edit mode
   const [loading, setLoading] = useState(false);
-  const [requirements, setRequirements] = useState([{ id: Date.now(), stack: '', level: '1', minScore: '70' }]);
+  const [requirements, setRequirements] = useState([{ id: Date.now(), stack: '', level: '1', minScore: '70', method: 'Both' }]);
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm({
     defaultValues: { title: '', description: '', experienceRequired: 0, salaryMin: '', salaryMax: '', location: 'Remote', isRemote: true, status: 'Open' }
@@ -29,12 +29,12 @@ export default function PostJob() {
     }
   }, [id, reset]);
 
-  const addReq = () => setRequirements([...requirements, { id: Date.now(), stack: '', level: '1', minScore: '70' }]);
+  const addReq = () => setRequirements([...requirements, { id: Date.now(), stack: '', level: '1', minScore: '70', method: 'Both' }]);
   const removeReq = (id) => setRequirements(requirements.filter(r => r.id !== id));
   const updateReq = (id, field, value) => setRequirements(requirements.map(r => r.id === id ? { ...r, [field]: value } : r));
 
   const onSubmit = async (data) => {
-    const validReqs = requirements.filter(r => r.stack).map(r => ({ stack: r.stack, level: Number(r.level), minScore: Number(r.minScore) }));
+    const validReqs = requirements.filter(r => r.stack).map(r => ({ stack: r.stack, level: Number(r.level), minScore: Number(r.minScore), method: r.method }));
     if (validReqs.length === 0) return toast.error('Add at least one complete stack requirement');
     
     setLoading(true);
@@ -68,24 +68,32 @@ export default function PostJob() {
           <div className="space-y-3">
             {requirements.map((req) => (
               <div key={req.id} className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end bg-dark-800/50 p-3 rounded-lg border border-dark-border">
-                <div className="md:col-span-5">
+                <div className="md:col-span-3">
                   <label className="label text-xs">Required Stack</label>
-                  <select className="input text-sm" value={req.stack} onChange={(e) => updateReq(req.id, 'stack', e.target.value)}>
+                  <select className="input text-sm px-2" value={req.stack} onChange={(e) => updateReq(req.id, 'stack', e.target.value)}>
                     <option value="">Select Stack</option>
                     {STACKS.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </div>
                 <div className="md:col-span-3">
+                  <label className="label text-xs">Method</label>
+                  <select className="input text-sm px-2" value={req.method || 'Both'} onChange={(e) => updateReq(req.id, 'method', e.target.value)}>
+                    <option value="Both">Any Method</option>
+                    <option value="Standard">Human Interview</option>
+                    <option value="AI">AI Agent</option>
+                  </select>
+                </div>
+                <div className="md:col-span-2">
                   <label className="label text-xs">Min Level</label>
-                  <select className="input text-sm" value={req.level} onChange={(e) => updateReq(req.id, 'level', e.target.value)}>
-                    <option value="1">Level 1 (Junior)</option>
-                    <option value="2">Level 2 (Mid)</option>
-                    <option value="3">Level 3 (Senior)</option>
+                  <select className="input text-sm px-2" value={req.level} onChange={(e) => updateReq(req.id, 'level', e.target.value)}>
+                    <option value="1">Level 1</option>
+                    <option value="2">Level 2</option>
+                    <option value="3">Level 3</option>
                   </select>
                 </div>
                 <div className="md:col-span-3">
                   <label className="label text-xs">Min Score (%)</label>
-                  <input type="number" min="0" max="100" className="input text-sm" placeholder="70" value={req.minScore} onChange={(e) => updateReq(req.id, 'minScore', e.target.value)} />
+                  <input type="number" min="0" max="100" className="input text-sm px-2" placeholder="70" value={req.minScore} onChange={(e) => updateReq(req.id, 'minScore', e.target.value)} />
                 </div>
                 <div className="md:col-span-1 flex justify-end">
                   <button type="button" onClick={() => removeReq(req.id)} className="w-10 h-10 flex items-center justify-center rounded-lg bg-danger-500/10 text-danger-400 hover:bg-danger-500 hover:text-white transition-colors" disabled={requirements.length === 1}>

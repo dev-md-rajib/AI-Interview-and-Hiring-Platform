@@ -7,7 +7,19 @@ const userSchema = new mongoose.Schema(
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     password: { type: String, required: true, minlength: 6, select: false },
     profileImage: { type: String, default: '' },
-    role: { type: String, enum: ['CANDIDATE', 'RECRUITER', 'ADMIN'], default: 'CANDIDATE' },
+    role: {
+      type: String,
+      enum: ['CANDIDATE', 'RECRUITER', 'ADMIN'],
+      default: 'CANDIDATE',
+    },
+    isBanned: { type: Boolean, default: false },
+    banReason: { type: String, default: '' },
+    appealText: { type: String, default: '' },
+    appealStatus: {
+      type: String,
+      enum: ['None', 'Pending', 'Reviewed', 'Rejected'],
+      default: 'None'
+    },
     isEmailVerified: { type: Boolean, default: true }, // simplified: auto-verified
     isVerified: { type: Boolean, default: false }, // for recruiters: admin-verified
     resetPasswordToken: { type: String },

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
-import { HiLocationMarker, HiBriefcase, HiCurrencyDollar, HiAcademicCap, HiSearch } from 'react-icons/hi';
+import { HiLocationMarker, HiBriefcase, HiCurrencyDollar, HiSearch, HiFlag, HiX } from 'react-icons/hi';
 
 export default function JobBoard() {
   const [jobs, setJobs] = useState([]);
@@ -9,6 +9,8 @@ export default function JobBoard() {
   const [applying, setApplying] = useState({});
   const [search, setSearch] = useState('');
   const [levelFilter, setLevelFilter] = useState('');
+  const [reportJobId, setReportJobId] = useState(null);
+  const [reportReason, setReportReason] = useState('');
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -27,6 +29,18 @@ export default function JobBoard() {
       toast.error(err.response?.data?.message || 'Failed to apply');
     } finally {
       setApplying((a) => ({ ...a, [jobId]: false }));
+    }
+  };
+
+  const submitReport = async () => {
+    if (!reportReason.trim()) return toast.error('Please enter a reason');
+    try {
+      await api.post('/reports/job', { jobId: reportJobId, reason: reportReason });
+      toast.success('Job reported successfully');
+      setReportJobId(null);
+      setReportReason('');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to report job');
     }
   };
 
@@ -58,9 +72,16 @@ export default function JobBoard() {
             <div key={job._id} className="card hover:border-primary-500/40 transition-all group">
               <div className="flex items-start justify-between mb-3">
                 <div>
-                  <h2 className="text-white font-bold text-lg group-hover:text-primary-400 transition-colors">{job.title}</h2>
+                  <h2 className="text-white font-bold text-lg group-hover:text-primary-400 transition-colors pr-8">{job.title}</h2>
                   <p className="text-gray-400 text-sm">{job.recruiter?.name}</p>
                 </div>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); setReportJobId(job._id); }}
+                  className="text-gray-500 hover:text-danger-400 transition-colors p-1"
+                  title="Report Job"
+                >
+                  <HiFlag className="w-5 h-5" />
+                </button>
               </div>
 
               <p className="text-gray-400 text-sm mb-4 line-clamp-2">{job.description}</p>
@@ -71,7 +92,14 @@ export default function JobBoard() {
                   <div className="flex flex-wrap gap-2">
                     {job.requirements.map((req, i) => (
                       <div key={i} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-dark-800 border border-dark-border">
-                        <span className="text-white text-sm font-medium">{req.stack}</span>
+                        <span className="text-white text-sm font-medium">
+                          {req.stack}
+                          {req.method && req.method !== 'Both' && (
+                            <span className="ml-1 text-[10px] text-gray-400 font-normal">
+                              ({req.method === 'Standard' ? 'Human' : 'AI'})
+                            </span>
+                          )}
+                        </span>
                         <span className="text-primary-400 text-xs font-bold px-1.5 py-0.5 rounded bg-primary-500/10">L{req.level}</span>
                         <span className="text-gray-400 text-xs">{req.minScore}%+</span>
                       </div>
@@ -95,6 +123,28 @@ export default function JobBoard() {
               </button>
             </div>
           ))}
+        </div>
+      )}
+
+      {reportJobId && (
+        <div className="fixed inset-0 bg-dark-900/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="bg-dark-800 rounded-2xl border border-dark-border max-w-md w-full p-6 space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-xl font-bold text-white flex items-center gap-2"><HiFlag className="text-danger-500" /> Report Job</h3>
+              <button onClick={() => setReportJobId(null)} className="text-gray-400 hover:text-white"><HiX className="w-6 h-6" /></button>
+            </div>
+            <p className="text-gray-400 text-sm">Please provide a reason for reporting this job. False reports may lead to account suspension.</p>
+            <textarea
+              className="input h-32 resize-none"
+              placeholder="E.g., Scam, discriminatory, explicitly requires money..."
+              value={reportReason}
+              onChange={(e) => setReportReason(e.target.value)}
+            />
+            <div className="flex justify-end gap-3 pt-2">
+              <button onClick={() => setReportJobId(null)} className="btn-secondary px-4 py-2">Cancel</button>
+              <button onClick={submitReport} className="bg-danger-600 hover:bg-danger-500 text-white px-4 py-2 rounded-lg font-medium transition-colors">Submit Report</button>
+            </div>
+          </div>
         </div>
       )}
     </div>

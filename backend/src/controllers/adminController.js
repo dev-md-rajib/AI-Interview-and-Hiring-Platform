@@ -7,6 +7,7 @@ const InterviewLevel = require('../models/InterviewLevel');
 const QuestionBank = require('../models/QuestionBank');
 const ActivityLog = require('../models/ActivityLog');
 const AiAgentInterview = require('../models/AiAgentInterview');
+const Report = require('../models/Report');
 
 // @desc    Get platform analytics
 // @route   GET /api/admin/analytics
@@ -274,4 +275,164 @@ const searchCandidates = async (req, res, next) => {
   }
 };
 
-module.exports = { getAnalytics, getAllUsers, verifyRecruiter, createOrUpdateLevel, getLevels, addQuestion, getQuestions, deleteQuestion, searchCandidates };
+// @desc    Get all pending reports
+// @route   GET /api/admin/reports
+// @access  Private (ADMIN)
+const getReports = async (req, res, next) => {
+  try {
+    const reports = await Report.find({ status: 'Pending' })
+      .populate('reporter', 'name email role')
+      .populate('reportedUser', 'name email role')
+      .populate('reportedJob', 'title status')
+      .sort({ createdAt: -1 });
+    res.status(200).json({ success: true, count: reports.length, reports });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// @desc    Resolve a report
+// @route   PUT /api/admin/reports/:id
+// @access  Private (ADMIN)
+const resolveReport = async (req, res, next) => {
+  try {
+    const { action, banReason } = req.body; // action: 'dismiss', 'delete_job', 'ban_user'
+    const report = await Report.findById(req.params.id);
+
+    if (!report) {
+      return res.status(404).json({ success: false, message: 'Report not found' });
+    }
+
+    if (action === 'dismiss') {
+      report.status = 'Dismissed';
+      await report.save();
+    } else if (action === 'delete_job') {
+      if (report.reportedJob) {
+        await Job.findByIdAndDelete(report.reportedJob);
+      }
+      report.status = 'Resolved';
+      await report.save();
+    } else if (action === 'ban_user') {
+      if (report.reportedUser) {
+        const user = await User.findByIdAndUpdate(report.reportedUser, {
+          isBanned: true,
+          banReason: banReason || 'Violated platform policies',
+        });
+        
+        // Hide their content
+        if (user.role === 'RECRUITER') {
+          await Job.updateMany({ recruiter: user._id }, { status: 'Closed' });
+        } else if (user.role === 'CANDIDATE') {
+          // Soft-deactivate Candidate Profile
+          await CandidateProfile.findOneAndUpdate({ user: user._id }, { isActive: false });
+        }
+      }
+      report.status = 'Resolved';
+      await report.save();
+    } else {
+      return res.status(400).json({ success: false, message: 'Invalid action' });
+    }
+
+    res.status(200).json({ success: true, message: 'Report resolved', report });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// @desc    Get pending appeals
+// @route   GET /api/admin/appeals
+// @access  Private (ADMIN)
+const getAppeals = async (req, res, next) => {
+  try {
+    const appeals = await User.find({ appealStatus: 'Pending' })
+      .select('name email role banReason appealText appealStatus createdAt')
+      .sort({ updatedAt: -1 });
+    res.status(200).json({ success: true, count: appeals.length, appeals });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// @desc    Resolve an appeal
+// @route   PUT /api/admin/appeals/:userId
+// @access  Private (ADMIN)
+const resolveAppeal = async (req, res, next) => {
+  try {
+    const { action } = req.body; // 'unban', 'reject'
+    const user = await User.findById(req.params.userId);
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    if (action === 'unban') {
+      user.isBanned = false;
+      user.banReason = '';
+      user.appealText = '';
+      user.appealStatus = 'Reviewed'; // Keeps a record
+      await user.save();
+      
+      // Optionally re-activate Candidate Profile
+      if (user.role === 'CANDIDATE') {
+        await CandidateProfile.findOneAndUpdate({ user: user._id }, { isActive: true });
+      }
+
+    } else if (action === 'reject') {
+      user.appealStatus = 'Rejected';
+      await user.save();
+    } else {
+      return res.status(400).json({ success: false, message: 'Invalid action' });
+    }
+
+    res.status(200).json({ success: true, message: 'Appeal resolved' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// @desc    Get all banned users
+// @route   GET /api/admin/banned-users
+// @access  Private (ADMIN)
+const getBannedUsers = async (req, res, next) => {
+  try {
+    const users = await User.find({ isBanned: true })
+      .select('name email role banReason appealStatus createdAt updatedAt')
+      .sort({ updatedAt: -1 });
+    res.status(200).json({ success: true, count: users.length, users });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// @desc    Unban user directly
+// @route   PUT /api/admin/banned-users/:id/unban
+// @access  Private (ADMIN)
+const unbanUser = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    user.isBanned = false;
+    user.banReason = '';
+    user.appealText = '';
+    user.appealStatus = 'None';
+    await user.save();
+
+    if (user.role === 'CANDIDATE') {
+      await CandidateProfile.findOneAndUpdate({ user: user._id }, { isActive: true });
+    }
+
+    res.status(200).json({ success: true, message: 'User unbanned successfully' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { 
+  getAnalytics, getAllUsers, verifyRecruiter, createOrUpdateLevel, 
+  getLevels, addQuestion, getQuestions, deleteQuestion, searchCandidates,
+  getReports, resolveReport, getAppeals, resolveAppeal,
+  getBannedUsers, unbanUser
+};
