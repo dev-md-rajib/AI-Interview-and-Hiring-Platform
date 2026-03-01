@@ -4,8 +4,56 @@ import toast from 'react-hot-toast';
 import api from '../../services/api';
 import {
   HiMicrophone, HiVolumeUp, HiCode, HiCheckCircle, HiXCircle,
-  HiClock, HiChartBar, HiStop, HiPlay, HiRefresh,
+  HiClock, HiChartBar, HiStop, HiPlay, HiRefresh, HiVideoCamera, HiShieldExclamation
 } from 'react-icons/hi';
+import { FilesetResolver, FaceLandmarker } from '@mediapipe/tasks-vision';
+
+/* ─── Proctoring Config & Math ────────────────────────────── */
+const YAW_THRESHOLD = 10;
+const PITCH_THRESHOLD = 10;
+const GAZE_THRESHOLD = 0.1;
+const LOOK_AWAY_TIME = 1000; // ms
+
+function rotationMatrixToEuler(R) {
+  const sy = Math.sqrt(R[0] * R[0] + R[4] * R[4]);
+  const singular = sy < 1e-6;
+  let pitch, yaw, roll;
+  if (!singular) {
+    pitch = Math.atan2(R[6], R[10]);
+    yaw = Math.atan2(-R[2], sy);
+    roll = Math.atan2(R[4], R[0]);
+  } else {
+    pitch = Math.atan2(-R[9], R[5]);
+    yaw = Math.atan2(-R[2], sy);
+    roll = 0;
+  }
+  return { 
+    yaw: yaw * (180 / Math.PI), 
+    pitch: pitch * (180 / Math.PI), 
+    roll: roll * (180 / Math.PI) 
+  };
+}
+
+function getIrisGaze(landmarks) {
+  // Left eye corners: 33 (L), 133 (R)
+  // Left iris center: 468
+  const lx_left = landmarks[33].x;
+  const lx_right = landmarks[133].x;
+  const ly_top = landmarks[159].y;
+  const ly_bot = landmarks[145].y;
+  const l_iris_x = landmarks[468].x;
+  const l_iris_y = landmarks[468].y;
+
+  const l_eye_w = lx_right - lx_left;
+  const l_eye_h = ly_bot - ly_top;
+
+  if (l_eye_w < 0.001 || l_eye_h < 0.001) return { x: 0, y: 0 };
+
+  const gaze_x = (l_iris_x - lx_left) / l_eye_w - 0.5;
+  const gaze_y = (l_iris_y - ly_top) / l_eye_h - 0.5;
+
+  return { x: gaze_x, y: gaze_y };
+}
 
 /* ─── Helpers ─────────────────────────────────────────────── */
 function formatTime(s) {
@@ -81,8 +129,8 @@ function VerdictCard({ result, onRetry }) {
           <p className="text-gray-400 text-sm mt-1">Overall Score (Pass mark: {result.passMark}%)</p>
         </div>
         {/* Coding vs Concept score breakdown */}
-        {(result.codingScore != null || result.conceptScore != null) && (
-          <div className="mt-5 grid grid-cols-2 gap-3 max-w-xs mx-auto">
+        {(result.codingScore != null || result.conceptScore != null || result.trustScore != null) && (
+          <div className="mt-5 grid grid-cols-3 gap-3 max-w-lg mx-auto">
             <div className="p-3 rounded-lg bg-violet-900/30 border border-violet-500/30">
               <p className="text-xs text-violet-300 mb-1">💻 Coding</p>
               <p className="text-2xl font-bold text-white">{result.codingScore ?? '—'}%</p>
@@ -90,6 +138,21 @@ function VerdictCard({ result, onRetry }) {
             <div className="p-3 rounded-lg bg-primary-900/30 border border-primary-500/30">
               <p className="text-xs text-primary-300 mb-1">🧠 Concepts</p>
               <p className="text-2xl font-bold text-white">{result.conceptScore ?? '—'}%</p>
+            </div>
+            <div className={`p-3 rounded-lg border flex flex-col items-center justify-center ${
+              result.trustScore < 80 ? 'bg-danger-900/30 border-danger-500/30' : 'bg-success-900/30 border-success-500/30'
+            }`}>
+              <div className="flex items-center gap-1">
+                <p className={`text-xs mb-1 ${result.trustScore < 80 ? 'text-danger-300' : 'text-success-300'}`}>
+                  🛡️ Trust Score
+                </p>
+              </div>
+              <p className="text-2xl font-bold text-white">{result.trustScore ?? 100}%</p>
+              {(result.cheatCount > 0) && (
+                <p className="text-[10px] text-danger-400 font-bold uppercase mt-1">
+                  {result.cheatCount} Violations
+                </p>
+              )}
             </div>
           </div>
         )}
@@ -162,6 +225,159 @@ export default function AIAgentInterviewRoom() {
 
   const transcriptEndRef = useRef(null);
   const interviewIdRef = useRef(id);
+
+  // Proctoring refs & state
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  const landmarkerRef = useRef(null);
+  const reqAFRef = useRef(null);
+  const lookAwayStartRef = useRef(null);
+  const currentlyAwayRef = useRef(false);
+  const alertUntilRef = useRef(0);
+
+  const [proctorStatus, setProctorStatus] = useState('Initializing AI Proctor...');
+  const [cheatCount, setCheatCount] = useState(0);
+  const [lookingAway, setLookingAway] = useState(false);
+  const [alertMsg, setAlertMsg] = useState('');
+  const [faceFound, setFaceFound] = useState(true);
+
+  // Initialize MediaPipe and Webcam
+  useEffect(() => {
+    let stream = null;
+
+    const setupProctoring = async () => {
+      try {
+        const vision = await FilesetResolver.forVisionTasks(
+          "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"
+        );
+        landmarkerRef.current = await FaceLandmarker.createFromOptions(vision, {
+          baseOptions: {
+            modelAssetPath: "/models/face_landmarker.task",
+            delegate: "GPU"
+          },
+          outputFaceBlendshapes: false,
+          outputFacialTransformationMatrixes: true,
+          numFaces: 1,
+          runningMode: "VIDEO"
+        });
+
+        // Get Webcam
+        stream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 } });
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.onloadedmetadata = () => {
+            videoRef.current.play();
+            setProctorStatus('Active');
+            reqAFRef.current = requestAnimationFrame(detectFrames);
+          };
+        }
+      } catch (err) {
+        console.error("Proctoring setup error:", err);
+        setProctorStatus('Failed to start webcam/proctor');
+      }
+    };
+    setupProctoring();
+
+    return () => {
+      if (reqAFRef.current) cancelAnimationFrame(reqAFRef.current);
+      if (stream) stream.getTracks().forEach(t => t.stop());
+      if (landmarkerRef.current) landmarkerRef.current.close();
+    };
+  }, []);
+
+  // Frame processing loop
+  const detectFrames = () => {
+    if (!videoRef.current || !canvasRef.current || !landmarkerRef.current) return;
+    
+    const video = videoRef.current;
+    if (video.readyState < 2) {
+      reqAFRef.current = requestAnimationFrame(detectFrames);
+      return;
+    }
+
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const w = canvas.width;
+    const h = canvas.height;
+
+    // Draw video (mirrored)
+    ctx.save();
+    ctx.scale(-1, 1);
+    ctx.translate(-w, 0);
+    ctx.drawImage(video, 0, 0, w, h);
+    ctx.restore();
+
+    const now = performance.now();
+    const results = landmarkerRef.current.detectForVideo(video, now);
+
+    let isAway = false;
+    let found = false;
+
+    if (results.faceLandmarks && results.faceLandmarks.length > 0) {
+      found = true;
+      const landmarks = results.faceLandmarks[0];
+
+      // Draw landmarks
+      ctx.fillStyle = 'rgba(0, 255, 0, 0.5)';
+      for (const pt of landmarks) {
+        ctx.beginPath();
+        ctx.arc(w - (pt.x * w), pt.y * h, 1, 0, 2 * Math.PI); // Mirrored X
+        ctx.fill();
+      }
+
+      let yaw = 0, pitch = 0;
+      if (results.facialTransformationMatrixes && results.facialTransformationMatrixes.length > 0) {
+        const mat = results.facialTransformationMatrixes[0];
+        const angles = rotationMatrixToEuler(mat);
+        yaw = angles.yaw;
+        pitch = angles.pitch;
+      }
+
+      let gazeP = { x: 0, y: 0 };
+      try {
+        gazeP = getIrisGaze(landmarks);
+      } catch (e) { }
+
+      const headDbg = Math.abs(yaw) > YAW_THRESHOLD || Math.abs(pitch) > PITCH_THRESHOLD;
+      const gazeDbg = Math.abs(gazeP.x) > GAZE_THRESHOLD || Math.abs(gazeP.y) > GAZE_THRESHOLD;
+      
+      isAway = headDbg || gazeDbg;
+    } else {
+      isAway = true;
+    }
+
+    setFaceFound(found);
+    setLookingAway(isAway);
+
+    // Cheat logic
+    const msNow = Date.now();
+    if (isAway) {
+      if (!lookAwayStartRef.current) {
+        lookAwayStartRef.current = msNow;
+      } else if ((msNow - lookAwayStartRef.current) >= LOOK_AWAY_TIME && !currentlyAwayRef.current) {
+        // Detected a cheat!
+        setCheatCount(prev => {
+          const next = prev + 1;
+          setAlertMsg(`WARNING! Cheat #${next} Detected!`);
+          alertUntilRef.current = msNow + 2000;
+          return next;
+        });
+        currentlyAwayRef.current = true;
+      }
+    } else {
+      lookAwayStartRef.current = null;
+      currentlyAwayRef.current = false;
+    }
+
+    // Clear alert message after time
+    if (msNow > alertUntilRef.current) {
+      setAlertMsg('');
+    }
+
+    reqAFRef.current = requestAnimationFrame(detectFrames);
+  };
 
   // Auto-scroll transcript
   useEffect(() => {
@@ -247,12 +463,12 @@ export default function AIAgentInterviewRoom() {
     setPhase('verdict');
     stopSpeech();
     try {
-      const { data } = await api.post(`/interviews/ai-agent/${interviewIdRef.current}/end`);
+      const { data } = await api.post(`/interviews/ai-agent/${interviewIdRef.current}/end`, { cheatCount });
       setResult(data);
     } catch (err) {
       toast.error('Failed to evaluate interview');
     }
-  }, []);
+  }, [cheatCount, stopSpeech]);
 
   const handleStartListening = () => {
     stopSpeech();
@@ -290,7 +506,43 @@ export default function AIAgentInterviewRoom() {
   const progress = Math.round((questionNum / totalQ) * 100);
 
   return (
-    <div className="max-w-3xl mx-auto animate-fade-in flex flex-col gap-5">
+    <div className="max-w-4xl mx-auto animate-fade-in flex flex-col gap-5">
+      
+      {/* ─── WebCam Proctoring Overlay ─── */}
+      <div className="fixed bottom-6 right-6 z-40 bg-dark-900 border-2 border-dark-border rounded-xl shadow-2xl overflow-hidden w-[320px]">
+        <div className="bg-dark-800 px-3 py-2 flex items-center justify-between border-b border-dark-border">
+          <div className="flex items-center gap-2">
+            <HiShieldExclamation className={lookingAway ? 'text-danger-500 animate-pulse' : 'text-success-500'} />
+            <span className="text-xs font-semibold text-gray-200">AI Proctor</span>
+          </div>
+          <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full ${proctorStatus === 'Active' ? 'bg-success-500/20 text-success-400' : 'bg-yellow-500/20 text-yellow-500'}`}>
+            {proctorStatus}
+          </span>
+        </div>
+        
+        <div className="relative w-full h-[240px] bg-black">
+          <video ref={videoRef} playsInline muted className="hidden" />
+          <canvas ref={canvasRef} className="absolute inset-0 w-full h-full object-cover" />
+          
+          {/* Overlay UI elements drawn in React instead of Canvas text for sharper rendering */}
+          <div className="absolute top-2 left-2 text-[10px] font-mono font-bold space-y-1 drop-shadow-md">
+            <div className="text-danger-400 bg-black/50 px-1 rounded">CHEATS: {cheatCount}</div>
+            <div className={lookingAway ? 'text-danger-400 bg-black/50 px-1 rounded' : 'text-success-400 bg-black/50 px-1 rounded'}>
+              {lookingAway ? 'LOOKING AWAY' : 'OK - FOCUSED'}
+            </div>
+            {!faceFound && <div className="text-danger-400 bg-black/50 px-1 rounded animate-pulse">NO FACE DETECTED!</div>}
+          </div>
+
+          {alertMsg && (
+            <div className="absolute inset-0 flex items-center justify-center bg-danger-900/60 backdrop-blur-sm animate-fade-in">
+              <div className="bg-danger-600 text-white text-sm font-bold py-2 px-4 rounded shadow-xl uppercase border border-red-400">
+                {alertMsg}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Header */}
       <div className="card flex items-center justify-between flex-wrap gap-4">
         <div>

@@ -157,17 +157,22 @@ const respondToAiAgent = async (req, res, next) => {
 // @access Private (CANDIDATE)
 const endAiAgentInterview = async (req, res, next) => {
   try {
+    const { cheatCount = 0 } = req.body;
+    
     const interview = await AiAgentInterview.findById(req.params.id);
     if (!interview) return res.status(404).json({ success: false, message: 'Interview not found' });
     if (interview.candidate.toString() !== req.user._id.toString()) {
       return res.status(403).json({ success: false, message: 'Not authorized' });
     }
+    
     if (interview.status === 'completed') {
       return res.status(200).json({
         success: true,
         totalScore: interview.totalScore,
         codingScore: interview.codingScore,
         conceptScore: interview.conceptScore,
+        cheatCount: interview.cheatCount,
+        trustScore: interview.trustScore,
         passed: interview.passed,
         passMark: interview.passMark,
         feedback: interview.feedback,
@@ -188,6 +193,9 @@ const endAiAgentInterview = async (req, res, next) => {
     );
 
     const levelSpec = getLevelSpec(interview.level);
+    
+    // Calculate Trust Score (Deduct 10% per cheat detected)
+    const trustScore = Math.max(0, 100 - (cheatCount * 10));
 
     interview.status = 'completed';
     interview.completedAt = new Date();
@@ -200,6 +208,8 @@ const endAiAgentInterview = async (req, res, next) => {
     interview.recommendations = evaluation.recommendations || '';
     interview.codingScore = evaluation.codingScore || evaluation.totalScore;
     interview.conceptScore = evaluation.conceptScore || evaluation.totalScore;
+    interview.cheatCount = cheatCount;
+    interview.trustScore = trustScore;
     await interview.save();
 
     // Update candidate profile if passed
@@ -222,6 +232,8 @@ const endAiAgentInterview = async (req, res, next) => {
       totalScore: evaluation.totalScore,
       codingScore: evaluation.codingScore || evaluation.totalScore,
       conceptScore: evaluation.conceptScore || evaluation.totalScore,
+      cheatCount,
+      trustScore,
       passed: evaluation.passed,
       passMark: levelSpec.passMark,
       feedback: evaluation.feedback,
