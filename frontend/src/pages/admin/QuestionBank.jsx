@@ -12,7 +12,19 @@ export default function QuestionBank() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [filters, setFilters] = useState({ stack: '', level: '', type: '' });
-  const [form, setForm] = useState({ stack: 'JavaScript', level: 1, type: 'text', question: '', skill: '', difficulty: 'medium', options: ['', '', '', ''], correctAnswer: '' });
+  const [form, setForm] = useState({ 
+    stack: 'JavaScript', 
+    level: 1, 
+    type: 'text', 
+    question: '', 
+    skill: '', 
+    difficulty: 'medium', 
+    options: ['', '', '', ''], 
+    correctAnswer: '',
+    testCases: [{ input: '', expectedOutput: '', hidden: false }],
+    allowedLanguages: 'javascript,python',
+    marks: 10
+  });
 
   const load = () => {
     const params = new URLSearchParams(Object.entries(filters).filter(([, v]) => v));
@@ -24,7 +36,20 @@ export default function QuestionBank() {
   const addQuestion = async () => {
     if (!form.question.trim()) return toast.error('Question text required');
     try {
-      const payload = { ...form, options: form.type === 'mcq' ? form.options.filter(Boolean) : [] };
+      const payload = { ...form };
+      if (form.type === 'mcq') {
+        payload.options = form.options.filter(Boolean);
+      } else if (form.type === 'coding') {
+        payload.testCases = form.testCases.filter(tc => tc.expectedOutput.trim() !== '');
+        payload.allowedLanguages = form.allowedLanguages.split(',').map(s => s.trim()).filter(Boolean);
+        payload.marks = Number(form.marks);
+      } else {
+        payload.options = [];
+        delete payload.testCases;
+        delete payload.allowedLanguages;
+        delete payload.marks;
+      }
+      
       await api.post('/admin/questions', payload);
       toast.success('Question added!');
       setShowForm(false);
@@ -81,6 +106,60 @@ export default function QuestionBank() {
             </div>
             <div><label className="label">Correct Answer</label><input className="input" placeholder="e.g. Option A" value={form.correctAnswer} onChange={(e) => setForm((f) => ({ ...f, correctAnswer: e.target.value }))} /></div>
           </>)}
+          
+          {form.type === 'coding' && (
+            <div className="space-y-4 border-t border-dark-border pt-4">
+              <h3 className="text-white font-medium">Coding Settings</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="label">Allowed Languages (comma separated)</label>
+                  <input className="input" value={form.allowedLanguages} onChange={(e) => setForm(f => ({ ...f, allowedLanguages: e.target.value }))} placeholder="javascript,python,c++" />
+                </div>
+                <div>
+                  <label className="label">Marks</label>
+                  <input type="number" className="input" value={form.marks} onChange={(e) => setForm(f => ({ ...f, marks: e.target.value }))} />
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="label mb-0">Test Cases</label>
+                  <button onClick={() => setForm(f => ({ ...f, testCases: [...f.testCases, { input: '', expectedOutput: '', hidden: false }] }))} className="text-xs text-primary-400 hover:text-primary-300">
+                    + Add Test Case
+                  </button>
+                </div>
+                <div className="space-y-3">
+                  {form.testCases.map((tc, idx) => (
+                    <div key={idx} className="flex items-start gap-2 bg-dark-900 p-3 rounded-lg border border-dark-border">
+                      <div className="flex-1 space-y-2">
+                        <textarea className="input h-12 text-xs" placeholder="Input (e.g. 5, 10)" value={tc.input} onChange={e => {
+                          const newTc = [...form.testCases]; newTc[idx].input = e.target.value; setForm(f => ({ ...f, testCases: newTc }));
+                        }} />
+                        <textarea className="input h-12 text-xs" placeholder="Expected Output" value={tc.expectedOutput} onChange={e => {
+                          const newTc = [...form.testCases]; newTc[idx].expectedOutput = e.target.value; setForm(f => ({ ...f, testCases: newTc }));
+                        }} />
+                      </div>
+                      <div className="flex flex-col items-center gap-2 pt-1">
+                        <label className="flex items-center gap-1 text-xs text-gray-400 cursor-pointer">
+                          <input type="checkbox" className="accent-primary-500" checked={tc.hidden} onChange={e => {
+                            const newTc = [...form.testCases]; newTc[idx].hidden = e.target.checked; setForm(f => ({ ...f, testCases: newTc }));
+                          }} />
+                          Hidden
+                        </label>
+                        <button onClick={() => {
+                          const newTc = form.testCases.filter((_, i) => i !== idx);
+                          setForm(f => ({ ...f, testCases: newTc }));
+                        }} className="text-danger-400 hover:text-danger-300 p-1">
+                          <HiTrash />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="flex gap-3">
             <button onClick={addQuestion} className="btn-primary flex items-center gap-2"><HiPlus />Add Question</button>
             <button onClick={() => setShowForm(false)} className="btn-secondary">Cancel</button>

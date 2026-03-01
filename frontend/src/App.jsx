@@ -23,6 +23,9 @@ const MyApplications = lazy(() => import('./pages/candidate/MyApplications'));
 const MyInterviews = lazy(() => import('./pages/candidate/MyInterviews'));
 const CandidateContests = lazy(() => import('./pages/candidate/Contests'));
 const ContestRoom = lazy(() => import('./pages/candidate/ContestRoom'));
+const CandidatePractice = lazy(() => import('./pages/candidate/CandidatePractice'));
+const CandidatePracticeRoom = lazy(() => import('./pages/candidate/CandidatePracticeRoom'));
+const CandidateMultiplayerRoom = lazy(() => import('./pages/candidate/CandidateMultiplayerRoom'));
 
 // Recruiter pages (lazy loaded)
 const RecruiterDashboard = lazy(() => import('./pages/recruiter/Dashboard'));
@@ -107,6 +110,10 @@ export default function App() {
               <Route path="messages" element={<Messages />} />
               <Route path="contests" element={<CandidateContests />} />
               <Route path="contests/:id/attempt" element={<ContestRoom />} />
+              {/* Practice */}
+              <Route path="practice" element={<CandidatePractice />} />
+              <Route path="practice/:id" element={<CandidatePracticeRoom />} />
+              <Route path="multiplayer/:id" element={<CandidateMultiplayerRoom />} />
             </Route>
 
             {/* Recruiter routes */}

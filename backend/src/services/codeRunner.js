@@ -46,7 +46,7 @@ ${code}
 `;
       filePath = path.join(tmpDir, `code_${Date.now()}.py`);
       fs.writeFileSync(filePath, wrapped);
-      command = `python "${filePath}"`;
+      command = `py "${filePath}"`;
 
     } else {
       return { passed: false, actual: '', executionTime: 0, error: `Language '${language}' not supported` };

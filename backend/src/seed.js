@@ -63,6 +63,66 @@ const seed = async () => {
       console.log('ℹ️  Admin user already exists');
     }
 
+    // Seed some questions
+    const QuestionBank = require('./models/QuestionBank');
+    if (await QuestionBank.countDocuments() === 0) {
+      await QuestionBank.insertMany([
+        {
+          stack: 'JavaScript',
+          level: 1,
+          type: 'mcq',
+          question: 'What is the correct syntax for referring to an external script called "xxx.js"?',
+          options: ['<script name="xxx.js">', '<script href="xxx.js">', '<script src="xxx.js">', '<link src="xxx.js">'],
+          correctAnswer: '<script src="xxx.js">',
+          difficulty: 'easy',
+          skill: 'HTML/JS Integration'
+        },
+        {
+          stack: 'JavaScript',
+          level: 1,
+          type: 'mcq',
+          question: 'How do you write "Hello World" in an alert box?',
+          options: ['msg("Hello World");', 'alert("Hello World");', 'msgBox("Hello World");', 'alertBox("Hello World");'],
+          correctAnswer: 'alert("Hello World");',
+          difficulty: 'easy',
+          skill: 'Basic Syntax'
+        },
+        {
+          stack: 'JavaScript',
+          level: 2,
+          type: 'coding',
+          question: 'Write a program to reverse a string. The input string is given as a single argument (or via readline in stdin), and you must output the reversed string.',
+          difficulty: 'easy',
+          skill: 'Strings',
+          testCases: [
+            { input: 'hello', expectedOutput: 'olleh', hidden: false },
+            { input: 'world', expectedOutput: 'dlrow', hidden: false },
+            { input: 'javascript', expectedOutput: 'tpircsavaj', hidden: true }
+          ],
+          allowedLanguages: ['javascript', 'python'],
+          marks: 10
+        },
+        {
+          stack: 'Python',
+          level: 2,
+          type: 'coding',
+          question: 'Given an array (comma-separated string input), print the sum of its elements.',
+          difficulty: 'easy',
+          skill: 'Arrays',
+          testCases: [
+            { input: '1,2,3', expectedOutput: '6', hidden: false },
+            { input: '10,-5,5', expectedOutput: '10', hidden: false },
+            { input: '100,200', expectedOutput: '300', hidden: true }
+          ],
+          allowedLanguages: ['javascript', 'python'],
+          marks: 10
+        }
+      ]);
+      console.log('✅ Seeded 4 sample questions into QuestionBank');
+    } else {
+      console.log('ℹ️  QuestionBank already has data');
+    }
+
     console.log('🎉 Seeding complete!');
     process.exit(0);
   } catch (err) {

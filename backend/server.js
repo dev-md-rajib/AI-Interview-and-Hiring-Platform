@@ -22,6 +22,8 @@ const adminRoutes = require('./src/routes/admin');
 const messageRoutes = require('./src/routes/messages');
 const contestRoutes = require('./src/routes/contests');
 const reportRoutes = require('./src/routes/reports');
+const practiceRoutes = require('./src/routes/practice');
+const multiplayerRoutes = require('./src/routes/multiplayer');
 
 // Connect DB
 connectDB();
@@ -46,13 +48,13 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
 }));
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 200,
-  message: { success: false, message: 'Too many requests, please try again later.' },
-});
-app.use(limiter);
+// Rate limiting (disabled for multiplayer polling)
+// const limiter = rateLimit({
+//   windowMs: 15 * 60 * 1000, // 15 minutes
+//   max: 200,
+//   message: { success: false, message: 'Too many requests, please try again later.' },
+// });
+// app.use(limiter);
 
 
 // Body parsing
@@ -78,6 +80,8 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/contests', contestRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/practice', practiceRoutes);
+app.use('/api/multiplayer', multiplayerRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

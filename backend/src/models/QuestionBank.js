@@ -10,6 +10,16 @@ const questionBankSchema = new mongoose.Schema(
     correctAnswer: { type: String },
     difficulty: { type: String, enum: ['easy', 'medium', 'hard'], default: 'medium' },
     skill: { type: String },
+    
+    // Coding specific fields
+    testCases: [{
+      input: String,
+      expectedOutput: String,
+      hidden: { type: Boolean, default: false }
+    }],
+    allowedLanguages: { type: [String], default: ['javascript', 'python'] },
+    marks: { type: Number, default: 10 },
+
     isActive: { type: Boolean, default: true },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   },

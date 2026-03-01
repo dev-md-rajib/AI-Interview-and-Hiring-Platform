@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import {
   HiHome, HiUser, HiBriefcase, HiChatAlt2, HiClipboardList,
   HiChartBar, HiCog, HiLogout, HiMenuAlt3, HiX, HiAcademicCap,
-  HiSearch, HiDocumentText, HiQuestionMarkCircle, HiStar, HiExclamation
+  HiSearch, HiDocumentText, HiQuestionMarkCircle, HiStar, HiExclamation, HiCode
 } from 'react-icons/hi';
 
 const getNavItems = (role, basePath) => {
@@ -14,6 +14,7 @@ const getNavItems = (role, basePath) => {
     { to: `${basePath}/profile`, icon: HiUser, label: 'My Profile' },
     { to: `${basePath}/interview`, icon: HiAcademicCap, label: 'Take Interview' },
     { to: `${basePath}/history`, icon: HiClipboardList, label: 'Interview History' },
+    { to: `${basePath}/practice`, icon: HiCode, label: 'Coding Practice' },
     { to: `${basePath}/jobs`, icon: HiBriefcase, label: 'Job Board' },
     { to: `${basePath}/applications`, icon: HiDocumentText, label: 'My Applications' },
     { to: `${basePath}/contests`, icon: HiStar, label: 'Contests' },
