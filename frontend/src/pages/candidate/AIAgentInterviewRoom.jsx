@@ -293,7 +293,7 @@ export default function AIAgentInterviewRoom() {
           },
           outputFaceBlendshapes: false,
           outputFacialTransformationMatrixes: true,
-          numFaces: 1,
+          numFaces: 4, // Allow detecting multiple faces for proctoring
           runningMode: "VIDEO"
         });
 
@@ -364,6 +364,20 @@ export default function AIAgentInterviewRoom() {
       }
 
       let yaw = 0, pitch = 0;
+      
+      // Multi-face check
+      if (results.faceLandmarks.length > 1) {
+        const msNow = Date.now();
+        if (msNow > alertUntilRef.current) {
+          setCheatCount(prev => {
+            const next = prev + 10;
+            setAlertMsg(`MULTIPLE FACES DETECTED (+10 penalty)`);
+            alertUntilRef.current = msNow + 3000;
+            return next;
+          });
+        }
+      }
+
       if (results.facialTransformationMatrixes && results.facialTransformationMatrixes.length > 0) {
         const mat = results.facialTransformationMatrixes[0];
         const angles = rotationMatrixToEuler(mat);
