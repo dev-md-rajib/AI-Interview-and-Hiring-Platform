@@ -12,7 +12,7 @@ import { FilesetResolver, FaceLandmarker } from '@mediapipe/tasks-vision';
 const YAW_THRESHOLD = 10;
 const PITCH_THRESHOLD = 10;
 const GAZE_THRESHOLD = 0.1;
-const LOOK_AWAY_TIME = 1000; // ms
+const LOOK_AWAY_TIME = 2500; // ms
 
 function rotationMatrixToEuler(R) {
   const sy = Math.sqrt(R[0] * R[0] + R[4] * R[4]);
@@ -62,23 +62,59 @@ function formatTime(s) {
 }
 
 function useSpeechSynthesis() {
-  const speak = useCallback((text) => {
-    if (!window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.rate = 0.95;
-    utter.pitch = 1;
-    utter.volume = 1;
-    // Prefer a natural English voice if available
-    const voices = window.speechSynthesis.getVoices();
-    const preferred = voices.find((v) => v.lang === 'en-US' && v.name.includes('Google'))
-      || voices.find((v) => v.lang === 'en-US')
-      || voices[0];
-    if (preferred) utter.voice = preferred;
-    window.speechSynthesis.speak(utter);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const audioRef = useRef(null);
+  const abortControllerRef = useRef(null);
+
+  const stop = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      audioRef.current = null;
+    }
+    setIsSpeaking(false);
   }, []);
-  const stop = useCallback(() => window.speechSynthesis?.cancel(), []);
-  return { speak, stop };
+
+  const speak = useCallback(async (text) => {
+    try {
+      stop(); // Clean up any currently playing audio or pending fetches
+      
+      abortControllerRef.current = new AbortController();
+      setIsSpeaking(true);
+      
+      // Fetch audio from Gemini backend
+      const { data } = await api.post('/interviews/ai-agent/tts', { text }, {
+        signal: abortControllerRef.current.signal
+      });
+      
+      if (data.success && data.audioBase64) {
+        const audio = new Audio("data:audio/mp3;base64," + data.audioBase64);
+        audioRef.current = audio;
+        
+        audio.onended = () => setIsSpeaking(false);
+        audio.onerror = () => setIsSpeaking(false);
+        
+        await audio.play();
+      } else {
+        setIsSpeaking(false);
+      }
+    } catch (err) {
+      if (err.name !== 'CanceledError') {
+        console.error('TTS execution error:', err);
+        setIsSpeaking(false);
+      }
+    }
+  }, [stop]);
+  
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => stop();
+  }, [stop]);
+  
+  return { speak, stop, isSpeaking };
 }
 
 function useSpeechRecognition({ onResult, onEnd }) {
@@ -221,7 +257,7 @@ export default function AIAgentInterviewRoom() {
   const [submittingCode, setSubmittingCode] = useState(false);
 
   // Voice hooks
-  const { speak, stop: stopSpeech } = useSpeechSynthesis();
+  const { speak, stop: stopSpeech, isSpeaking } = useSpeechSynthesis();
 
   const transcriptEndRef = useRef(null);
   const interviewIdRef = useRef(id);
@@ -360,7 +396,7 @@ export default function AIAgentInterviewRoom() {
         // Detected a cheat!
         setCheatCount(prev => {
           const next = prev + 1;
-          setAlertMsg(`WARNING! Cheat #${next} Detected!`);
+          setAlertMsg(`Unusual Activity #${next} Detected!`);
           alertUntilRef.current = msNow + 2000;
           return next;
         });
@@ -392,19 +428,29 @@ export default function AIAgentInterviewRoom() {
 
   // Initialize from state or fetch
   useEffect(() => {
+    let timeoutId = null;
+
     if (initData) {
       const firstMsg = initData.currentResponse;
       setCurrentMsg(firstMsg);
       setTranscript([{ role: 'interviewer', content: firstMsg.message, isCodingQuestion: firstMsg.isCodingQuestion, isFollowUp: false }]);
+      if (!muted) {
+        // Small delay ensures voices are loaded and bypasses some autoplay restrictions
+        timeoutId = setTimeout(() => speak(firstMsg.message), 500);
+      }
+
       if (firstMsg.isCodingQuestion) {
         setPhase('coding');
       } else {
         setPhase('interviewing');
-        if (!muted) speak(firstMsg.message);
       }
     } else {
       navigate('/candidate/interview');
     }
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, []);
 
   const addToTranscript = (role, content, isCodingQuestion = false, isFollowUp = false) => {
@@ -471,7 +517,9 @@ export default function AIAgentInterviewRoom() {
   }, [cheatCount, stopSpeech]);
 
   const handleStartListening = () => {
-    stopSpeech();
+    if (isSpeaking) {
+      stopSpeech(); // Stop AI if it's currently talking
+    }
     setPhase('listening');
     startListening();
   };
@@ -526,7 +574,7 @@ export default function AIAgentInterviewRoom() {
           
           {/* Overlay UI elements drawn in React instead of Canvas text for sharper rendering */}
           <div className="absolute top-2 left-2 text-[10px] font-mono font-bold space-y-1 drop-shadow-md">
-            <div className="text-danger-400 bg-black/50 px-1 rounded">CHEATS: {cheatCount}</div>
+            <div className="text-danger-400 bg-black/50 px-1 rounded">WARNINGS: {cheatCount}</div>
             <div className={lookingAway ? 'text-danger-400 bg-black/50 px-1 rounded' : 'text-success-400 bg-black/50 px-1 rounded'}>
               {lookingAway ? 'LOOKING AWAY' : 'OK - FOCUSED'}
             </div>
@@ -581,6 +629,28 @@ export default function AIAgentInterviewRoom() {
           />
         </div>
       </div>
+
+      {/* AI Voice Visualizer (Only visible when AI is speaking) */}
+      {isSpeaking && (
+        <div className="card border-2 border-violet-500/30 bg-violet-900/10 flex flex-col items-center justify-center py-8 animate-fade-in shadow-[0_0_30px_rgba(139,92,246,0.15)]">
+          <div className="w-16 h-16 rounded-full bg-violet-600 flex items-center justify-center text-2xl shadow-[0_0_20px_rgba(139,92,246,0.6)] mb-6 animate-pulse">
+            🤖
+          </div>
+          <div className="flex items-end justify-center gap-2 h-16">
+            {[0.3, 0.7, 0.4, 0.9, 0.5, 0.8, 0.4, 0.6, 0.3].map((delay, i) => (
+              <div 
+                key={i} 
+                className="w-3 bg-gradient-to-t from-violet-600 to-primary-400 rounded-full animate-soundwave"
+                style={{ 
+                  animationDelay: `${delay}s`,
+                  height: '20%' // Base height, CSS animation will scale it
+                }}
+              />
+            ))}
+          </div>
+          <p className="text-violet-300 font-medium text-sm mt-4 tracking-wider animate-pulse">AI IS SPEAKING...</p>
+        </div>
+      )}
 
       {/* Transcript */}
       <div className="card max-h-[340px] overflow-y-auto space-y-4 text-sm" style={{ scrollBehavior: 'smooth' }}>
@@ -663,8 +733,8 @@ export default function AIAgentInterviewRoom() {
             spellCheck={false}
           />
           <div className="flex items-center justify-between mt-3">
-            <p className="text-xs text-gray-500">{codeAnswer.length} characters</p>
-            <div className="flex gap-3">
+            <p className="text-xs text-gray-500 w-24">{codeAnswer.length} characters</p>
+            <div className="flex gap-3 justify-center flex-1">
               <button
                 onClick={() => { setPhase('interviewing'); toast('Code editor dismissed. Answer verbally.'); }}
                 className="text-xs text-gray-400 hover:text-white transition-colors px-3 py-1.5"
@@ -674,7 +744,7 @@ export default function AIAgentInterviewRoom() {
               <button
                 onClick={handleSubmitCode}
                 disabled={!codeAnswer.trim() || submittingCode}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold disabled:opacity-50 transition-all"
+                className="flex items-center gap-2 px-6 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold disabled:opacity-50 transition-all"
               >
                 {submittingCode ? (
                   <><div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Submitting...</>
@@ -683,6 +753,7 @@ export default function AIAgentInterviewRoom() {
                 )}
               </button>
             </div>
+            <div className="w-24"></div> {/* Spacer for perfect centering */}
           </div>
         </div>
       )}
@@ -756,23 +827,22 @@ function TextAnswerFallback({ onSubmit }) {
     setText('');
   };
   return (
-    <div>
-      <p className="text-xs text-gray-500 mb-2">Or type your answer:</p>
-      <div className="flex gap-2">
-        <input
-          type="text"
+    <div className="w-full">
+      <p className="text-xs text-gray-500 mb-3 text-center">Or type your answer below:</p>
+      <div className="flex flex-col gap-4 items-center w-full max-w-2xl mx-auto">
+        <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSubmit()}
-          placeholder="Type your answer and press Enter..."
-          className="flex-1 bg-dark-800 border border-dark-border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-primary-500 transition-colors"
+          onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSubmit())}
+          placeholder="Type your conceptual answer here... (Press Shift+Enter for new line)"
+          className="w-full bg-dark-800 border border-dark-border rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-primary-500 transition-colors resize-none h-24 shadow-inner"
         />
         <button
           onClick={handleSubmit}
           disabled={!text.trim()}
-          className="px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium disabled:opacity-40 transition-all"
+          className="flex items-center justify-center gap-2 px-8 py-2.5 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold disabled:opacity-50 transition-all shadow-lg shadow-violet-900/40 w-56"
         >
-          Send
+          <HiCheckCircle className="w-5 h-5" /> Submit Answer
         </button>
       </div>
     </div>

@@ -1,6 +1,7 @@
 const AiAgentInterview = require('../models/AiAgentInterview');
 const { startSession, getNextResponse, evaluateInterview, getLevelSpec, LEVEL_SPECS } = require('../services/aiAgentService');
 const logger = require('../config/logger');
+const https = require('https');
 
 // @desc  Get level specifications for AI Agent interview
 // @route GET /api/interviews/ai-agent/level-specs
@@ -267,4 +268,60 @@ const getAiAgentInterview = async (req, res, next) => {
   }
 };
 
-module.exports = { getLevelSpecs, startAiAgentInterview, respondToAiAgent, endAiAgentInterview, getAiAgentInterview };
+// @desc  Generate TTS audio from Gemini
+// @route POST /api/interviews/ai-agent/tts
+// @access Private
+const generateTTS = async (req, res, next) => {
+  try {
+    const { text } = req.body;
+    if (!text) return res.status(400).json({ success: false, message: 'Text is required for TTS' });
+
+    // Helper to chunk long text (Translate API has 200 char limit)
+    const chunks = [];
+    let current = '';
+    const sentences = text.match(/[^.!?]+[.!?]+|\s*[^.!?]+$/g) || [text];
+
+    for (const sentence of sentences) {
+      if ((current + sentence).length > 150) {
+        if (current) chunks.push(current.trim());
+        current = sentence;
+      } else {
+        current += sentence;
+      }
+    }
+    if (current) chunks.push(current.trim());
+
+    const audioBuffers = [];
+
+    // Fetch chunks sequentially to avoid rate limiting
+    for (const chunk of chunks) {
+      if (!chunk) continue;
+      const url = `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&q=${encodeURIComponent(chunk)}&tl=en-us`;
+
+      const chunkBuffer = await new Promise((resolve, reject) => {
+        https.get(url, (response) => {
+          if (response.statusCode !== 200) {
+            return reject(new Error('Failed to fetch TTS audio, status: ' + response.statusCode));
+          }
+          const chunkData = [];
+          response.on('data', (d) => chunkData.push(d));
+          response.on('end', () => resolve(Buffer.concat(chunkData)));
+        }).on('error', reject);
+      });
+      audioBuffers.push(chunkBuffer);
+    }
+
+    const finalBuffer = Buffer.concat(audioBuffers);
+    const audioBase64 = finalBuffer.toString('base64');
+
+    res.status(200).json({
+      success: true,
+      audioBase64,
+    });
+  } catch (err) {
+    logger.error(`TTS Generation Error: ${err.message}`);
+    next(err);
+  }
+};
+
+module.exports = { getLevelSpecs, startAiAgentInterview, respondToAiAgent, endAiAgentInterview, getAiAgentInterview, generateTTS };
