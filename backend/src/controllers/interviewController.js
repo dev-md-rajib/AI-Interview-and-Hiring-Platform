@@ -5,46 +5,31 @@ const CandidateProfile = require('../models/CandidateProfile');
 const { generateQuestions, scoreAnswer, generateFeedback } = require('../services/aiService');
 const logger = require('../config/logger');
 
-// Check if candidate is eligible for a level
-const checkEligibility = async (candidateId, level) => {
+// Check if candidate is eligible for a level (AI Agent and Zoom only — standard has no prereqs)
+const checkEligibilityStrict = async (candidateId, level) => {
+  const TeamInterview = require('../models/TeamInterview');
   if (level === 1) return { eligible: true };
   const prevLevel = level - 1;
 
-  // Must have passed previous level
+  // Must have passed previous level via Standard, AI Agent, OR Zoom Team interview
   const prevPassedStandard = await Interview.findOne({
-    candidate: candidateId,
-    level: prevLevel,
-    status: 'completed',
-    passed: true,
+    candidate: candidateId, level: prevLevel, status: 'completed', passed: true,
   });
-
   const prevPassedAi = await AiAgentInterview.findOne({
-    candidate: candidateId,
-    level: prevLevel,
-    status: 'completed',
-    passed: true,
+    candidate: candidateId, level: prevLevel, status: 'completed', passed: true,
+  });
+  const prevPassedZoom = await TeamInterview.findOne({
+    candidate: candidateId, level: prevLevel, status: 'completed', passed: true,
   });
 
-  const passedAny = prevPassedStandard || prevPassedAi;
-
-  if (!passedAny) {
-    return { eligible: false, reason: `You must pass Level ${prevLevel} first` };
+  if (!prevPassedStandard && !prevPassedAi && !prevPassedZoom) {
+    return { eligible: false, reason: `You must pass Level ${prevLevel} first (via AI Agent or Interview Team)` };
   }
+  return { eligible: true };
+};
 
-  const levelConfig = await InterviewLevel.findOne({ level: prevLevel });
-  if (levelConfig) {
-    const highestScore = Math.max(
-      prevPassedStandard ? prevPassedStandard.totalScore : 0,
-      prevPassedAi ? prevPassedAi.totalScore : 0
-    );
-    if (highestScore < levelConfig.minimumPassScore) {
-      return {
-        eligible: false,
-        reason: `Minimum score of ${levelConfig.minimumPassScore} required for Level ${prevLevel}`,
-      };
-    }
-  }
-
+// Eligibility check for display purposes (standard mode — always eligible)
+const checkEligibility = async (candidateId, level) => {
   return { eligible: true };
 };
 
@@ -96,11 +81,7 @@ const startInterview = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Level must be 1, 2, or 3' });
     }
 
-    // Eligibility check
-    const eligibility = await checkEligibility(req.user._id, parsedLevel);
-    if (!eligibility.eligible) {
-      return res.status(403).json({ success: false, message: eligibility.reason });
-    }
+    // Standard interview: no level prerequisites — anyone can take any level
 
     // Attempt limit check
     const today = new Date();

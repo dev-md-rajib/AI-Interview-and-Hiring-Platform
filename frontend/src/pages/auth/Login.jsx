@@ -22,7 +22,7 @@ export default function Login() {
       const { data } = await api.post('/auth/login', formData);
       login(data.user, data.token);
       toast.success(`Welcome back, ${data.user.name}!`);
-      const redirectMap = { ADMIN: '/admin', RECRUITER: '/recruiter', CANDIDATE: '/candidate' };
+      const redirectMap = { ADMIN: '/admin', RECRUITER: '/recruiter', CANDIDATE: '/candidate', INTERVIEWER: '/interviewer' };
       navigate(redirectMap[data.user.role] || '/candidate');
     } catch (err) {
       if (err.response?.status === 403 && err.response?.data?.isBanned) {

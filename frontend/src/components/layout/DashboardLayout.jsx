@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import NotificationBell from '../NotificationBell';
 import {
   HiHome, HiUser, HiBriefcase, HiChatAlt2, HiClipboardList,
   HiChartBar, HiCog, HiLogout, HiMenuAlt3, HiX, HiAcademicCap,
-  HiSearch, HiDocumentText, HiQuestionMarkCircle, HiStar, HiExclamation, HiCode
+  HiSearch, HiDocumentText, HiQuestionMarkCircle, HiStar, HiExclamation, HiCode,
+  HiCalendar, HiLightBulb
 } from 'react-icons/hi';
 
 const getNavItems = (role, basePath) => {
@@ -28,6 +30,11 @@ const getNavItems = (role, basePath) => {
     { to: `${basePath}/contests`, icon: HiStar, label: 'Contests' },
     { to: `${basePath}/messages`, icon: HiChatAlt2, label: 'Messages' },
   ];
+  if (role === 'INTERVIEWER') return [
+    { to: `${basePath}`, icon: HiHome, label: 'Dashboard', exact: true },
+    { to: `${basePath}/assignments`, icon: HiCalendar, label: 'My Assignments' },
+    { to: `${basePath}/profile`, icon: HiLightBulb, label: 'My Profile & Availability' },
+  ];
   if (role === 'ADMIN') return [
     { to: `${basePath}`, icon: HiChartBar, label: 'Analytics', exact: true },
     { to: `${basePath}/levels`, icon: HiAcademicCap, label: 'Interview Levels' },
@@ -49,7 +56,7 @@ export default function DashboardLayout() {
   const [totalMatched, setTotalMatched] = useState(0);
   const [seenMatched, setSeenMatched] = useState(0);
 
-  const basePath = user?.role === 'ADMIN' ? '/admin' : user?.role === 'RECRUITER' ? '/recruiter' : '/candidate';
+  const basePath = user?.role === 'ADMIN' ? '/admin' : user?.role === 'RECRUITER' ? '/recruiter' : user?.role === 'INTERVIEWER' ? '/interviewer' : '/candidate';
   const navItems = getNavItems(user?.role, basePath);
 
   useEffect(() => {
@@ -113,7 +120,12 @@ export default function DashboardLayout() {
             </div>
             <div className="min-w-0">
               <p className="text-white text-sm font-semibold truncate">{user?.name}</p>
-              <span className={`badge text-xs ${user?.role === 'ADMIN' ? 'bg-yellow-900 text-yellow-300' : user?.role === 'RECRUITER' ? 'bg-blue-900 text-blue-300' : 'bg-primary-900 text-primary-300'}`}>
+              <span className={`badge text-xs ${
+                user?.role === 'ADMIN' ? 'bg-yellow-900 text-yellow-300' 
+                : user?.role === 'RECRUITER' ? 'bg-blue-900 text-blue-300' 
+                : user?.role === 'INTERVIEWER' ? 'bg-cyan-900 text-cyan-300'
+                : 'bg-primary-900 text-primary-300'
+              }`}>
                 {user?.role}
               </span>
             </div>
@@ -181,6 +193,7 @@ export default function DashboardLayout() {
           </div>
 
           <div className="flex items-center gap-2">
+            <NotificationBell />
             <div className="w-2 h-2 rounded-full bg-accent-400 animate-pulse" />
             <span className="text-xs text-gray-400 hidden sm:inline">Live</span>
           </div>

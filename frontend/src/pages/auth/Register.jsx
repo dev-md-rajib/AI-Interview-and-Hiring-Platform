@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { toast } from 'react-hot-toast';
-import { HiAcademicCap, HiEye, HiEyeOff, HiUser, HiBriefcase } from 'react-icons/hi';
+import { HiAcademicCap, HiEye, HiEyeOff, HiUser, HiBriefcase, HiLightBulb } from 'react-icons/hi';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 
 const roles = [
   { value: 'CANDIDATE', label: 'Candidate', icon: HiUser, desc: 'Looking for opportunities' },
   { value: 'RECRUITER', label: 'Recruiter', icon: HiBriefcase, desc: 'Hiring top talent' },
+  { value: 'INTERVIEWER', label: 'Interviewer', icon: HiLightBulb, desc: 'Conduct tech interviews' },
 ];
 
 export default function Register() {
@@ -27,7 +28,8 @@ export default function Register() {
       const { data } = await api.post('/auth/register', { ...formData, role: selectedRole });
       login(data.user, data.token);
       toast.success(`Account created! Welcome, ${data.user.name}!`);
-      navigate(selectedRole === 'RECRUITER' ? '/recruiter' : '/candidate');
+      const redirectMap = { RECRUITER: '/recruiter', INTERVIEWER: '/interviewer' };
+      navigate(redirectMap[selectedRole] || '/candidate');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Registration failed');
     } finally {
@@ -48,7 +50,7 @@ export default function Register() {
         </div>
 
         {/* Role selector */}
-        <div className="grid grid-cols-2 gap-3 mb-8">
+        <div className="grid grid-cols-3 gap-3 mb-8">
           {roles.map(({ value, label, icon: Icon, desc }) => (
             <button
               key={value}
@@ -129,7 +131,7 @@ export default function Register() {
                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 Creating account...
               </span>
-            ) : `Create ${selectedRole === 'RECRUITER' ? 'Recruiter' : 'Candidate'} Account`}
+            ) : `Create ${selectedRole === 'RECRUITER' ? 'Recruiter' : selectedRole === 'INTERVIEWER' ? 'Interviewer' : 'Candidate'} Account`}
           </button>
         </form>
 

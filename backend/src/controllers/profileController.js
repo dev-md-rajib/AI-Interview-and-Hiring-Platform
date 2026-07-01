@@ -1,6 +1,7 @@
 const CandidateProfile = require('../models/CandidateProfile');
 const Interview = require('../models/Interview');
 const AiAgentInterview = require('../models/AiAgentInterview');
+const TeamInterview = require('../models/TeamInterview');
 
 // @desc    Get my candidate profile
 // @route   GET /api/profile/me
@@ -19,11 +20,20 @@ const getMyProfile = async (req, res, next) => {
     const aiHistory = await AiAgentInterview.find({ candidate: req.user._id, status: 'completed' })
       .select('level stack totalScore passed completedAt feedback')
       .lean();
+    const zoomHistory = await TeamInterview.find({ candidate: req.user._id, status: 'completed', resultReleasedAt: { $ne: null } })
+      .select('level stack interviewerScore passed completedAt interviewerFeedback')
+      .lean();
 
     const formattedStandard = standardHistory.map(iv => ({ ...iv, evaluator: 'Normal Query' }));
     const formattedAi = aiHistory.map(iv => ({ ...iv, evaluator: 'AI Agent' }));
+    const formattedZoom = zoomHistory.map(iv => ({
+      ...iv,
+      totalScore: iv.interviewerScore,
+      feedback: iv.interviewerFeedback,
+      evaluator: 'Human Team',
+    }));
 
-    const interviewHistory = [...formattedStandard, ...formattedAi].sort(
+    const interviewHistory = [...formattedStandard, ...formattedAi, ...formattedZoom].sort(
       (a, b) => new Date(b.completedAt) - new Date(a.completedAt)
     );
 
@@ -41,7 +51,6 @@ const getMyProfile = async (req, res, next) => {
         const currentPrio = evaluatorPriority[currentHighest.evaluator] || 0;
         const newPrio = evaluatorPriority[iv.evaluator] || 0;
         
-        // If higher priority evaluator, OR same priority but higher score, replace it.
         if (newPrio > currentPrio || (newPrio === currentPrio && iv.totalScore > currentHighest.totalScore)) {
           levelVerdictsMap[iv.level] = iv;
         }
@@ -145,11 +154,19 @@ const getPublicProfile = async (req, res, next) => {
     const aiHistory = await AiAgentInterview.find({ candidate: req.params.userId, status: 'completed' })
       .select('level stack totalScore passed completedAt')
       .lean();
+    const zoomHistory = await TeamInterview.find({ candidate: req.params.userId, status: 'completed', resultReleasedAt: { $ne: null } })
+      .select('level stack interviewerScore passed completedAt')
+      .lean();
 
     const formattedStandard = standardHistory.map(iv => ({ ...iv, evaluator: 'Normal Query' }));
     const formattedAi = aiHistory.map(iv => ({ ...iv, evaluator: 'AI Agent' }));
+    const formattedZoom = zoomHistory.map(iv => ({
+      ...iv,
+      totalScore: iv.interviewerScore,
+      evaluator: 'Human Team',
+    }));
 
-    const interviewHistory = [...formattedStandard, ...formattedAi].sort(
+    const interviewHistory = [...formattedStandard, ...formattedAi, ...formattedZoom].sort(
       (a, b) => new Date(b.completedAt) - new Date(a.completedAt)
     );
 
@@ -167,7 +184,6 @@ const getPublicProfile = async (req, res, next) => {
         const currentPrio = evaluatorPriority[currentHighest.evaluator] || 0;
         const newPrio = evaluatorPriority[iv.evaluator] || 0;
         
-        // If higher priority evaluator, OR same priority but higher score, replace it.
         if (newPrio > currentPrio || (newPrio === currentPrio && iv.totalScore > currentHighest.totalScore)) {
           levelVerdictsMap[iv.level] = iv;
         }

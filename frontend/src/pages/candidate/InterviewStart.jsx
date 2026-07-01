@@ -63,11 +63,11 @@ const INTERVIEW_MODES = [
     id: 'interview_team',
     label: 'Interview Team',
     icon: HiUserGroup,
-    description: 'A panel of interviewers will review your profile and conduct a scheduled session.',
+    description: 'A real interviewer will conduct a live Zoom session. Auto-matched by availability and expertise.',
     color: 'from-cyan-900/50 to-cyan-800/30',
     border: 'border-cyan-500',
     iconColor: 'text-cyan-400',
-    badge: 'Coming Soon',
+    badge: 'ZOOM LIVE',
   },
 ];
 
@@ -85,21 +85,30 @@ export default function InterviewStart() {
     api.get('/admin/levels').then(({ data }) => setLevels(data.levels || []));
   }, []);
 
+  // Check eligibility based on mode
   useEffect(() => {
-    if (level && mode === 'standard') {
-      setEligibility(null);
-      api.get(`/interviews/eligibility/${level}`).then(({ data }) => setEligibility(data)).catch(() => {});
-    } else if (mode === 'ai_agent') {
+    setEligibility(null);
+    if (mode === 'standard') {
+      // Standard: always eligible, just fetch for display info
       setEligibility({ eligible: true });
+    } else if (mode === 'ai_agent' || mode === 'interview_team') {
+      // AI Agent & Zoom: must pass previous level
+      if (level === 1) {
+        setEligibility({ eligible: true });
+      } else {
+        api.get(`/team-interviews/eligibility?level=${level}`)
+          .then(({ data }) => setEligibility(data))
+          .catch(() => setEligibility({ eligible: true }));
+      }
     }
   }, [level, mode]);
 
   const handleStart = async () => {
-    if (!stack) return toast.error('Please select a tech stack');
     if (mode === 'interview_team') {
-      toast('Interview Team mode is coming soon!', { icon: '🔜' });
+      navigate('/candidate/interview/team');
       return;
     }
+    if (!stack) return toast.error('Please select a tech stack');
     if (mode === 'standard' && !eligibility?.eligible) {
       return toast.error(eligibility?.reason || 'Not eligible');
     }
@@ -150,7 +159,9 @@ export default function InterviewStart() {
               >
                 {m.badge && (
                   <span className={`absolute top-2 right-2 text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                    m.badge === 'LIVE' ? 'bg-violet-600 text-white' : 'bg-gray-700 text-gray-300'
+                    m.badge === 'LIVE' ? 'bg-violet-600 text-white' 
+                    : m.badge === 'ZOOM LIVE' ? 'bg-cyan-600 text-white'
+                    : 'bg-gray-700 text-gray-300'
                   }`}>
                     {m.badge}
                   </span>
@@ -212,18 +223,54 @@ export default function InterviewStart() {
         )}
       </div>
 
-      {/* Eligibility check (standard mode only) */}
-      {mode === 'standard' && eligibility && (
-        <div className={`card mb-6 border-2 ${eligibility.eligible ? 'border-accent-500/40 bg-emerald-900/10' : 'border-danger-500/40 bg-red-900/10'}`}>
+      {mode === 'interview_team' && (
+        <div className="card mb-6 border border-cyan-500/30 bg-cyan-900/10">
+          <p className="text-cyan-300 font-semibold text-sm">🎥 How Interview Team Works</p>
+          <ul className="mt-2 space-y-1 text-xs text-gray-400">
+            <li>• You'll be matched with a real human interviewer</li>
+            <li>• A Zoom meeting is automatically created for your session</li>
+            <li>• You receive a 2-minute notification before it starts ⏰</li>
+            <li>• You can only have one team interview queued at a time</li>
+            <li>• Must pass previous levels sequentially (Level 1 → 2 → 3) 🔒</li>
+            <li>• A passed Zoom interview shows as top priority on your profile 🏆</li>
+          </ul>
+        </div>
+      )}
+
+      {mode === 'ai_agent' && (
+        <div className="card mb-6 border border-violet-500/30 bg-violet-900/10">
+          <p className="text-violet-300 font-semibold text-sm">🤖 How AI Agent Interview Works</p>
+          <ul className="mt-2 space-y-1 text-xs text-gray-400">
+            <li>• A live voice AI (powered by Gemini) asks you questions</li>
+            <li>• Dynamic follow-ups based on your answers</li>
+            <li>• Coding challenges may be included 💻</li>
+            <li>• Must pass previous levels sequentially (Level 1 → 2 → 3) 🔒</li>
+          </ul>
+        </div>
+      )}
+
+      {/* Eligibility check (standard always eligible, AI agent and Zoom require previous level) */}
+      {(mode === 'standard' || mode === 'ai_agent' || mode === 'interview_team') && eligibility && (
+        <div className={`card mb-6 border-2 ${
+          eligibility.eligible
+            ? 'border-accent-500/40 bg-emerald-900/10'
+            : 'border-danger-500/40 bg-red-900/10'
+        }`}>
           <div className="flex items-center gap-3">
             {eligibility.eligible
               ? <HiCheckCircle className="w-6 h-6 text-accent-400" />
               : <div className="w-6 h-6 rounded-full border-2 border-danger-400 flex items-center justify-center text-danger-400 text-xs font-bold">✗</div>}
             <div>
-              <p className={`font-medium ${eligibility.eligible ? 'text-accent-400' : 'text-danger-400'}`}>
-                {eligibility.eligible ? 'You are eligible for this level' : 'Not eligible'}
+              <p className={`font-medium ${
+                eligibility.eligible ? 'text-accent-400' : 'text-danger-400'
+              }`}>
+                {eligibility.eligible
+                  ? mode === 'standard'
+                    ? '✅ Open to all — Standard level has no prerequisites'
+                    : '✅ You are eligible for this level'
+                  : '🔒 Level locked'}
               </p>
-              {!eligibility.eligible && <p className="text-gray-400 text-sm">{eligibility.reason}</p>}
+              {!eligibility.eligible && <p className="text-gray-400 text-sm mt-0.5">{eligibility.reason}</p>}
               {eligibility.eligible && eligibility.attemptsToday != null && (
                 <p className="text-gray-400 text-sm">{eligibility.attemptsToday}/{eligibility.maxAttemptsPerDay} attempts used today</p>
               )}
@@ -266,13 +313,17 @@ export default function InterviewStart() {
               {mode === 'ai_agent'
                 ? 'AI will ask questions via voice. You reply via voice or code.'
                 : mode === 'interview_team'
-                ? 'Coming soon — team-based panel interviews.'
+                ? 'Click to schedule your session — a Zoom link will be auto-created.'
                 : 'Timer starts once you click start'}
             </p>
           </div>
           <button
             onClick={handleStart}
-            disabled={starting || !stack || (mode === 'standard' && !eligibility?.eligible)}
+            disabled={
+              starting ||
+              (mode !== 'interview_team' && !stack) ||
+              (mode !== 'standard' && eligibility && !eligibility.eligible)
+            }
             className={`px-8 py-3 text-base rounded-xl font-bold transition-all disabled:opacity-50 ${
               mode === 'ai_agent'
                 ? 'bg-violet-600 hover:bg-violet-700 text-white'
@@ -289,7 +340,7 @@ export default function InterviewStart() {
             ) : mode === 'ai_agent' ? (
               <span className="flex items-center gap-2"><HiLightningBolt /> Start AI Interview</span>
             ) : mode === 'interview_team' ? (
-              '🔜 Coming Soon'
+              <span className="flex items-center gap-2">🎥 Schedule Team Interview</span>
             ) : (
               '🚀 Start Interview'
             )}

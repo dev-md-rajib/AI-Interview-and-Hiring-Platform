@@ -1,6 +1,20 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
+const availabilitySlotSchema = new mongoose.Schema({
+  dayOfWeek: { type: Number, min: 0, max: 6 }, // 0=Sun, 1=Mon, ..., 6=Sat
+  startTime: { type: String }, // "HH:MM" 24h format
+  endTime: { type: String },   // "HH:MM" 24h format
+}, { _id: false });
+
+const interviewerProfileSchema = new mongoose.Schema({
+  expertise: [{ type: String }], // tech stacks
+  availabilitySlots: [availabilitySlotSchema],
+  isActive: { type: Boolean, default: true },
+  totalInterviewsConducted: { type: Number, default: 0 },
+  bio: { type: String, default: '' },
+}, { _id: false });
+
 const userSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
@@ -9,7 +23,7 @@ const userSchema = new mongoose.Schema(
     profileImage: { type: String, default: '' },
     role: {
       type: String,
-      enum: ['CANDIDATE', 'RECRUITER', 'ADMIN'],
+      enum: ['CANDIDATE', 'RECRUITER', 'ADMIN', 'INTERVIEWER'],
       default: 'CANDIDATE',
     },
     isBanned: { type: Boolean, default: false },
@@ -24,6 +38,10 @@ const userSchema = new mongoose.Schema(
     isVerified: { type: Boolean, default: false }, // for recruiters: admin-verified
     resetPasswordToken: { type: String },
     resetPasswordExpiry: { type: Date },
+    // Candidate-specific: cooldown after cancel/fail a team interview
+    teamInterviewCooldownUntil: { type: Date, default: null },
+    // Interviewer-specific profile
+    interviewerProfile: { type: interviewerProfileSchema, default: null },
   },
   { timestamps: true }
 );

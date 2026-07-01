@@ -12,7 +12,7 @@ const register = async (req, res, next) => {
     if (!name || !email || !password) {
       return res.status(400).json({ success: false, message: 'Name, email and password are required' });
     }
-    const validRoles = ['CANDIDATE', 'RECRUITER'];
+    const validRoles = ['CANDIDATE', 'RECRUITER', 'INTERVIEWER'];
     const userRole = validRoles.includes(role) ? role : 'CANDIDATE';
 
     const existing = await User.findOne({ email });
@@ -20,7 +20,20 @@ const register = async (req, res, next) => {
       return res.status(409).json({ success: false, message: 'Email already registered' });
     }
 
-    const user = await User.create({ name, email, password, role: userRole });
+    const userData = { name, email, password, role: userRole };
+
+    // Initialize interviewer profile
+    if (userRole === 'INTERVIEWER') {
+      userData.interviewerProfile = {
+        expertise: [],
+        availabilitySlots: [],
+        isActive: true,
+        totalInterviewsConducted: 0,
+        bio: '',
+      };
+    }
+
+    const user = await User.create(userData);
 
     // Auto-create candidate profile
     if (userRole === 'CANDIDATE') {

@@ -1,7 +1,24 @@
 const AiAgentInterview = require('../models/AiAgentInterview');
+const Interview = require('../models/Interview');
 const { startSession, getNextResponse, evaluateInterview, getLevelSpec, LEVEL_SPECS } = require('../services/aiAgentService');
 const logger = require('../config/logger');
 const https = require('https');
+
+// Helper: check level prerequisite (passes if level=1, else needs prior level pass)
+const checkLevelEligibility = async (candidateId, level) => {
+  if (level === 1) return { eligible: true };
+  const prevLevel = level - 1;
+  const TeamInterview = require('../models/TeamInterview');
+
+  const prevPassedStandard = await Interview.findOne({ candidate: candidateId, level: prevLevel, status: 'completed', passed: true });
+  const prevPassedAi = await AiAgentInterview.findOne({ candidate: candidateId, level: prevLevel, status: 'completed', passed: true });
+  const prevPassedZoom = await TeamInterview.findOne({ candidate: candidateId, level: prevLevel, status: 'completed', passed: true });
+
+  if (!prevPassedStandard && !prevPassedAi && !prevPassedZoom) {
+    return { eligible: false, reason: `You must pass Level ${prevLevel} first before attempting Level ${level}` };
+  }
+  return { eligible: true };
+};
 
 // @desc  Get level specifications for AI Agent interview
 // @route GET /api/interviews/ai-agent/level-specs
@@ -27,6 +44,12 @@ const startAiAgentInterview = async (req, res, next) => {
     const parsedLevel = parseInt(level);
     if (![1, 2, 3].includes(parsedLevel)) {
       return res.status(400).json({ success: false, message: 'Level must be 1, 2, or 3' });
+    }
+
+    // Level prerequisite check (AI Agent requires sequential progression)
+    const eligibility = await checkLevelEligibility(req.user._id, parsedLevel);
+    if (!eligibility.eligible) {
+      return res.status(403).json({ success: false, message: eligibility.reason });
     }
 
     const levelSpec = getLevelSpec(parsedLevel);

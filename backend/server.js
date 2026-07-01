@@ -17,6 +17,9 @@ const authRoutes = require('./src/routes/auth');
 const profileRoutes = require('./src/routes/profile');
 const interviewRoutes = require('./src/routes/interviews');
 const aiAgentInterviewRoutes = require('./src/routes/aiAgentInterviews');
+const teamInterviewRoutes = require('./src/routes/teamInterviews');
+const interviewerRoutes = require('./src/routes/interviewer');
+const notificationRoutes = require('./src/routes/notifications');
 const jobRoutes = require('./src/routes/jobs');
 const adminRoutes = require('./src/routes/admin');
 const messageRoutes = require('./src/routes/messages');
@@ -25,8 +28,12 @@ const reportRoutes = require('./src/routes/reports');
 const practiceRoutes = require('./src/routes/practice');
 const multiplayerRoutes = require('./src/routes/multiplayer');
 
-// Connect DB
-connectDB();
+// Connect DB and start notification scheduler
+const { startNotificationScheduler } = require('./src/services/notificationService');
+(async () => {
+  await connectDB();
+  startNotificationScheduler();
+})();
 
 // Create logs dir
 const logsDir = path.join(__dirname, 'logs');
@@ -75,6 +82,9 @@ app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/interviews', interviewRoutes);
 app.use('/api/interviews/ai-agent', aiAgentInterviewRoutes);
+app.use('/api/team-interviews', teamInterviewRoutes);
+app.use('/api/interviewer', interviewerRoutes);
+app.use('/api/notifications', notificationRoutes);
 app.use('/api/jobs', jobRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/messages', messageRoutes);

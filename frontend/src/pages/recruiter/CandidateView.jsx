@@ -92,21 +92,49 @@ export default function CandidateView() {
         <div className="card">
           <h2 className="section-title">Highest Level Verdicts</h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {levelVerdicts.map((lv) => (
-              <div key={`lv-${lv.level}`} className="p-4 rounded-xl bg-dark-800/50 border border-primary-500/20 hover:border-primary-500/50 transition-colors">
-                <div className="flex justify-between items-start mb-2">
-                  <span className="text-lg font-bold text-white text-gradient">L{lv.level} Passed</span>
-                  <span className="text-2xl font-black text-primary-400">{lv.totalScore}%</span>
+            {levelVerdicts.map((lv) => {
+              const isHumanTeam = lv.evaluator === 'Human Team';
+              const isAiAgent = lv.evaluator === 'AI Agent';
+              return (
+                <div
+                  key={`lv-${lv.level}`}
+                  className={`p-4 rounded-xl border transition-colors relative overflow-hidden ${
+                    isHumanTeam
+                      ? 'bg-gradient-to-br from-cyan-900/30 to-dark-800 border-cyan-500/40 hover:border-cyan-500/70'
+                      : isAiAgent
+                      ? 'bg-gradient-to-br from-violet-900/20 to-dark-800 border-violet-500/30 hover:border-violet-500/50'
+                      : 'bg-dark-800/50 border-primary-500/20 hover:border-primary-500/50'
+                  }`}
+                >
+                  {isHumanTeam && (
+                    <span className="absolute top-2 right-2 text-xs font-bold px-2 py-0.5 rounded-full bg-cyan-600/30 border border-cyan-500/50 text-cyan-300">
+                      🏆 Top
+                    </span>
+                  )}
+                  <div className="flex justify-between items-start mb-2">
+                    <span className="text-lg font-bold text-white text-gradient">L{lv.level} Passed</span>
+                    <span className={`text-2xl font-black ${isHumanTeam ? 'text-cyan-400' : isAiAgent ? 'text-violet-400' : 'text-primary-400'}`}>
+                      {lv.totalScore}
+                      <span className="text-sm font-medium">/100</span>
+                    </span>
+                  </div>
+                  <div className="text-sm text-gray-400 mb-2">Stack: <span className="text-white">{lv.stack}</span></div>
+                  <div className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold border ${
+                    isHumanTeam
+                      ? 'bg-cyan-900/30 text-cyan-300 border-cyan-500/30'
+                      : isAiAgent
+                      ? 'bg-violet-900/30 text-violet-300 border-violet-500/30'
+                      : 'bg-dark-700 text-gray-300 border-dark-600'
+                  }`}>
+                    {isHumanTeam ? '🎥' : isAiAgent ? '🤖' : '📝'} {lv.evaluator}
+                  </div>
                 </div>
-                <div className="text-sm text-gray-400 mb-2">Stack: <span className="text-white">{lv.stack}</span></div>
-                <div className="inline-flex items-center px-2 py-1 rounded text-xs font-semibold bg-dark-700 text-gray-300 border border-dark-600">
-                  Evaluated by: {lv.evaluator}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
+
 
       {interviewHistory?.length > 0 && (
         <div className="card">

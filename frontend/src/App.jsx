@@ -49,6 +49,11 @@ const AdminReports = lazy(() => import('./pages/admin/Reports'));
 const Messages = lazy(() => import('./pages/shared/Messages'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
+// Interviewer pages
+const InterviewerDashboard = lazy(() => import('./pages/interviewer/Dashboard'));
+const InterviewerProfile = lazy(() => import('./pages/interviewer/Profile'));
+const InterviewerAssignments = lazy(() => import('./pages/interviewer/Assignments'));
+
 const LoadingSpinner = () => (
   <div className="min-h-screen flex items-center justify-center bg-dark-900">
     <div className="flex flex-col items-center gap-4">
@@ -72,6 +77,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 const getDefaultRoute = (role) => {
   if (role === 'ADMIN') return '/admin';
   if (role === 'RECRUITER') return '/recruiter';
+  if (role === 'INTERVIEWER') return '/interviewer';
   return '/candidate';
 };
 
@@ -140,6 +146,13 @@ export default function App() {
               <Route path="users" element={<UserManager />} />
               <Route path="candidates" element={<CandidateSearch />} />
               <Route path="reports" element={<AdminReports />} />
+            </Route>
+
+            {/* Interviewer routes */}
+            <Route path="/interviewer" element={<ProtectedRoute allowedRoles={['INTERVIEWER']}><DashboardLayout /></ProtectedRoute>}>
+              <Route index element={<InterviewerDashboard />} />
+              <Route path="assignments" element={<InterviewerAssignments />} />
+              <Route path="profile" element={<InterviewerProfile />} />
             </Route>
 
             <Route path="*" element={<NotFound />} />
