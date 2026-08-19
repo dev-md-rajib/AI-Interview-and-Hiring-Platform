@@ -21,7 +21,7 @@ const createJob = async (req, res, next) => {
 // @access  Private
 const getJobs = async (req, res, next) => {
   try {
-    const { stack, level, remote, page = 1, limit = 20 } = req.query;
+    const { stack, level, remote, sector, page = 1, limit = 20 } = req.query;
     const query = { status: 'Open' };
     
     if (stack || level) {
@@ -30,6 +30,7 @@ const getJobs = async (req, res, next) => {
       if (level) query.requirements.$elemMatch.level = parseInt(level);
     }
     
+    if (sector) query.sector = sector;
     if (remote !== undefined) query.isRemote = remote === 'true';
 
     const skip = (page - 1) * limit;

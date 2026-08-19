@@ -3,6 +3,7 @@ const AiAgentInterview = require('../models/AiAgentInterview');
 const InterviewLevel = require('../models/InterviewLevel');
 const CandidateProfile = require('../models/CandidateProfile');
 const { generateQuestions, scoreAnswer, generateFeedback } = require('../services/aiService');
+const { isSector } = require('../config/sectors');
 const logger = require('../config/logger');
 
 // Check if candidate is eligible for a level (AI Agent and Zoom only — standard has no prereqs)
@@ -101,6 +102,9 @@ const startInterview = async (req, res, next) => {
     // Get attempt number
     const totalAttempts = await Interview.countDocuments({ candidate: req.user._id, level: parsedLevel });
 
+    const interviewMode = isSector(stack) ? 'business' : 'technical';
+    const sector = isSector(stack) ? stack : null;
+
     // Generate questions via AI
     logger.info(`Generating questions for ${stack} Level ${parsedLevel}...`);
     const levelConfig = await InterviewLevel.findOne({ level: parsedLevel });
@@ -112,6 +116,8 @@ const startInterview = async (req, res, next) => {
       candidate: req.user._id,
       level: parsedLevel,
       stack,
+      sector,
+      interviewMode,
       questions,
       status: 'active',
       startedAt: new Date(),

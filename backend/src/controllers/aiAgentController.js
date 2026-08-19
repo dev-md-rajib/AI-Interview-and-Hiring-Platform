@@ -1,6 +1,6 @@
 const AiAgentInterview = require('../models/AiAgentInterview');
 const Interview = require('../models/Interview');
-const { startSession, getNextResponse, evaluateInterview, getLevelSpec, LEVEL_SPECS } = require('../services/aiAgentService');
+const { startSession, getNextResponse, evaluateInterview, getLevelSpec, LEVEL_SPECS, isSector } = require('../services/aiAgentService');
 const logger = require('../config/logger');
 const https = require('https');
 
@@ -38,7 +38,7 @@ const startAiAgentInterview = async (req, res, next) => {
   try {
     const { stack, level } = req.body;
     if (!stack || !level) {
-      return res.status(400).json({ success: false, message: 'Stack and level are required' });
+      return res.status(400).json({ success: false, message: 'Stack/Sector and level are required' });
     }
 
     const parsedLevel = parseInt(level);
@@ -52,16 +52,20 @@ const startAiAgentInterview = async (req, res, next) => {
       return res.status(403).json({ success: false, message: eligibility.reason });
     }
 
-    const levelSpec = getLevelSpec(parsedLevel);
+    const levelSpec = getLevelSpec(stack, parsedLevel);
+    const interviewMode = isSector(stack) ? 'business' : 'technical';
+    const sector = isSector(stack) ? stack : null;
 
     // Call Gemini via startChat() to get the first question
-    logger.info(`Starting AI agent session for ${stack} Level ${parsedLevel}`);
+    logger.info(`Starting AI agent session for ${stack} Level ${parsedLevel} [${interviewMode}]`);
     const firstResponse = await startSession(stack, parsedLevel);
 
     // Create interview record with the first question in transcript
     const interview = await AiAgentInterview.create({
       candidate: req.user._id,
       stack,
+      sector,
+      interviewMode,
       level: parsedLevel,
       levelSpec: levelSpec.description,
       status: 'active',
@@ -82,6 +86,8 @@ const startAiAgentInterview = async (req, res, next) => {
       success: true,
       interviewId: interview._id,
       stack,
+      sector,
+      interviewMode,
       level: parsedLevel,
       levelSpec: levelSpec.description,
       levelTopics: levelSpec.topics,

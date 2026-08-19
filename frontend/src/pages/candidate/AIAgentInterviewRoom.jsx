@@ -4,9 +4,10 @@ import toast from 'react-hot-toast';
 import api from '../../services/api';
 import {
   HiMicrophone, HiVolumeUp, HiCode, HiCheckCircle, HiXCircle,
-  HiClock, HiChartBar, HiStop, HiPlay, HiRefresh, HiVideoCamera, HiShieldExclamation
+  HiClock, HiChartBar, HiStop, HiPlay, HiRefresh, HiVideoCamera, HiShieldExclamation, HiBriefcase
 } from 'react-icons/hi';
 import { FilesetResolver, FaceLandmarker } from '@mediapipe/tasks-vision';
+import { getSectorById, isSector } from '../../constants/sectors';
 
 /* ─── Proctoring Config & Math ────────────────────────────── */
 const YAW_THRESHOLD = 10;
@@ -267,6 +268,7 @@ export default function AIAgentInterviewRoom() {
   const canvasRef = useRef(null);
   const landmarkerRef = useRef(null);
   const reqAFRef = useRef(null);
+  const streamRef = useRef(null);
   const lookAwayStartRef = useRef(null);
   const currentlyAwayRef = useRef(false);
   const alertUntilRef = useRef(0);
@@ -277,10 +279,27 @@ export default function AIAgentInterviewRoom() {
   const [alertMsg, setAlertMsg] = useState('');
   const [faceFound, setFaceFound] = useState(true);
 
+  // Stop webcam, face landmarker, and detection loop
+  const stopProctoring = useCallback(() => {
+    if (reqAFRef.current) {
+      cancelAnimationFrame(reqAFRef.current);
+      reqAFRef.current = null;
+    }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(t => t.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    if (landmarkerRef.current) {
+      landmarkerRef.current.close();
+      landmarkerRef.current = null;
+    }
+  }, []);
+
   // Initialize MediaPipe and Webcam
   useEffect(() => {
-    let stream = null;
-
     const setupProctoring = async () => {
       try {
         const vision = await FilesetResolver.forVisionTasks(
@@ -298,7 +317,8 @@ export default function AIAgentInterviewRoom() {
         });
 
         // Get Webcam
-        stream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 } });
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 } });
+        streamRef.current = stream;
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           videoRef.current.onloadedmetadata = () => {
@@ -314,12 +334,8 @@ export default function AIAgentInterviewRoom() {
     };
     setupProctoring();
 
-    return () => {
-      if (reqAFRef.current) cancelAnimationFrame(reqAFRef.current);
-      if (stream) stream.getTracks().forEach(t => t.stop());
-      if (landmarkerRef.current) landmarkerRef.current.close();
-    };
-  }, []);
+    return () => stopProctoring();
+  }, [stopProctoring]);
 
   // Frame processing loop
   const detectFrames = () => {
@@ -522,13 +538,14 @@ export default function AIAgentInterviewRoom() {
   const endInterview = useCallback(async () => {
     setPhase('verdict');
     stopSpeech();
+    stopProctoring();
     try {
       const { data } = await api.post(`/interviews/ai-agent/${interviewIdRef.current}/end`, { cheatCount });
       setResult(data);
     } catch (err) {
       toast.error('Failed to evaluate interview');
     }
-  }, [cheatCount, stopSpeech]);
+  }, [cheatCount, stopSpeech, stopProctoring]);
 
   const handleStartListening = () => {
     if (isSpeaking) {
@@ -612,9 +629,21 @@ export default function AIAgentInterviewRoom() {
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-violet-600 text-white animate-pulse">
               🤖 AI LIVE
             </span>
-            <span className="text-gray-400 text-sm">{initData?.stack} · Level {initData?.level}</span>
+            {initData?.interviewMode === 'business' ? (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-800/50 text-amber-300 border border-amber-600/40">
+                {getSectorById(initData?.stack)?.icon || '💼'} {initData?.stack}
+              </span>
+            ) : (
+              <span className="text-gray-400 text-sm">{initData?.stack} · Level {initData?.level}</span>
+            )}
+            <span className="text-gray-400 text-sm">· Level {initData?.level}</span>
           </div>
-          <h1 className="text-white font-bold">AI Agent Interview</h1>
+          <h1 className="text-white font-bold">
+            {initData?.interviewMode === 'business' ? 'Business Sector AI Interview' : 'AI Agent Interview'}
+          </h1>
+          {initData?.interviewMode === 'business' && (
+            <p className="text-amber-400/80 text-xs mt-0.5">🎙️ Scenario-based voice interview — no coding challenges</p>
+          )}
         </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-dark-800 font-mono text-sm text-gray-300">
@@ -723,8 +752,8 @@ export default function AIAgentInterviewRoom() {
         <div ref={transcriptEndRef} />
       </div>
 
-      {/* Code editor panel — appears when isCodingQuestion */}
-      {phase === 'coding' && (
+      {/* Code editor panel — appears when isCodingQuestion and NOT a business sector interview */}
+      {phase === 'coding' && initData?.interviewMode !== 'business' && (
         <div className="card border-2 border-violet-500/40 bg-violet-900/10 animate-fade-in">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">

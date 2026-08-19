@@ -4,6 +4,7 @@ const jobSchema = new mongoose.Schema(
   {
     recruiter: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     title: { type: String, required: true, trim: true },
+    sector: { type: String, default: null }, // business sector this job belongs to
     description: { type: String, required: true },
     requirements: [
       {

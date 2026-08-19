@@ -23,10 +23,11 @@ const getProfile = async (req, res, next) => {
 // ─────────────────────────────────────────────
 const updateProfile = async (req, res, next) => {
   try {
-    const { expertise, availabilitySlots, bio, isActive } = req.body;
+    const { expertise, sectors, availabilitySlots, bio, isActive } = req.body;
 
     const updateData = {};
     if (expertise !== undefined) updateData['interviewerProfile.expertise'] = expertise;
+    if (sectors !== undefined) updateData['interviewerProfile.sectors'] = sectors;
     if (availabilitySlots !== undefined) updateData['interviewerProfile.availabilitySlots'] = availabilitySlots;
     if (bio !== undefined) updateData['interviewerProfile.bio'] = bio;
     if (isActive !== undefined) updateData['interviewerProfile.isActive'] = isActive;

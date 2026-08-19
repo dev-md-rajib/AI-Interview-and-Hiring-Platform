@@ -1,5 +1,6 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const logger = require('../config/logger');
+const { isSector, getSectorLevelSpec } = require('../config/sectors');
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || 'placeholder');
 
@@ -12,15 +13,51 @@ const getModel = () => {
   }
 };
 
-// Generate interview questions via Gemini
-const generateQuestions = async (stack, level, count = 10) => {
-  const levelDescriptions = {
-    1: 'Junior level — foundational concepts, basic syntax, common patterns',
-    2: 'Mid level — system design basics, optimization, architecture patterns',
-    3: 'Senior level — complex architecture, deep analysis, leadership decisions',
-  };
+// Level descriptions for tech stacks
+const TECH_LEVEL_DESCRIPTIONS = {
+  1: 'Junior level — foundational concepts, basic syntax, common patterns',
+  2: 'Mid level — system design basics, optimization, architecture patterns',
+  3: 'Senior level — complex architecture, deep analysis, leadership decisions',
+};
 
-  const prompt = `You are an expert technical interviewer. Generate exactly ${count} interview questions for a ${stack} developer at ${levelDescriptions[level]}.
+// Generate interview questions via Gemini
+const generateQuestions = async (stackOrSector, level, count = 10) => {
+  const sectorMode = isSector(stackOrSector);
+
+  let prompt;
+
+  if (sectorMode) {
+    const spec = getSectorLevelSpec(stackOrSector, level);
+    const topicsList = spec ? spec.topics.join(', ') : stackOrSector;
+    const levelName = spec ? spec.name : `Level ${level}`;
+    const scenario = spec && spec.scenarios ? spec.scenarios[0] : '';
+
+    prompt = `You are an expert ${stackOrSector} professional interviewer. Generate exactly ${count} interview questions for a ${levelName} ${stackOrSector} professional.
+
+Context about this level: ${spec ? spec.description : ''}
+Key topics to cover: ${topicsList}
+${scenario ? `Example scenario to draw inspiration from: "${scenario}"` : ''}
+
+Return ONLY a valid JSON array with this exact structure:
+[
+  {
+    "questionText": "question or scenario text here",
+    "questionType": "scenario" | "text",
+    "options": [],
+    "correctAnswer": "",
+    "skill": "specific competency being tested",
+    "difficulty": "easy" | "medium" | "hard"
+  }
+]
+
+Rules:
+- NO coding or MCQ questions — this is a business/professional interview
+- Mix question types: 60% scenario-based, 40% behavioral/knowledge text
+- Questions should be realistic, workplace-relevant, and appropriate for ${levelName} level
+- skill field should be a specific competency like "Objection Handling", "Campaign Strategy", "Root Cause Analysis"
+- Scenario questions should be concrete situational challenges`;
+  } else {
+    prompt = `You are an expert technical interviewer. Generate exactly ${count} interview questions for a ${stackOrSector} developer at ${TECH_LEVEL_DESCRIPTIONS[level]}.
 
 Return ONLY a valid JSON array with this exact structure:
 [
@@ -38,31 +75,31 @@ Rules:
 - For MCQ: include options (4 choices) and correctAnswer
 - For coding/text/scenario: options and correctAnswer should be empty strings/arrays
 - Mix question types: 3 MCQ, 3 coding, 2 text, 2 scenario
-- Focus specifically on ${stack} technologies
+- Focus specifically on ${stackOrSector} technologies
 - skill field should be a specific sub-skill like "React Hooks", "SQL Joins", "REST API Design"`;
+  }
 
   try {
     const model = getModel();
-    if (!model) return getFallbackQuestions(stack, level, count);
+    if (!model) return getFallbackQuestions(stackOrSector, level, count, sectorMode);
 
     const result = await model.generateContent(prompt);
     const text = result.response.text();
 
-    // Extract JSON from response
     const jsonMatch = text.match(/\[[\s\S]*\]/);
     if (!jsonMatch) throw new Error('No JSON array in AI response');
 
     const questions = JSON.parse(jsonMatch[0]);
-    logger.info(`Generated ${questions.length} questions for ${stack} Level ${level}`);
+    logger.info(`Generated ${questions.length} questions for ${stackOrSector} Level ${level}`);
     return questions;
   } catch (err) {
     logger.error(`AI question generation error: ${err.message}`);
-    return getFallbackQuestions(stack, level, count);
+    return getFallbackQuestions(stackOrSector, level, count, sectorMode);
   }
 };
 
 // Score a single answer via Gemini
-const scoreAnswer = async (question, userAnswer, stack) => {
+const scoreAnswer = async (question, userAnswer, stackOrSector) => {
   if (!userAnswer || userAnswer.trim() === '') {
     return { score: 0, feedback: 'No answer provided.' };
   }
@@ -76,17 +113,23 @@ const scoreAnswer = async (question, userAnswer, stack) => {
     };
   }
 
-  const prompt = `You are an expert ${stack} technical interviewer. Score the following answer:
+  const isBusiness = isSector(stackOrSector);
+  const context = isBusiness
+    ? `You are a senior ${stackOrSector} professional evaluator.`
+    : `You are an expert ${stackOrSector} technical interviewer.`;
+
+  const prompt = `${context} Score the following answer:
 
 Question: ${question.questionText}
 Question Type: ${question.questionType}
-Skill Being Tested: ${question.skill}
+Competency / Skill Being Tested: ${question.skill}
 Candidate's Answer: ${userAnswer}
 
 Score the answer from 0-100 based on:
-- Technical accuracy
-- Completeness
-- Clarity
+- ${isBusiness ? 'Professional knowledge and real-world awareness' : 'Technical accuracy'}
+- Completeness and depth
+- Clarity and communication
+${isBusiness ? '- Practical applicability and decision quality' : '- Code quality and efficiency (if applicable)'}
 
 Return ONLY valid JSON:
 {
@@ -112,16 +155,21 @@ Return ONLY valid JSON:
 };
 
 // Generate final feedback summary
-const generateFeedback = async (stack, level, skillScores, passed, totalScore) => {
+const generateFeedback = async (stackOrSector, level, skillScores, passed, totalScore) => {
+  const isBusiness = isSector(stackOrSector);
   const skillBreakdown = Object.entries(skillScores)
     .map(([skill, score]) => `${skill}: ${score}/100`)
     .join(', ');
 
-  const prompt = `You are a senior technical interviewer. A candidate just completed a ${stack} Level ${level} interview.
+  const context = isBusiness
+    ? `You are a senior ${stackOrSector} professional evaluator. A candidate just completed a ${stackOrSector} Level ${level} professional interview.`
+    : `You are a senior technical interviewer. A candidate just completed a ${stackOrSector} Level ${level} interview.`;
+
+  const prompt = `${context}
 
 Overall Score: ${totalScore}/100
 Result: ${passed ? 'PASSED' : 'FAILED'}
-Skill Scores: ${skillBreakdown}
+Competency Scores: ${skillBreakdown || 'N/A'}
 
 Generate a professional feedback summary. Return ONLY valid JSON:
 {
@@ -135,8 +183,8 @@ Generate a professional feedback summary. Return ONLY valid JSON:
     const model = getModel();
     if (!model) {
       return {
-        summary: `You scored ${totalScore}/100 on the ${stack} Level ${level} interview.`,
-        strengths: ['Technical knowledge demonstrated'],
+        summary: `You scored ${totalScore}/100 on the ${stackOrSector} Level ${level} interview.`,
+        strengths: ['Professional knowledge demonstrated'],
         weaknesses: ['Continue practicing'],
         recommendations: 'Keep learning and practicing.',
       };
@@ -160,18 +208,33 @@ Generate a professional feedback summary. Return ONLY valid JSON:
 };
 
 // Fallback static questions if AI is unavailable
-const getFallbackQuestions = (stack, level, count) => {
+const getFallbackQuestions = (stackOrSector, level, count, sectorMode = false) => {
+  if (sectorMode) {
+    const spec = getSectorLevelSpec(stackOrSector, level);
+    const scenario = spec && spec.scenarios ? spec.scenarios[0] : `Describe a challenging ${stackOrSector} situation you have faced.`;
+    const templates = [
+      { questionText: scenario, questionType: 'scenario', options: [], correctAnswer: '', skill: `${stackOrSector} Problem Solving`, difficulty: 'medium' },
+      { questionText: `Describe a time you had to handle a difficult situation in your ${stackOrSector} role. What did you do?`, questionType: 'text', options: [], correctAnswer: '', skill: `${stackOrSector} Experience`, difficulty: 'easy' },
+      { questionText: `What are the most important skills for a professional working in ${stackOrSector}?`, questionType: 'text', options: [], correctAnswer: '', skill: `${stackOrSector} Fundamentals`, difficulty: 'easy' },
+      { questionText: `How do you prioritize competing tasks in a ${stackOrSector} environment?`, questionType: 'scenario', options: [], correctAnswer: '', skill: 'Prioritization', difficulty: 'medium' },
+      { questionText: `Walk me through how you would approach a major challenge in ${stackOrSector}.`, questionType: 'scenario', options: [], correctAnswer: '', skill: 'Strategic Thinking', difficulty: 'hard' },
+      { questionText: `How do you measure success in your ${stackOrSector} role?`, questionType: 'text', options: [], correctAnswer: '', skill: 'Performance Metrics', difficulty: 'medium' },
+      { questionText: `Describe how you collaborate with other teams in a ${stackOrSector} context.`, questionType: 'text', options: [], correctAnswer: '', skill: 'Collaboration', difficulty: 'easy' },
+      { questionText: `What would you do if a key stakeholder disagreed with your ${stackOrSector} recommendation?`, questionType: 'scenario', options: [], correctAnswer: '', skill: 'Stakeholder Management', difficulty: 'hard' },
+    ];
+    return templates.slice(0, count);
+  }
   const templates = [
-    { questionText: `What are the core principles of ${stack}?`, questionType: 'text', options: [], correctAnswer: '', skill: `${stack} Fundamentals`, difficulty: 'easy' },
-    { questionText: `Explain how state management works in ${stack}.`, questionType: 'text', options: [], correctAnswer: '', skill: 'State Management', difficulty: 'medium' },
-    { questionText: `Write a simple ${stack} function that returns a sorted array.`, questionType: 'coding', options: [], correctAnswer: '', skill: 'Algorithms', difficulty: 'medium' },
-    { questionText: `What is your approach to error handling in ${stack}?`, questionType: 'text', options: [], correctAnswer: '', skill: 'Error Handling', difficulty: 'medium' },
-    { questionText: `Describe a scenario where you optimized a ${stack} application.`, questionType: 'scenario', options: [], correctAnswer: '', skill: 'Performance', difficulty: 'hard' },
-    { questionText: `Which of these is NOT a valid concept in ${stack}?`, questionType: 'mcq', options: ['Option A', 'Option B', 'Option C', 'None of the above'], correctAnswer: 'Option A', skill: `${stack} Concepts`, difficulty: 'easy' },
-    { questionText: `How do you handle asynchronous operations in ${stack}?`, questionType: 'text', options: [], correctAnswer: '', skill: 'Async Programming', difficulty: 'medium' },
-    { questionText: `Describe the difference between ${stack} patterns.`, questionType: 'text', options: [], correctAnswer: '', skill: 'Design Patterns', difficulty: 'hard' },
-    { questionText: `Write code to implement a basic CRUD operation in ${stack}.`, questionType: 'coding', options: [], correctAnswer: '', skill: 'CRUD Operations', difficulty: 'medium' },
-    { questionText: `How would you architect a scalable ${stack} system?`, questionType: 'scenario', options: [], correctAnswer: '', skill: 'System Design', difficulty: 'hard' },
+    { questionText: `What are the core principles of ${stackOrSector}?`, questionType: 'text', options: [], correctAnswer: '', skill: `${stackOrSector} Fundamentals`, difficulty: 'easy' },
+    { questionText: `Explain how state management works in ${stackOrSector}.`, questionType: 'text', options: [], correctAnswer: '', skill: 'State Management', difficulty: 'medium' },
+    { questionText: `Write a simple ${stackOrSector} function that returns a sorted array.`, questionType: 'coding', options: [], correctAnswer: '', skill: 'Algorithms', difficulty: 'medium' },
+    { questionText: `What is your approach to error handling in ${stackOrSector}?`, questionType: 'text', options: [], correctAnswer: '', skill: 'Error Handling', difficulty: 'medium' },
+    { questionText: `Describe a scenario where you optimized a ${stackOrSector} application.`, questionType: 'scenario', options: [], correctAnswer: '', skill: 'Performance', difficulty: 'hard' },
+    { questionText: `Which of these is NOT a valid concept in ${stackOrSector}?`, questionType: 'mcq', options: ['Option A', 'Option B', 'Option C', 'None of the above'], correctAnswer: 'Option A', skill: `${stackOrSector} Concepts`, difficulty: 'easy' },
+    { questionText: `How do you handle asynchronous operations in ${stackOrSector}?`, questionType: 'text', options: [], correctAnswer: '', skill: 'Async Programming', difficulty: 'medium' },
+    { questionText: `Describe the difference between ${stackOrSector} patterns.`, questionType: 'text', options: [], correctAnswer: '', skill: 'Design Patterns', difficulty: 'hard' },
+    { questionText: `Write code to implement a basic CRUD operation in ${stackOrSector}.`, questionType: 'coding', options: [], correctAnswer: '', skill: 'CRUD Operations', difficulty: 'medium' },
+    { questionText: `How would you architect a scalable ${stackOrSector} system?`, questionType: 'scenario', options: [], correctAnswer: '', skill: 'System Design', difficulty: 'hard' },
   ];
   return templates.slice(0, count);
 };

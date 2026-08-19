@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../services/api';
 import { HiSearch, HiFilter, HiPlus, HiTrash } from 'react-icons/hi';
-
-const STACKS = ['JavaScript', 'TypeScript', 'React', 'Vue.js', 'Angular', 'Node.js', 'Python', 'Java', 'PHP', 'SQL', 'MongoDB', 'Docker', 'AWS', 'Go', 'C#'];
+import { SECTORS, TECH_STACKS, getSectorById, isSector } from '../../constants/sectors';
 
 export default function CandidateSearch() {
   const [candidates, setCandidates] = useState([]);
@@ -48,11 +47,22 @@ export default function CandidateSearch() {
             {requirements.map((req) => (
               <div key={req.id} className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end bg-dark-800/50 p-3 rounded-lg border border-dark-border">
                 <div className="md:col-span-5">
-                  <label className="label text-xs">Require Stack</label>
+                  <label className="label text-xs">Require Stack / Sector</label>
                   <select className="input text-sm" value={req.stack} onChange={(e) => updateReq(req.id, 'stack', e.target.value)}>
-                    <option value="">Select Stack</option>
-                    {STACKS.map(s => <option key={s} value={s}>{s}</option>)}
+                    <option value="">Select Stack or Sector</option>
+                    <optgroup label="— Tech Stacks —">
+                      {TECH_STACKS.map(s => <option key={s} value={s}>{s}</option>)}
+                    </optgroup>
+                    <optgroup label="— Business Sectors —">
+                      {SECTORS.map(s => <option key={s.id} value={s.id}>{s.icon} {s.label}</option>)}
+                    </optgroup>
                   </select>
+                  {req.stack && isSector(req.stack) && (
+                    <p className="text-xs mt-1 flex items-center gap-1">
+                      <span>{getSectorById(req.stack)?.icon}</span>
+                      <span className={getSectorById(req.stack)?.color}>{req.stack} sector</span>
+                    </p>
+                  )}
                 </div>
                 <div className="md:col-span-3">
                   <label className="label text-xs">Min Level</label>

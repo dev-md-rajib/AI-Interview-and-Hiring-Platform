@@ -21,7 +21,9 @@ const interviewSchema = new mongoose.Schema(
   {
     candidate: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     level: { type: Number, required: true, enum: [1, 2, 3] },
-    stack: { type: String, required: true },
+    stack: { type: String, required: true }, // tech stack OR sector name
+    sector: { type: String, default: null }, // set if this is a business-sector interview
+    interviewMode: { type: String, enum: ['technical', 'business'], default: 'technical' },
     status: { type: String, enum: ['pending', 'active', 'completed', 'abandoned'], default: 'pending' },
     questions: [questionSchema],
     answers: [answerSchema],

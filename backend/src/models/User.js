@@ -9,6 +9,7 @@ const availabilitySlotSchema = new mongoose.Schema({
 
 const interviewerProfileSchema = new mongoose.Schema({
   expertise: [{ type: String }], // tech stacks
+  sectors: [{ type: String }], // business sectors
   availabilitySlots: [availabilitySlotSchema],
   isActive: { type: Boolean, default: true },
   totalInterviewsConducted: { type: Number, default: 0 },

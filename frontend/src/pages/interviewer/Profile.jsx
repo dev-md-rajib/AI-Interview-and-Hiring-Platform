@@ -1,22 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import {
-  HiLightBulb, HiClock, HiPlus, HiTrash, HiSave, HiUser, HiCheck,
+  HiLightBulb, HiClock, HiPlus, HiTrash, HiSave, HiUser, HiCheck, HiBriefcase,
 } from 'react-icons/hi';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
-
-const TECH_STACKS = [
-  'JavaScript', 'TypeScript', 'React', 'Vue.js', 'Angular', 'Node.js',
-  'Python', 'Java', 'PHP', 'SQL', 'MongoDB', 'Docker', 'AWS', 'Go', 'C#',
-  'Kubernetes', 'GraphQL', 'Redis', 'Spring Boot', 'Django', 'FastAPI',
-];
+import { SECTORS, TECH_STACKS as STACKS } from '../../constants/sectors';
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 export default function InterviewerProfile() {
   const { user, updateUser } = useAuth();
   const [expertise, setExpertise] = useState([]);
+  const [sectors, setSectors] = useState([]);
   const [slots, setSlots] = useState([]);
   const [bio, setBio] = useState('');
   const [isActive, setIsActive] = useState(true);
@@ -27,6 +23,7 @@ export default function InterviewerProfile() {
     const profile = user?.interviewerProfile;
     if (profile) {
       setExpertise(profile.expertise || []);
+      setSectors(profile.sectors || []);
       setSlots(profile.availabilitySlots || []);
       setBio(profile.bio || '');
       setIsActive(profile.isActive !== false);
@@ -36,6 +33,12 @@ export default function InterviewerProfile() {
   const toggleExpertise = (stack) => {
     setExpertise((prev) =>
       prev.includes(stack) ? prev.filter((s) => s !== stack) : [...prev, stack]
+    );
+  };
+
+  const toggleSector = (sectorId) => {
+    setSectors((prev) =>
+      prev.includes(sectorId) ? prev.filter((s) => s !== sectorId) : [...prev, sectorId]
     );
   };
 
@@ -56,11 +59,12 @@ export default function InterviewerProfile() {
   };
 
   const handleSave = async () => {
-    if (expertise.length === 0) return toast.error('Please select at least one area of expertise');
+    if (expertise.length === 0 && sectors.length === 0) return toast.error('Please select at least one area of expertise or sector');
     setSaving(true);
     try {
       const { data } = await api.put('/interviewer/profile', {
         expertise,
+        sectors,
         availabilitySlots: slots,
         bio,
         isActive,
@@ -117,12 +121,12 @@ export default function InterviewerProfile() {
       <div className="card">
         <div className="flex items-center gap-2 mb-4">
           <HiLightBulb className="text-cyan-400" />
-          <h2 className="section-title">Areas of Expertise</h2>
+          <h2 className="section-title">Tech Stack Expertise</h2>
           <span className="text-xs text-gray-500">({expertise.length} selected)</span>
         </div>
         <p className="text-xs text-gray-400 mb-3">Select all technologies you're qualified to interview candidates on.</p>
         <div className="flex flex-wrap gap-2">
-          {TECH_STACKS.map((stack) => {
+          {STACKS.map((stack) => {
             const selected = expertise.includes(stack);
             return (
               <button
@@ -136,6 +140,41 @@ export default function InterviewerProfile() {
               >
                 {selected && <HiCheck className="w-3 h-3" />}
                 {stack}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Business Sectors multi-select */}
+      <div className="card">
+        <div className="flex items-center gap-2 mb-4">
+          <HiBriefcase className="text-amber-400" />
+          <h2 className="section-title">Business Sector Expertise</h2>
+          <span className="text-xs text-gray-500">({sectors.length} selected)</span>
+        </div>
+        <p className="text-xs text-gray-400 mb-3">
+          Select business sectors you can conduct professional interviews for.
+          This allows you to be matched with candidates taking business sector team interviews.
+        </p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          {SECTORS.map((sector) => {
+            const selected = sectors.includes(sector.id);
+            return (
+              <button
+                key={sector.id}
+                onClick={() => toggleSector(sector.id)}
+                className={`p-3 rounded-xl border-2 text-left transition-all flex items-center gap-2 ${
+                  selected
+                    ? `${sector.border} ${sector.bg}`
+                    : 'border-dark-border hover:border-gray-500 bg-dark-800/50'
+                }`}
+              >
+                <span className="text-xl">{sector.icon}</span>
+                <div>
+                  <div className={`font-semibold text-xs ${selected ? 'text-white' : 'text-gray-300'}`}>{sector.label}</div>
+                  {selected && <div className={`text-[10px] ${sector.color}`}>✓ Selected</div>}
+                </div>
               </button>
             );
           })}

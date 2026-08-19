@@ -2,6 +2,7 @@ const TeamInterview = require('../models/TeamInterview');
 const User = require('../models/User');
 const { createMeeting, deleteMeeting } = require('../services/zoomService');
 const { createNotification } = require('../services/notificationService');
+const { isSector } = require('../config/sectors');
 const logger = require('../config/logger');
 
 const PASS_THRESHOLD = 50; // score >= 50 = passed
@@ -15,11 +16,17 @@ async function findAvailableInterviewer(stack, preferredDateTime, excludeIds = [
   const hours = new Date(preferredDateTime).getUTCHours();
   const minutes = new Date(preferredDateTime).getUTCMinutes();
   const requestedTime = hours * 60 + minutes; // minutes since midnight
+  const stackIsSector = isSector(stack);
+
+  // Match on sectors array for business sectors, expertise array for tech stacks
+  const expertiseQuery = stackIsSector
+    ? { 'interviewerProfile.sectors': stack }
+    : { 'interviewerProfile.expertise': stack };
 
   const candidates = await User.find({
     role: 'INTERVIEWER',
     'interviewerProfile.isActive': true,
-    'interviewerProfile.expertise': stack,
+    ...expertiseQuery,
     _id: { $nin: excludeIds },
   });
 
@@ -126,7 +133,7 @@ const requestInterview = async (req, res, next) => {
     const { stack, level, preferredDateTime } = req.body;
 
     if (!stack || !level || !preferredDateTime) {
-      return res.status(400).json({ success: false, message: 'stack, level, and preferredDateTime are required' });
+      return res.status(400).json({ success: false, message: 'stack/sector, level, and preferredDateTime are required' });
     }
 
     // Eligibility checks
@@ -157,6 +164,9 @@ const requestInterview = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Please select a future date/time.' });
     }
 
+    const interviewMode = isSector(stack) ? 'business' : 'technical';
+    const sector = isSector(stack) ? stack : null;
+
     // Find matching interviewer
     const interviewer = await findAvailableInterviewer(stack, preferredDate);
 
@@ -165,6 +175,8 @@ const requestInterview = async (req, res, next) => {
       const interview = await TeamInterview.create({
         candidate: candidateId,
         stack,
+        sector,
+        interviewMode,
         level: parseInt(level),
         preferredDateTime: preferredDate,
         status: 'no_interviewer',
@@ -196,6 +208,8 @@ const requestInterview = async (req, res, next) => {
       candidate: candidateId,
       interviewer: interviewer._id,
       stack,
+      sector,
+      interviewMode,
       level: parseInt(level),
       preferredDateTime: preferredDate,
       scheduledAt: preferredDate,

@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
-import { HiLocationMarker, HiBriefcase, HiCurrencyDollar, HiSearch, HiFlag, HiX } from 'react-icons/hi';
+import { HiLocationMarker, HiBriefcase, HiCurrencyDollar, HiSearch, HiFlag, HiX, HiFilter } from 'react-icons/hi';
+import { SECTORS, getSectorById, isSector } from '../../constants/sectors';
 
 export default function JobBoard() {
   const [jobs, setJobs] = useState([]);
@@ -9,6 +10,7 @@ export default function JobBoard() {
   const [applying, setApplying] = useState({});
   const [search, setSearch] = useState('');
   const [levelFilter, setLevelFilter] = useState('');
+  const [sectorFilter, setSectorFilter] = useState('');
   const [reportJobId, setReportJobId] = useState(null);
   const [reportReason, setReportReason] = useState('');
 
@@ -16,8 +18,10 @@ export default function JobBoard() {
     const params = new URLSearchParams();
     if (search) params.set('stack', search);
     if (levelFilter) params.set('level', levelFilter);
+    if (sectorFilter) params.set('sector', sectorFilter);
+    setLoading(true);
     api.get(`/jobs?${params}`).then(({ data }) => setJobs(data.jobs || [])).finally(() => setLoading(false));
-  }, [search, levelFilter]);
+  }, [search, levelFilter, sectorFilter]);
 
   const apply = async (jobId, e) => {
     e.stopPropagation();
@@ -48,11 +52,17 @@ export default function JobBoard() {
     <div className="animate-fade-in">
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <h1 className="text-2xl font-bold text-white">Job Board</h1>
-        <div className="flex gap-3">
+        <div className="flex gap-3 flex-wrap">
           <div className="relative">
             <HiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input className="input pl-9 w-48" placeholder="Search stack..." value={search} onChange={(e) => setSearch(e.target.value)} />
+            <input className="input pl-9 w-44" placeholder="Search stack..." value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
+          <select className="input w-40" value={sectorFilter} onChange={(e) => setSectorFilter(e.target.value)}>
+            <option value="">All Sectors</option>
+            {SECTORS.map((s) => (
+              <option key={s.id} value={s.id}>{s.icon} {s.label}</option>
+            ))}
+          </select>
           <select className="input w-32" value={levelFilter} onChange={(e) => setLevelFilter(e.target.value)}>
             <option value="">All Levels</option>
             <option value="1">Level 1</option>
@@ -62,67 +72,104 @@ export default function JobBoard() {
         </div>
       </div>
 
+      {/* Active filters pills */}
+      {(sectorFilter || levelFilter || search) && (
+        <div className="flex flex-wrap gap-2 mb-4">
+          {sectorFilter && (
+            <span className={`inline-flex items-center gap-1.5 text-xs px-3 py-1 rounded-full border ${getSectorById(sectorFilter)?.badgeBg || 'bg-dark-800 border-dark-border text-gray-300'}`}>
+              {getSectorById(sectorFilter)?.icon} {sectorFilter}
+              <button onClick={() => setSectorFilter('')} className="ml-1 hover:opacity-70"><HiX className="w-3 h-3" /></button>
+            </span>
+          )}
+          {levelFilter && (
+            <span className="inline-flex items-center gap-1.5 text-xs px-3 py-1 rounded-full bg-primary-900/40 border border-primary-500/40 text-primary-300">
+              Level {levelFilter}
+              <button onClick={() => setLevelFilter('')} className="ml-1 hover:opacity-70"><HiX className="w-3 h-3" /></button>
+            </span>
+          )}
+          {search && (
+            <span className="inline-flex items-center gap-1.5 text-xs px-3 py-1 rounded-full bg-dark-800 border border-dark-border text-gray-300">
+              Stack: {search}
+              <button onClick={() => setSearch('')} className="ml-1 hover:opacity-70"><HiX className="w-3 h-3" /></button>
+            </span>
+          )}
+        </div>
+      )}
+
       {loading ? (
         <div className="flex justify-center h-64 items-center"><div className="w-8 h-8 border-3 border-primary-500/30 border-t-primary-500 rounded-full animate-spin" /></div>
       ) : jobs.length === 0 ? (
         <div className="card text-center py-16"><p className="text-gray-400">No jobs found</p></div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {jobs.map((job) => (
-            <div key={job._id} className="card hover:border-primary-500/40 transition-all group">
-              <div className="flex items-start justify-between mb-3">
-                <div>
-                  <h2 className="text-white font-bold text-lg group-hover:text-primary-400 transition-colors pr-8">{job.title}</h2>
-                  <p className="text-gray-400 text-sm">{job.recruiter?.name}</p>
+          {jobs.map((job) => {
+            const jobSector = job.sector ? getSectorById(job.sector) : null;
+            return (
+              <div key={job._id} className="card hover:border-primary-500/40 transition-all group">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1 pr-8">
+                    {/* Sector badge */}
+                    {jobSector && (
+                      <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border mb-2 ${jobSector.badgeBg}`}>
+                        {jobSector.icon} {jobSector.label}
+                      </span>
+                    )}
+                    <h2 className="text-white font-bold text-lg group-hover:text-primary-400 transition-colors">{job.title}</h2>
+                    <p className="text-gray-400 text-sm">{job.recruiter?.name}</p>
+                  </div>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setReportJobId(job._id); }}
+                    className="text-gray-500 hover:text-danger-400 transition-colors p-1"
+                    title="Report Job"
+                  >
+                    <HiFlag className="w-5 h-5" />
+                  </button>
                 </div>
-                <button 
-                  onClick={(e) => { e.stopPropagation(); setReportJobId(job._id); }}
-                  className="text-gray-500 hover:text-danger-400 transition-colors p-1"
-                  title="Report Job"
+
+                <p className="text-gray-400 text-sm mb-4 line-clamp-2">{job.description}</p>
+
+                {job.requirements && job.requirements.length > 0 && (
+                  <div className="mb-4">
+                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Requirements</span>
+                    <div className="flex flex-wrap gap-2">
+                      {job.requirements.map((req, i) => {
+                        const reqSector = isSector(req.stack) ? getSectorById(req.stack) : null;
+                        return (
+                          <div key={i} className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded border ${reqSector ? reqSector.badgeBg : 'bg-dark-800 border-dark-border'}`}>
+                            {reqSector && <span className="text-sm">{reqSector.icon}</span>}
+                            <span className="text-white text-sm font-medium">
+                              {req.stack}
+                              {req.method && req.method !== 'Both' && (
+                                <span className="ml-1 text-[10px] text-gray-400 font-normal">
+                                  ({req.method === 'Standard' ? 'Human' : 'AI'})
+                                </span>
+                              )}
+                            </span>
+                            <span className="text-primary-400 text-xs font-bold px-1.5 py-0.5 rounded bg-primary-500/10">L{req.level}</span>
+                            <span className="text-gray-400 text-xs">{req.minScore}%+</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex items-center gap-4 text-xs text-gray-500 mb-4">
+                  <span className="flex items-center gap-1"><HiLocationMarker />{job.isRemote ? 'Remote' : (job.location || 'On-site')}</span>
+                  {job.salaryMin && <span className="flex items-center gap-1"><HiCurrencyDollar />{job.salaryMin}–{job.salaryMax}k</span>}
+                  <span className="flex items-center gap-1"><HiBriefcase />{job.experienceRequired}+ years</span>
+                </div>
+
+                <button
+                  onClick={(e) => apply(job._id, e)}
+                  disabled={applying[job._id]}
+                  className="btn-primary w-full py-2 text-sm disabled:opacity-50"
                 >
-                  <HiFlag className="w-5 h-5" />
+                  {applying[job._id] ? 'Applying...' : 'Apply Now'}
                 </button>
               </div>
-
-              <p className="text-gray-400 text-sm mb-4 line-clamp-2">{job.description}</p>
-
-              {job.requirements && job.requirements.length > 0 && (
-                <div className="mb-4">
-                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Requirements</span>
-                  <div className="flex flex-wrap gap-2">
-                    {job.requirements.map((req, i) => (
-                      <div key={i} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-dark-800 border border-dark-border">
-                        <span className="text-white text-sm font-medium">
-                          {req.stack}
-                          {req.method && req.method !== 'Both' && (
-                            <span className="ml-1 text-[10px] text-gray-400 font-normal">
-                              ({req.method === 'Standard' ? 'Human' : 'AI'})
-                            </span>
-                          )}
-                        </span>
-                        <span className="text-primary-400 text-xs font-bold px-1.5 py-0.5 rounded bg-primary-500/10">L{req.level}</span>
-                        <span className="text-gray-400 text-xs">{req.minScore}%+</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div className="flex items-center gap-4 text-xs text-gray-500 mb-4">
-                <span className="flex items-center gap-1"><HiLocationMarker />{job.isRemote ? 'Remote' : (job.location || 'On-site')}</span>
-                {job.salaryMin && <span className="flex items-center gap-1"><HiCurrencyDollar />{job.salaryMin}–{job.salaryMax}k</span>}
-                <span className="flex items-center gap-1"><HiBriefcase />{job.experienceRequired}+ years</span>
-              </div>
-
-              <button
-                onClick={(e) => apply(job._id, e)}
-                disabled={applying[job._id]}
-                className="btn-primary w-full py-2 text-sm disabled:opacity-50"
-              >
-                {applying[job._id] ? 'Applying...' : 'Apply Now'}
-              </button>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
