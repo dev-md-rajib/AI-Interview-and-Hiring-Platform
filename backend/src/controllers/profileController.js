@@ -59,6 +59,28 @@ const getMyProfile = async (req, res, next) => {
 
     const levelVerdicts = Object.values(levelVerdictsMap).sort((a, b) => a.level - b.level);
 
+    // Synchronize and calculate currentLevel from all passed interviews
+    const calculatedCurrentLevel = passedInterviews.length > 0
+      ? Math.max(...passedInterviews.map(i => i.level))
+      : 0;
+
+    // Overall score is from the interview in which the current level was achieved/selected
+    let calculatedScore = 0;
+    if (calculatedCurrentLevel > 0 && levelVerdictsMap[calculatedCurrentLevel]) {
+      calculatedScore = levelVerdictsMap[calculatedCurrentLevel].totalScore || 0;
+    } else if (interviewHistory.length > 0) {
+      calculatedScore = interviewHistory[0].totalScore || 0;
+    }
+
+    if (profile.currentLevel !== calculatedCurrentLevel || profile.overallScore !== calculatedScore) {
+      profile.currentLevel = calculatedCurrentLevel;
+      profile.overallScore = calculatedScore;
+      await CandidateProfile.findByIdAndUpdate(profile._id, {
+        currentLevel: calculatedCurrentLevel,
+        overallScore: calculatedScore,
+      });
+    }
+
     res.status(200).json({ success: true, profile, interviewHistory, levelVerdicts });
   } catch (err) {
     next(err);
@@ -191,6 +213,28 @@ const getPublicProfile = async (req, res, next) => {
     });
 
     const levelVerdicts = Object.values(levelVerdictsMap).sort((a, b) => a.level - b.level);
+
+    // Synchronize and calculate currentLevel from all passed interviews
+    const calculatedCurrentLevel = passedInterviews.length > 0
+      ? Math.max(...passedInterviews.map(i => i.level))
+      : 0;
+
+    // Overall score is from the interview in which the current level was achieved/selected
+    let calculatedScore = 0;
+    if (calculatedCurrentLevel > 0 && levelVerdictsMap[calculatedCurrentLevel]) {
+      calculatedScore = levelVerdictsMap[calculatedCurrentLevel].totalScore || 0;
+    } else if (interviewHistory.length > 0) {
+      calculatedScore = interviewHistory[0].totalScore || 0;
+    }
+
+    if (profile.currentLevel !== calculatedCurrentLevel || profile.overallScore !== calculatedScore) {
+      profile.currentLevel = calculatedCurrentLevel;
+      profile.overallScore = calculatedScore;
+      await CandidateProfile.findByIdAndUpdate(profile._id, {
+        currentLevel: calculatedCurrentLevel,
+        overallScore: calculatedScore,
+      });
+    }
 
     res.status(200).json({ success: true, profile, interviewHistory, levelVerdicts });
   } catch (err) {

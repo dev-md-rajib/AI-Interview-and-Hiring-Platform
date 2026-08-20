@@ -26,15 +26,12 @@ export default function CandidateDashboard() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [profileRes, interviewRes] = await Promise.all([
-          api.get('/profile/me'),
-          api.get('/interviews/my'),
-        ]);
-        setProfile(profileRes.data.profile);
-        const allInterviews = interviewRes.data.interviews || [];
+        const { data: profileData } = await api.get('/profile/me');
+        setProfile(profileData.profile);
+        const allInterviews = profileData.interviewHistory || [];
         setStats({
           total: allInterviews.length,
-          passed: allInterviews.filter(i => i.passed).length
+          passed: allInterviews.filter(i => i.passed).length,
         });
         setInterviews(allInterviews.slice(0, 5));
       } catch { /* ignore */ }

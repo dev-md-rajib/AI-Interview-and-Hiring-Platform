@@ -1,4 +1,5 @@
 const TeamInterview = require('../models/TeamInterview');
+const CandidateProfile = require('../models/CandidateProfile');
 const User = require('../models/User');
 const { createMeeting, deleteMeeting } = require('../services/zoomService');
 const { createNotification } = require('../services/notificationService');
@@ -536,6 +537,15 @@ const submitResult = async (req, res, next) => {
     interview.status = 'completed';
     interview.completedAt = new Date();
     await interview.save();
+
+    // If passed, update candidate's currentLevel
+    if (passed) {
+      await CandidateProfile.findOneAndUpdate(
+        { user: interview.candidate._id },
+        { $max: { currentLevel: interview.level } },
+        { upsert: true }
+      );
+    }
 
     // If failed, apply 7-day cooldown to candidate
     if (!passed) {
