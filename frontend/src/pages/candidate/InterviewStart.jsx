@@ -83,12 +83,17 @@ export default function InterviewStart() {
   const [stack, setStack] = useState('');
   const [interviewType, setInterviewType] = useState('tech'); // 'tech' | 'business'
   const [eligibility, setEligibility] = useState(null);
+  const [activeTeamInterview, setActiveTeamInterview] = useState(null);
   const [levels, setLevels] = useState([]);
   const [loading, setLoading] = useState(false);
   const [starting, setStarting] = useState(false);
 
   useEffect(() => {
     api.get('/admin/levels').then(({ data }) => setLevels(data.levels || []));
+    api.get('/team-interviews/my').then(({ data }) => {
+      const active = (data.interviews || []).find((i) => ['pending', 'scheduled', 'active'].includes(i.status));
+      setActiveTeamInterview(active || null);
+    }).catch(() => {});
   }, []);
 
   // Clear selection when switching type
@@ -113,12 +118,25 @@ export default function InterviewStart() {
     }
   }, [level, mode]);
 
+  const handleModeClick = (selectedMode) => {
+    if (selectedMode === 'interview_team' && activeTeamInterview) {
+      navigate('/candidate/interview/team');
+      return;
+    }
+    setMode(selectedMode);
+  };
+
   const handleStart = async () => {
-    if (!stack) return toast.error(`Please select a ${interviewType === 'business' ? 'sector' : 'tech stack'}`);
     if (mode === 'interview_team') {
+      if (activeTeamInterview) {
+        navigate('/candidate/interview/team');
+        return;
+      }
+      if (!stack) return toast.error(`Please select a ${interviewType === 'business' ? 'sector' : 'tech stack'}`);
       navigate('/candidate/interview/team', { state: { stack, level, interviewType } });
       return;
     }
+    if (!stack) return toast.error(`Please select a ${interviewType === 'business' ? 'sector' : 'tech stack'}`);
     if (mode === 'standard' && !eligibility?.eligible) {
       return toast.error(eligibility?.reason || 'Not eligible');
     }
@@ -167,7 +185,7 @@ export default function InterviewStart() {
             return (
               <button
                 key={m.id}
-                onClick={() => setMode(m.id)}
+                onClick={() => handleModeClick(m.id)}
                 className={`relative p-4 rounded-xl border-2 text-left transition-all ${
                   isSelected
                     ? `${m.border} bg-gradient-to-br ${m.color}`

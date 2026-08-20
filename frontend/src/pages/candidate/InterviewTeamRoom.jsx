@@ -68,8 +68,14 @@ export default function InterviewTeamRoom() {
         api.get('/team-interviews/my'),
         api.get(`/team-interviews/eligibility?level=${level}`),
       ]);
-      setInterviews(intRes.data.interviews || []);
+      const fetched = intRes.data.interviews || [];
+      setInterviews(fetched);
       setEligibility(eligRes.data);
+
+      const hasActive = fetched.some((i) => ['pending', 'scheduled', 'active'].includes(i.status));
+      if (hasActive) {
+        setView('status');
+      }
     } catch {
       toast.error('Failed to load interview data');
     } finally {
