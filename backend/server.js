@@ -6,11 +6,13 @@ const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
 const fs = require('fs');
+const http = require('http');
 
 const connectDB = require('./src/config/db');
 const logger = require('./src/config/logger');
 const errorHandler = require('./src/middleware/errorHandler');
 const activityLogger = require('./src/middleware/activityLogger');
+const { initSocket } = require('./src/services/socketService');
 
 // Route imports
 const authRoutes = require('./src/routes/auth');
@@ -27,6 +29,7 @@ const contestRoutes = require('./src/routes/contests');
 const reportRoutes = require('./src/routes/reports');
 const practiceRoutes = require('./src/routes/practice');
 const multiplayerRoutes = require('./src/routes/multiplayer');
+const trackerRoutes = require('./src/routes/tracker');
 
 // Connect DB and start notification scheduler
 const { startNotificationScheduler } = require('./src/services/notificationService');
@@ -92,6 +95,7 @@ app.use('/api/contests', contestRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/practice', practiceRoutes);
 app.use('/api/multiplayer', multiplayerRoutes);
+app.use('/api/tracker', trackerRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -107,14 +111,22 @@ app.use((req, res) => {
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
-const server = app.listen(PORT, () => {
-  logger.info(`🚀 Server running on port ${PORT} in ${process.env.NODE_ENV} mode`);
+const server = http.createServer(app);
+
+// Initialize real-time Socket.IO
+initSocket(server);
+
+server.listen(PORT, () => {
+  logger.info(`🚀 Server running on port ${PORT} in ${process.env.NODE_ENV} mode (HTTP + WebSocket)`);
 });
 
-// Handle unhandled promise rejections
+// Handle unhandled promise rejections & uncaught exceptions gracefully
 process.on('unhandledRejection', (err) => {
-  logger.error(`Unhandled Rejection: ${err.message}`);
-  server.close(() => process.exit(1));
+  logger.error(`Unhandled Rejection: ${err?.stack || err?.message || err}`);
 });
 
-module.exports = app;
+process.on('uncaughtException', (err) => {
+  logger.error(`Uncaught Exception: ${err?.stack || err?.message || err}`);
+});
+
+module.exports = { app, server };

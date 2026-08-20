@@ -7,6 +7,7 @@ import {
   HiUserGroup, HiLightningBolt, HiInformationCircle, HiCode, HiBriefcase,
 } from 'react-icons/hi';
 import { SECTORS, TECH_STACKS, getSectorById, isSector, SECTOR_LEVEL_DESCRIPTIONS } from '../../constants/sectors';
+import TrackerRequiredModal from '../../components/TrackerRequiredModal';
 
 // ─── Tech Level Descriptions ────────────────────────────────
 const TECH_LEVEL_DESCRIPTIONS = {
@@ -126,7 +127,9 @@ export default function InterviewStart() {
     setMode(selectedMode);
   };
 
-  const handleStart = async () => {
+  const [showTrackerModal, setShowTrackerModal] = useState(false);
+
+  const executeStart = async () => {
     if (mode === 'interview_team') {
       if (activeTeamInterview) {
         navigate('/candidate/interview/team');
@@ -156,6 +159,26 @@ export default function InterviewStart() {
     } finally {
       setStarting(false);
     }
+  };
+
+  const handleStart = async () => {
+    if (mode !== 'interview_team' && !stack) {
+      return toast.error(`Please select a ${interviewType === 'business' ? 'sector' : 'tech stack'}`);
+    }
+
+    try {
+      const { data: trackerData } = await api.get('/tracker/status');
+      if (!trackerData.active) {
+        setShowTrackerModal(true);
+        return;
+      }
+    } catch {
+      // If error checking tracker, open prompt
+      setShowTrackerModal(true);
+      return;
+    }
+
+    executeStart();
   };
 
   const selectedSector = isSector(stack) ? getSectorById(stack) : null;
@@ -497,6 +520,13 @@ export default function InterviewStart() {
           </button>
         </div>
       </div>
+
+      {/* Tracker Required Prompt Modal */}
+      <TrackerRequiredModal
+        isOpen={showTrackerModal}
+        onClose={() => setShowTrackerModal(false)}
+        onSuccess={executeStart}
+      />
     </div>
   );
 }

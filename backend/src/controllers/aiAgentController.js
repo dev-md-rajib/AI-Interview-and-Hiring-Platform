@@ -82,6 +82,23 @@ const startAiAgentInterview = async (req, res, next) => {
 
     logger.info(`AI agent interview started: ${interview._id}`);
 
+    // Synchronize active desktop Tracker app session with this exact interview ID
+    try {
+      const TrackerSession = require('../models/TrackerSession');
+      const { emitToCandidate } = require('../services/socketService');
+
+      await TrackerSession.updateMany(
+        { candidate: req.user._id, status: { $in: ['ready', 'active'] } },
+        { interviewId: String(interview._id) }
+      );
+
+      emitToCandidate(req.user._id, 'tracker:set_interview_id', {
+        interviewId: String(interview._id),
+      });
+    } catch (trackerErr) {
+      logger.warn(`Could not sync tracker session: ${trackerErr.message}`);
+    }
+
     res.status(201).json({
       success: true,
       interviewId: interview._id,

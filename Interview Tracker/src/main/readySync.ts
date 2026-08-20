@@ -2,6 +2,7 @@ import { EventEmitter } from 'events';
 import { io, Socket } from 'socket.io-client';
 import { TrackerStatus } from '../shared/types';
 import { apiClient } from '../shared/apiClient';
+import { screenshotCaptureManager } from './screenshotCapture';
 
 const SOCKET_SERVER_URL = process.env.VITE_SOCKET_URL || 'http://localhost:5000';
 
@@ -60,7 +61,15 @@ export class ReadySyncManager extends EventEmitter {
 
     this.socket.on('connect', () => {
       console.log('[ReadySync] Connected to realtime status channel:', this.socket?.id);
-      this.socket?.emit('tracker:join', { candidateId, interviewId });
+      this.socket?.emit('tracker:join', { candidateId, interviewId: this.interviewId });
+    });
+
+    this.socket.on('tracker:set_interview_id', (data: { interviewId?: string }) => {
+      if (data?.interviewId) {
+        console.log('[ReadySync] Server set active interview ID to:', data.interviewId);
+        this.interviewId = data.interviewId;
+        screenshotCaptureManager.setInterviewId(data.interviewId);
+      }
     });
 
     this.socket.on('tracker:force_terminate', (data: { reason?: string }) => {

@@ -75,7 +75,7 @@ class ApiClient {
 
   public async getNextInterview(): Promise<NextInterviewResponse> {
     try {
-      const response = await this.client.get<NextInterviewResponse>('/api/candidate/next-interview');
+      const response = await this.client.get<NextInterviewResponse>('/api/tracker/next-interview');
       return response.data;
     } catch (error) {
       console.warn('Could not fetch next interview from backend. Using mock interview detail.');
@@ -122,17 +122,18 @@ class ApiClient {
   }
 
   public async uploadScreenshot(
-    formData: FormData
+    formData: any
   ): Promise<boolean> {
     try {
+      const customHeaders = typeof formData.getHeaders === 'function' ? formData.getHeaders() : {};
       await this.client.post('/api/tracker/screenshot', formData, {
         headers: {
-          'Content-Type': 'multipart/form-data'
+          ...customHeaders
         }
       });
       return true;
-    } catch (error) {
-      console.error('Screenshot upload failed, queued locally.');
+    } catch (error: any) {
+      console.error('Screenshot upload failed:', error?.response?.data || error?.message);
       throw error;
     }
   }

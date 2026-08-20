@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
-import { HiMail, HiFlag, HiX } from 'react-icons/hi';
+import { HiMail, HiFlag, HiX, HiPhotograph } from 'react-icons/hi';
 import toast from 'react-hot-toast';
+import InterviewScreenshotsModal from '../../components/InterviewScreenshotsModal';
 
 export default function CandidateView() {
   const { id } = useParams();
@@ -35,13 +36,15 @@ export default function CandidateView() {
     }
   };
 
+  const [selectedInterviewForScreenshots, setSelectedInterviewForScreenshots] = useState(null);
+
   if (loading) return <div className="flex justify-center h-64 items-center"><div className="w-8 h-8 border-3 border-primary-500/30 border-t-primary-500 rounded-full animate-spin" /></div>;
   if (!data) return <div className="text-center py-16 text-gray-400">Profile not found</div>;
 
   const { profile, interviewHistory, levelVerdicts } = data;
 
   return (
-    <div className="max-w-3xl mx-auto animate-fade-in space-y-6">
+    <div className="max-w-4xl mx-auto animate-fade-in space-y-6">
       <div className="card">
         <div className="flex items-start justify-between flex-wrap gap-4">
           <div className="flex items-center gap-4">
@@ -98,7 +101,7 @@ export default function CandidateView() {
               return (
                 <div
                   key={`lv-${lv.level}`}
-                  className={`p-4 rounded-xl border transition-colors relative overflow-hidden ${
+                  className={`p-4 rounded-xl border transition-colors relative overflow-hidden flex flex-col justify-between ${
                     isHumanTeam
                       ? 'bg-gradient-to-br from-cyan-900/30 to-dark-800 border-cyan-500/40 hover:border-cyan-500/70'
                       : isAiAgent
@@ -111,23 +114,33 @@ export default function CandidateView() {
                       🏆 Top
                     </span>
                   )}
-                  <div className="flex justify-between items-start mb-2">
-                    <span className="text-lg font-bold text-white text-gradient">L{lv.level} Passed</span>
-                    <span className={`text-2xl font-black ${isHumanTeam ? 'text-cyan-400' : isAiAgent ? 'text-violet-400' : 'text-primary-400'}`}>
-                      {lv.totalScore}
-                      <span className="text-sm font-medium">/100</span>
-                    </span>
+                  <div>
+                    <div className="flex justify-between items-start mb-2">
+                      <span className="text-lg font-bold text-white text-gradient">L{lv.level} Passed</span>
+                      <span className={`text-2xl font-black ${isHumanTeam ? 'text-cyan-400' : isAiAgent ? 'text-violet-400' : 'text-primary-400'}`}>
+                        {lv.totalScore}
+                        <span className="text-sm font-medium">/100</span>
+                      </span>
+                    </div>
+                    <div className="text-sm text-gray-400 mb-2">Stack: <span className="text-white">{lv.stack}</span></div>
+                    <div className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold border ${
+                      isHumanTeam
+                        ? 'bg-cyan-900/30 text-cyan-300 border-cyan-500/30'
+                        : isAiAgent
+                        ? 'bg-violet-900/30 text-violet-300 border-violet-500/30'
+                        : 'bg-dark-700 text-gray-300 border-dark-600'
+                    }`}>
+                      {isHumanTeam ? '🎥' : isAiAgent ? '🤖' : '📝'} {lv.evaluator}
+                    </div>
                   </div>
-                  <div className="text-sm text-gray-400 mb-2">Stack: <span className="text-white">{lv.stack}</span></div>
-                  <div className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold border ${
-                    isHumanTeam
-                      ? 'bg-cyan-900/30 text-cyan-300 border-cyan-500/30'
-                      : isAiAgent
-                      ? 'bg-violet-900/30 text-violet-300 border-violet-500/30'
-                      : 'bg-dark-700 text-gray-300 border-dark-600'
-                  }`}>
-                    {isHumanTeam ? '🎥' : isAiAgent ? '🤖' : '📝'} {lv.evaluator}
-                  </div>
+
+                  <button
+                    onClick={() => setSelectedInterviewForScreenshots({ ...lv, candidate: id })}
+                    className="mt-3 w-full py-1.5 rounded-lg bg-dark-800 hover:bg-dark-700 border border-dark-border text-xs text-gray-300 hover:text-white font-medium flex items-center justify-center gap-1.5 transition-all"
+                  >
+                    <HiPhotograph className="w-3.5 h-3.5 text-primary-400" />
+                    <span>View Captures</span>
+                  </button>
                 </div>
               );
             })}
@@ -135,27 +148,46 @@ export default function CandidateView() {
         </div>
       )}
 
-
       {interviewHistory?.length > 0 && (
         <div className="card">
-          <h2 className="section-title">Interview Results</h2>
-          <table className="w-full text-sm">
-            <thead className="text-gray-400 uppercase text-xs border-b border-dark-border">
-              <tr>{['Stack', 'Level', 'Evaluator', 'Score', 'Result', 'Date'].map((h) => <th key={h} className="text-left pb-2 pr-4">{h}</th>)}</tr>
-            </thead>
-            <tbody className="divide-y divide-dark-border">
-              {interviewHistory.map((iv) => (
-                <tr key={iv._id}>
-                  <td className="py-2 pr-4 text-white">{iv.stack}</td>
-                  <td className="py-2 pr-4 text-gray-400">L{iv.level}</td>
-                  <td className="py-2 pr-4 text-gray-400">{iv.evaluator}</td>
-                  <td className="py-2 pr-4 font-bold text-primary-400">{iv.totalScore}%</td>
-                  <td className="py-2 pr-4">{iv.passed ? <span className="badge-success">Passed</span> : <span className="badge-danger">Failed</span>}</td>
-                  <td className="py-2 text-gray-400">{new Date(iv.completedAt).toLocaleDateString()}</td>
+          <h2 className="section-title">Interview History & Proctoring</h2>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="text-gray-400 uppercase text-xs border-b border-dark-border">
+                <tr>
+                  {['Stack', 'Level', 'Evaluator', 'Score', 'Result', 'Date', 'Proctoring'].map((h) => (
+                    <th key={h} className="text-left pb-2 pr-4">{h}</th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-dark-border">
+                {interviewHistory.map((iv) => (
+                  <tr key={iv._id} className="hover:bg-dark-800/40 transition-colors">
+                    <td className="py-3 pr-4 text-white font-medium">{iv.stack}</td>
+                    <td className="py-3 pr-4 text-gray-400">L{iv.level}</td>
+                    <td className="py-3 pr-4 text-gray-400">{iv.evaluator}</td>
+                    <td className="py-3 pr-4 font-bold text-primary-400">{iv.totalScore}%</td>
+                    <td className="py-3 pr-4">
+                      {iv.passed ? <span className="badge-success">Passed</span> : <span className="badge-danger">Failed</span>}
+                    </td>
+                    <td className="py-3 pr-4 text-gray-400 text-xs">
+                      {iv.completedAt ? new Date(iv.completedAt).toLocaleDateString() : '—'}
+                    </td>
+                    <td className="py-3">
+                      <button
+                        onClick={() => setSelectedInterviewForScreenshots({ ...iv, candidate: id })}
+                        className="px-2.5 py-1 rounded-lg bg-dark-800 hover:bg-primary-900/40 hover:text-primary-300 border border-dark-border text-xs text-gray-300 flex items-center gap-1.5 transition-all"
+                        title="View interval and violation screenshots"
+                      >
+                        <HiPhotograph className="w-3.5 h-3.5 text-primary-400" />
+                        <span>Captures</span>
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
@@ -179,6 +211,14 @@ export default function CandidateView() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Proctoring Screenshots Inspection Modal */}
+      {selectedInterviewForScreenshots && (
+        <InterviewScreenshotsModal
+          interview={selectedInterviewForScreenshots}
+          onClose={() => setSelectedInterviewForScreenshots(null)}
+        />
       )}
     </div>
   );

@@ -6,9 +6,11 @@ import {
   HiX, HiCheck, HiChip, HiRefresh, HiLockClosed, HiStar, HiCode, HiBriefcase,
   HiVideoCamera, HiClipboardCopy, HiArrowsExpand,
 } from 'react-icons/hi';
+import { io } from 'socket.io-client';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { SECTORS, TECH_STACKS, getSectorById, isSector } from '../../constants/sectors';
+import TrackerRequiredModal from '../../components/TrackerRequiredModal';
 
 const LEVEL_LABELS = { 1: 'Junior', 2: 'Mid-level', 3: 'Senior' };
 
@@ -51,7 +53,8 @@ export default function InterviewTeamRoom() {
   const initialInterviewType = location.state?.interviewType || (initialStack && isSector(initialStack) ? 'business' : 'tech');
 
   const [view, setView] = useState(initialStack ? 'request' : 'status'); // 'status' | 'request'
-  const [inMeeting, setInMeeting] = useState(Boolean(location.state?.openMeeting));
+  const [inMeeting, setInMeeting] = useState(false);
+  const [showTrackerModal, setShowTrackerModal] = useState(false);
   const [interviews, setInterviews] = useState([]);
   const [eligibility, setEligibility] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -61,6 +64,26 @@ export default function InterviewTeamRoom() {
   const [stack, setStack] = useState(initialStack);
   const [level, setLevel] = useState(initialLevel);
   const [submitting, setSubmitting] = useState(false);
+
+  const handleJoinMeeting = async () => {
+    try {
+      const { data: trackerData } = await api.get('/tracker/status');
+      if (!trackerData.active) {
+        setShowTrackerModal(true);
+        return;
+      }
+    } catch {
+      setShowTrackerModal(true);
+      return;
+    }
+    setInMeeting(true);
+  };
+
+  useEffect(() => {
+    if (location.state?.openMeeting) {
+      handleJoinMeeting();
+    }
+  }, [location.state]);
 
   const fetchData = useCallback(async () => {
     try {
@@ -380,7 +403,7 @@ export default function InterviewTeamRoom() {
               interview={activeInterview}
               onCancel={handleCancel}
               onRefresh={fetchData}
-              onJoinMeeting={() => setInMeeting(true)}
+              onJoinMeeting={handleJoinMeeting}
             />
           ) : (
             <div className="card text-center py-8">
@@ -410,6 +433,13 @@ export default function InterviewTeamRoom() {
           )}
         </>
       )}
+
+      {/* Tracker Required Prompt Modal */}
+      <TrackerRequiredModal
+        isOpen={showTrackerModal}
+        onClose={() => setShowTrackerModal(false)}
+        onSuccess={() => setInMeeting(true)}
+      />
     </div>
   );
 }
@@ -419,6 +449,26 @@ function EmbeddedInterviewMeeting({ interview, user, onLeave }) {
   const [copied, setCopied] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const containerRef = useRef(null);
+
+  // Listen for tracker desktop app termination
+  useEffect(() => {
+    const socketUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+    const socket = io(socketUrl, {
+      auth: { token: localStorage.getItem('token') },
+      transports: ['websocket', 'polling'],
+    });
+
+    socket.emit('tracker:join', { interviewId: interview._id });
+
+    socket.on('tracker:interview_ended', () => {
+      toast('Interview session ended from Interview Tracker app 🛑', { icon: '🛑' });
+      onLeave?.();
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [interview._id, onLeave]);
 
   const roomName = `ai-interview-${interview._id}`;
   const displayName = user?.name || 'Candidate';

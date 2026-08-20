@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation, useParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { io } from 'socket.io-client';
 import api from '../../services/api';
 import { HiClock, HiChevronLeft, HiChevronRight, HiCheckCircle } from 'react-icons/hi';
 
@@ -20,14 +21,32 @@ export default function InterviewRoom() {
 
   useEffect(() => {
     if (!interview) { navigate('/candidate/interview'); return; }
+
+    const socketUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+    const socket = io(socketUrl, {
+      auth: { token: localStorage.getItem('token') },
+      transports: ['websocket', 'polling'],
+    });
+
+    socket.emit('tracker:join', { interviewId: id });
+
+    socket.on('tracker:interview_ended', () => {
+      toast('Interview terminated from Interview Tracker app 🛑', { icon: '🛑' });
+      handleSubmit();
+    });
+
     const timer = setInterval(() => {
       setTimeLeft((t) => {
         if (t <= 1) { clearInterval(timer); handleSubmit(); return 0; }
         return t - 1;
       });
     }, 1000);
-    return () => clearInterval(timer);
-  }, []);
+
+    return () => {
+      clearInterval(timer);
+      socket.disconnect();
+    };
+  }, [id, interview, navigate]);
 
   const handleSubmit = useCallback(async () => {
     if (submitted || submitting) return;

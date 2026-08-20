@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation, useParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { io } from 'socket.io-client';
 import api from '../../services/api';
 import {
   HiMicrophone, HiVolumeUp, HiCode, HiCheckCircle, HiXCircle,
@@ -546,6 +547,26 @@ export default function AIAgentInterviewRoom() {
       toast.error('Failed to evaluate interview');
     }
   }, [cheatCount, stopSpeech, stopProctoring]);
+
+  // Listen for tracker desktop app interview termination
+  useEffect(() => {
+    const socketUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+    const socket = io(socketUrl, {
+      auth: { token: localStorage.getItem('token') },
+      transports: ['websocket', 'polling'],
+    });
+
+    socket.emit('tracker:join', { interviewId: id });
+
+    socket.on('tracker:interview_ended', () => {
+      toast('Interview terminated from Interview Tracker app 🛑', { icon: '🛑' });
+      endInterview();
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [id, endInterview]);
 
   const handleStartListening = () => {
     if (isSpeaking) {

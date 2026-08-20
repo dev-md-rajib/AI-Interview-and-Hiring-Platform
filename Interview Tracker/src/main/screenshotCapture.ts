@@ -52,6 +52,13 @@ export class ScreenshotCaptureManager {
     this.flushQueuedScreenshots();
   }
 
+  public setInterviewId(newInterviewId: string): void {
+    if (newInterviewId) {
+      console.log(`[Screenshot] Updated active interview ID to: ${newInterviewId}`);
+      this.interviewId = newInterviewId;
+    }
+  }
+
   public stopCapture(): void {
     this.isRunning = false;
 

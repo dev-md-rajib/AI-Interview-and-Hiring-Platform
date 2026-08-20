@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import api from '../../services/api';
-import { HiVideoCamera, HiChip, HiAcademicCap } from 'react-icons/hi';
+import { HiVideoCamera, HiChip, HiAcademicCap, HiPhotograph } from 'react-icons/hi';
+import InterviewScreenshotsModal from '../../components/InterviewScreenshotsModal';
 
 const MODE_ICONS = {
   'Human Team': { icon: HiVideoCamera, color: 'text-cyan-400', bg: 'bg-cyan-900/20 border-cyan-500/30', label: 'Zoom Live' },
@@ -12,6 +13,7 @@ export default function MyInterviews() {
   const [interviews, setInterviews] = useState([]);
   const [zoomInterviews, setZoomInterviews] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedInterviewForScreenshots, setSelectedInterviewForScreenshots] = useState(null);
 
   useEffect(() => {
     Promise.all([
@@ -61,7 +63,7 @@ export default function MyInterviews() {
           <table className="w-full text-sm">
             <thead className="bg-dark-800 text-gray-400 uppercase text-xs">
               <tr>
-                {['Mode', 'Stack', 'Level', 'Score', 'Result', 'Date'].map((h) => (
+                {['Mode', 'Stack', 'Level', 'Score', 'Result', 'Date', 'Proctoring'].map((h) => (
                   <th key={h} className="text-left px-4 py-3">{h}</th>
                 ))}
               </tr>
@@ -94,12 +96,29 @@ export default function MyInterviews() {
                     <td className="px-4 py-4 text-gray-400">
                       {iv.completedAt ? new Date(iv.completedAt).toLocaleDateString() : '—'}
                     </td>
+                    <td className="px-4 py-4">
+                      <button
+                        onClick={() => setSelectedInterviewForScreenshots(iv)}
+                        className="px-2.5 py-1 rounded-lg bg-dark-800 hover:bg-primary-900/40 hover:text-primary-300 border border-dark-border text-xs text-gray-300 flex items-center gap-1.5 transition-all"
+                        title="View proctoring captures"
+                      >
+                        <HiPhotograph className="w-3.5 h-3.5 text-primary-400" />
+                        <span>Captures</span>
+                      </button>
+                    </td>
                   </tr>
                 );
               })}
             </tbody>
           </table>
         </div>
+      )}
+
+      {selectedInterviewForScreenshots && (
+        <InterviewScreenshotsModal
+          interview={selectedInterviewForScreenshots}
+          onClose={() => setSelectedInterviewForScreenshots(null)}
+        />
       )}
     </div>
   );

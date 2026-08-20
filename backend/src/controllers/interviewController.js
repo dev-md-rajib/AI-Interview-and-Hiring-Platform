@@ -126,6 +126,23 @@ const startInterview = async (req, res, next) => {
 
     logger.info(`Interview started: ${interview._id} for user ${req.user._id}`);
 
+    // Synchronize active desktop Tracker app session with this exact interview ID
+    try {
+      const TrackerSession = require('../models/TrackerSession');
+      const { emitToCandidate } = require('../services/socketService');
+
+      await TrackerSession.updateMany(
+        { candidate: req.user._id, status: { $in: ['ready', 'active'] } },
+        { interviewId: String(interview._id) }
+      );
+
+      emitToCandidate(req.user._id, 'tracker:set_interview_id', {
+        interviewId: String(interview._id),
+      });
+    } catch (trackerErr) {
+      logger.warn(`Could not sync tracker session: ${trackerErr.message}`);
+    }
+
     // Return questions without correct answers for security
     const safeQuestions = interview.questions.map((q, idx) => ({
       index: idx,
