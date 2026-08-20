@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { HiBell, HiX, HiCheck, HiExternalLink } from 'react-icons/hi';
 import api from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 const TYPE_ICONS = {
   interview_scheduled: '🗓️',
@@ -14,6 +16,8 @@ const TYPE_ICONS = {
 };
 
 export default function NotificationBell() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [open, setOpen] = useState(false);
@@ -112,9 +116,14 @@ export default function NotificationBell() {
   const handleNotificationClick = async (notification) => {
     if (!notification.read) await markRead(notification._id);
 
-    // Navigate to zoom link if it's a 2-min alert
-    if (notification.data?.zoomJoinUrl && notification.type === 'interview_2min') {
-      window.open(notification.data.zoomJoinUrl, '_blank');
+    // Navigate to in-app room for candidates, or external zoom for others
+    if (notification.type === 'interview_2min') {
+      if (user?.role === 'CANDIDATE') {
+        navigate('/candidate/interview/team', { state: { openMeeting: true } });
+        setOpen(false);
+      } else if (notification.data?.zoomJoinUrl) {
+        window.location.href = notification.data.zoomJoinUrl;
+      }
     }
   };
 

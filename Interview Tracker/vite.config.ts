@@ -11,6 +11,9 @@ export default defineConfig({
       {
         // Main-process entrypoint of the Electron App
         entry: path.resolve(__dirname, 'src/main/index.ts'),
+        onstart(options) {
+          options.startup();
+        },
         vite: {
           build: {
             outDir: path.resolve(__dirname, 'dist-electron/main'),

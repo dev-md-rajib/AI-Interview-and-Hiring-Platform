@@ -1,16 +1,14 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   HiUserGroup, HiArrowLeft, HiCalendar, HiClock, HiExternalLink,
-  HiX, HiCheck, HiChip, HiRefresh, HiLockClosed, HiStar,
+  HiX, HiCheck, HiChip, HiRefresh, HiLockClosed, HiStar, HiCode, HiBriefcase,
+  HiVideoCamera, HiClipboardCopy, HiArrowsExpand,
 } from 'react-icons/hi';
 import api from '../../services/api';
-
-const STACKS = [
-  'JavaScript', 'TypeScript', 'React', 'Vue.js', 'Angular', 'Node.js',
-  'Python', 'Java', 'PHP', 'SQL', 'MongoDB', 'Docker', 'AWS', 'Go', 'C#',
-];
+import { useAuth } from '../../context/AuthContext';
+import { SECTORS, TECH_STACKS, getSectorById, isSector } from '../../constants/sectors';
 
 const LEVEL_LABELS = { 1: 'Junior', 2: 'Mid-level', 3: 'Senior' };
 
@@ -46,15 +44,22 @@ function CountdownTimer({ scheduledAt }) {
 }
 
 export default function InterviewTeamRoom() {
-  const [view, setView] = useState('status'); // 'status' | 'request'
+  const { user } = useAuth();
+  const location = useLocation();
+  const initialStack = location.state?.stack || '';
+  const initialLevel = location.state?.level || 1;
+  const initialInterviewType = location.state?.interviewType || (initialStack && isSector(initialStack) ? 'business' : 'tech');
+
+  const [view, setView] = useState(initialStack ? 'request' : 'status'); // 'status' | 'request'
+  const [inMeeting, setInMeeting] = useState(Boolean(location.state?.openMeeting));
   const [interviews, setInterviews] = useState([]);
   const [eligibility, setEligibility] = useState(null);
   const [loading, setLoading] = useState(true);
 
   // Request form state
-  const [stack, setStack] = useState('');
-  const [level, setLevel] = useState(1);
-  const [preferredDateTime, setPreferredDateTime] = useState('');
+  const [interviewType, setInterviewType] = useState(initialInterviewType);
+  const [stack, setStack] = useState(initialStack);
+  const [level, setLevel] = useState(initialLevel);
   const [submitting, setSubmitting] = useState(false);
 
   const fetchData = useCallback(async () => {
@@ -77,25 +82,26 @@ export default function InterviewTeamRoom() {
   const activeInterview = interviews.find((i) => ['pending', 'scheduled', 'active'].includes(i.status));
   const pastInterviews = interviews.filter((i) => !['pending', 'scheduled', 'active'].includes(i.status));
 
-  const handleRequest = async () => {
-    if (!stack) return toast.error('Please select a tech stack');
-    if (!preferredDateTime) return toast.error('Please select a preferred date/time');
+  const handleTypeChange = (type) => {
+    setInterviewType(type);
+    setStack('');
+  };
 
-    const selected = new Date(preferredDateTime);
-    if (selected < new Date()) return toast.error('Please select a future date/time');
+  const handleRequest = async () => {
+    if (!stack) return toast.error(`Please select a ${interviewType === 'business' ? 'business sector' : 'tech stack'}`);
 
     setSubmitting(true);
     try {
       const { data } = await api.post('/team-interviews/request', {
         stack,
         level,
-        preferredDateTime: selected.toISOString(),
+        interviewType,
       });
 
       if (data.noInterviewer) {
-        toast('No interviewer available at that time. Please try a different slot.', { icon: '⚠️' });
+        toast(data.message || 'No interviewer with matching expertise is available right now. Please try again later or select another stack.', { icon: '⚠️' });
       } else {
-        toast.success('Interview scheduled! Check your notification for details. 🎉');
+        toast.success(data.message || 'Interview scheduled! Check details below. 🎉');
       }
 
       await fetchData();
@@ -118,13 +124,24 @@ export default function InterviewTeamRoom() {
     }
   };
 
-  // Min datetime for picker — at least 30 min from now
-  const minDateTime = new Date(Date.now() + 30 * 60 * 1000).toISOString().slice(0, 16);
+  const selectedSector = interviewType === 'business' && isSector(stack) ? getSectorById(stack) : null;
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-48">
         <div className="w-8 h-8 border-4 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (inMeeting && activeInterview) {
+    return (
+      <div className="max-w-5xl mx-auto animate-fade-in space-y-4">
+        <EmbeddedInterviewMeeting
+          interview={activeInterview}
+          user={user}
+          onLeave={() => setInMeeting(false)}
+        />
       </div>
     );
   }
@@ -145,7 +162,7 @@ export default function InterviewTeamRoom() {
           <div>
             <h1 className="text-2xl font-bold text-white">Interview Team</h1>
             <p className="text-gray-400 text-sm mt-1">
-              A real human interviewer will conduct a live Zoom session with you.
+              A real human interviewer matched to your stack or domain will conduct a live Zoom session.
             </p>
           </div>
         </div>
@@ -188,24 +205,108 @@ export default function InterviewTeamRoom() {
         <div className="card space-y-5">
           <h2 className="section-title">Schedule a Team Interview</h2>
 
-          {/* Tech stack */}
+          {/* Select Interview Type */}
           <div>
-            <label className="label">Tech Stack</label>
-            <div className="flex flex-wrap gap-2">
-              {STACKS.map((s) => (
-                <button
-                  key={s}
-                  onClick={() => setStack(s)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
-                    stack === s
-                      ? 'border-cyan-500 bg-cyan-900/30 text-cyan-300'
-                      : 'border-dark-border text-gray-400 hover:border-gray-500 hover:text-white'
-                  }`}
-                >
-                  {s}
-                </button>
-              ))}
+            <label className="label">Select Interview Type</label>
+            <p className="text-xs text-gray-400 mb-3">Choose whether you want a technical engineering interview or a business domain interview to find the right interviewer.</p>
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <button
+                type="button"
+                onClick={() => handleTypeChange('tech')}
+                className={`p-3.5 rounded-xl border-2 text-left transition-all flex items-center gap-3 ${
+                  interviewType === 'tech'
+                    ? 'border-cyan-500 bg-cyan-900/30 text-white'
+                    : 'border-dark-border hover:border-gray-600 bg-dark-800/50 text-gray-400'
+                }`}
+              >
+                <HiCode className={`w-6 h-6 flex-shrink-0 ${interviewType === 'tech' ? 'text-cyan-400' : 'text-gray-500'}`} />
+                <div>
+                  <div className={`font-bold text-sm ${interviewType === 'tech' ? 'text-white' : 'text-gray-300'}`}>Tech Stack</div>
+                  <div className="text-xs text-gray-400">Software, coding, systems</div>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleTypeChange('business')}
+                className={`p-3.5 rounded-xl border-2 text-left transition-all flex items-center gap-3 ${
+                  interviewType === 'business'
+                    ? 'border-amber-500 bg-amber-900/20 text-white'
+                    : 'border-dark-border hover:border-gray-600 bg-dark-800/50 text-gray-400'
+                }`}
+              >
+                <HiBriefcase className={`w-6 h-6 flex-shrink-0 ${interviewType === 'business' ? 'text-amber-400' : 'text-gray-500'}`} />
+                <div>
+                  <div className={`font-bold text-sm ${interviewType === 'business' ? 'text-white' : 'text-gray-300'}`}>Business Sector</div>
+                  <div className="text-xs text-gray-400">Marketing, Sales, HR, Finance</div>
+                </div>
+              </button>
             </div>
+
+            {/* Tech Stack Options */}
+            {interviewType === 'tech' && (
+              <div>
+                <label className="label text-xs text-gray-400 mb-2">Choose Tech Stack</label>
+                <div className="flex flex-wrap gap-2">
+                  {TECH_STACKS.map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => setStack(s)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                        stack === s
+                          ? 'border-cyan-500 bg-cyan-900/40 text-cyan-300 font-semibold'
+                          : 'border-dark-border text-gray-400 hover:border-gray-500 hover:text-white'
+                      }`}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+                {stack && (
+                  <p className="mt-2 text-xs text-cyan-400">
+                    Selected: <span className="font-semibold text-white">{stack}</span>
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Business Sector Options */}
+            {interviewType === 'business' && (
+              <div>
+                <label className="label text-xs text-gray-400 mb-2">Choose Business Sector</label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {SECTORS.map((sector) => {
+                    const isSelected = stack === sector.id;
+                    return (
+                      <button
+                        key={sector.id}
+                        type="button"
+                        onClick={() => setStack(sector.id)}
+                        className={`p-2.5 rounded-xl border-2 text-left transition-all flex items-center gap-2 ${
+                          isSelected
+                            ? `${sector.border} ${sector.bg}`
+                            : 'border-dark-border hover:border-gray-500 bg-dark-800/50'
+                        }`}
+                      >
+                        <span className="text-xl">{sector.icon}</span>
+                        <div className="min-w-0 flex-1">
+                          <div className={`font-semibold text-xs truncate ${isSelected ? 'text-white' : 'text-gray-300'}`}>
+                            {sector.label}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+                {stack && selectedSector && (
+                  <p className="mt-2 text-xs flex items-center gap-1.5">
+                    <span>{selectedSector.icon}</span>
+                    <span className={`font-semibold ${selectedSector.color}`}>{selectedSector.id}</span>
+                    <span className="text-gray-500">selected</span>
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Level */}
@@ -218,6 +319,7 @@ export default function InterviewTeamRoom() {
               {[1, 2, 3].map((lvl) => (
                 <button
                   key={lvl}
+                  type="button"
                   onClick={() => setLevel(lvl)}
                   className={`py-3 rounded-xl border-2 text-center transition-all ${
                     level === lvl ? 'border-cyan-500 bg-cyan-900/20 text-white' : 'border-dark-border text-gray-400 hover:border-gray-600'
@@ -230,39 +332,34 @@ export default function InterviewTeamRoom() {
             </div>
           </div>
 
-          {/* Date/time picker */}
-          <div>
-            <label className="label">Preferred Date & Time</label>
-            <p className="text-xs text-gray-500 mb-2">We'll match you with an interviewer available at this time (UTC). Select at least 30 minutes in the future.</p>
-            <input
-              type="datetime-local"
-              min={minDateTime}
-              value={preferredDateTime}
-              onChange={(e) => setPreferredDateTime(e.target.value)}
-              className="input"
-            />
-          </div>
-
-          {/* Info box */}
-          <div className="p-3 bg-dark-800 rounded-lg border border-dark-border text-xs text-gray-400 space-y-1">
-            <p>📹 <strong className="text-gray-300">Zoom meeting</strong> will be auto-created and sent to both parties.</p>
-            <p>⏰ <strong className="text-gray-300">2-minute reminder</strong> notification will be sent before the meeting starts.</p>
-            <p>🔒 <strong className="text-gray-300">Levels are sequential</strong> — must pass Level 1 before Level 2, etc.</p>
-            <p>🏆 <strong className="text-gray-300">Passed Zoom interviews</strong> show as top priority on your public profile.</p>
+          {/* Automated Slot Matching Info Card */}
+          <div className="p-4 bg-gradient-to-r from-cyan-950/40 via-dark-800 to-dark-800 rounded-xl border border-cyan-500/30 text-xs text-gray-300 space-y-2">
+            <div className="flex items-center gap-2 text-cyan-400 font-semibold text-sm">
+              <HiClock className="w-5 h-5" />
+              <span>Automated First-Available Slot Matching</span>
+            </div>
+            <p className="text-gray-400 leading-relaxed">
+              You don't need to guess or enter a time slot. We will automatically locate the best available interviewer qualified in <strong className="text-white">{stack || (interviewType === 'business' ? 'your sector' : 'your tech stack')}</strong> and assign you their <strong>first available opening</strong> (enforcing a guaranteed 30-minute rest buffer between interviews).
+            </p>
+            <div className="flex flex-wrap gap-4 pt-1 text-[11px] text-gray-400">
+              <span className="flex items-center gap-1 text-cyan-300">✓ Instant Zoom Link</span>
+              <span className="flex items-center gap-1 text-cyan-300">✓ 30-min Rest Gap</span>
+              <span className="flex items-center gap-1 text-cyan-300">✓ 2-Minute Reminder</span>
+            </div>
           </div>
 
           <button
             onClick={handleRequest}
-            disabled={submitting || !stack || !preferredDateTime || (eligibility?.levelLocked)}
+            disabled={submitting || !stack || (eligibility?.levelLocked)}
             className="w-full py-3 bg-gradient-to-r from-cyan-600 to-primary-600 hover:from-cyan-700 hover:to-primary-700 text-white rounded-xl font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {submitting ? (
               <>
                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Scheduling...
+                Searching Interviewer & Scheduling...
               </>
             ) : (
-              <>🎥 Schedule Zoom Interview</>
+              <>⚡ Find Interviewer & Auto-Schedule Zoom</>
             )}
           </button>
         </div>
@@ -273,7 +370,12 @@ export default function InterviewTeamRoom() {
         <>
           {/* Active interview */}
           {activeInterview ? (
-            <ActiveInterviewCard interview={activeInterview} onCancel={handleCancel} onRefresh={fetchData} />
+            <ActiveInterviewCard
+              interview={activeInterview}
+              onCancel={handleCancel}
+              onRefresh={fetchData}
+              onJoinMeeting={() => setInMeeting(true)}
+            />
           ) : (
             <div className="card text-center py-8">
               <HiCalendar className="w-10 h-10 text-gray-600 mx-auto mb-3" />
@@ -306,11 +408,129 @@ export default function InterviewTeamRoom() {
   );
 }
 
+// ── Embedded Native Fullscreen In-App Meeting Room for Candidate ──
+function EmbeddedInterviewMeeting({ interview, user, onLeave }) {
+  const [copied, setCopied] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const containerRef = useRef(null);
+
+  const roomName = `ai-interview-${interview._id}`;
+  const displayName = user?.name || 'Candidate';
+  const jitsiUrl = `https://meet.jit.si/${encodeURIComponent(roomName)}#userInfo.displayName="${encodeURIComponent(displayName)}"&config.prejoinPageEnabled=false&config.disableDeepLinking=true&config.startWithAudioMuted=false&config.startWithVideoMuted=false&interfaceConfig.SHOW_JITSI_WATERMARK=false`;
+
+  const copyPassword = () => {
+    if (interview.zoomPassword) {
+      navigator.clipboard.writeText(interview.zoomPassword);
+      setCopied(true);
+      toast.success('Meeting password copied to clipboard!');
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen?.();
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen?.();
+      setIsFullscreen(false);
+    }
+  };
+
+  return (
+    <div
+      ref={containerRef}
+      className="fixed inset-0 z-[100] w-screen h-screen bg-black flex flex-col overflow-hidden animate-fade-in"
+    >
+      {/* Top Meeting Control Bar */}
+      <div className="h-14 px-4 bg-dark-900/95 backdrop-blur-md border-b border-dark-border/80 flex items-center justify-between z-10 flex-shrink-0">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onLeave}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-red-900/30 hover:bg-red-900/60 text-red-300 hover:text-white border border-red-500/30 text-xs font-semibold transition-all shadow-sm active:scale-95"
+            title="Leave Meeting and return to dashboard"
+          >
+            <HiArrowLeft className="w-4 h-4" />
+            <span>Leave Call</span>
+          </button>
+
+          <div className="h-4 w-[1px] bg-dark-border hidden sm:block" />
+
+          <div className="flex items-center gap-2">
+            <span className="flex h-2.5 w-2.5 relative">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+            </span>
+            <span className="text-white font-bold text-xs sm:text-sm tracking-wide truncate">
+              {interview.stack} · Level {interview.level} ({LEVEL_LABELS[interview.level] || `Level ${interview.level}`})
+            </span>
+          </div>
+
+          {interview.interviewer && (
+            <span className="hidden md:inline-flex items-center gap-1.5 text-xs text-gray-400 bg-dark-800 px-2.5 py-1 rounded-full border border-dark-border">
+              <span>Interviewer:</span>
+              <strong className="text-cyan-300 font-medium">{interview.interviewer.name}</strong>
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          {interview.zoomPassword && (
+            <button
+              onClick={copyPassword}
+              className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg bg-dark-800 hover:bg-dark-700 border border-dark-border text-gray-300 hover:text-white transition-all"
+              title="Copy Meeting Password"
+            >
+              <HiClipboardCopy className="w-4 h-4 text-cyan-400" />
+              <span className="hidden sm:inline">Password:</span>
+              <strong className="font-mono text-white">{interview.zoomPassword}</strong>
+              {copied && <span className="text-emerald-400 ml-1">✓</span>}
+            </button>
+          )}
+
+          <button
+            onClick={toggleFullscreen}
+            className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg bg-dark-800 hover:bg-dark-700 border border-dark-border text-gray-300 hover:text-white transition-all"
+            title="Toggle Browser Fullscreen"
+          >
+            <HiArrowsExpand className="w-4 h-4 text-gray-400" />
+            <span className="hidden sm:inline">{isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}</span>
+          </button>
+
+          {interview.zoomJoinUrl && (
+            <a
+              href={interview.zoomJoinUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden lg:flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg bg-blue-600/20 hover:bg-blue-600/40 border border-blue-500/30 text-blue-300 hover:text-white transition-all"
+              title="Open External Zoom Link fallback"
+            >
+              <HiExternalLink className="w-3.5 h-3.5" />
+              <span>Zoom Fallback</span>
+            </a>
+          )}
+        </div>
+      </div>
+
+      {/* 100% Full-Screen Embedded Video Meeting Viewport */}
+      <div className="flex-1 w-full h-[calc(100vh-56px)] bg-black overflow-hidden relative">
+        <iframe
+          src={jitsiUrl}
+          title="In-App Video Interview"
+          className="w-full h-full border-none bg-black"
+          allow="camera; microphone; fullscreen; display-capture; autoplay; clipboard-write; ambient-light-sensor"
+        />
+      </div>
+    </div>
+  );
+}
+
 // ── Active Interview Card ──
-function ActiveInterviewCard({ interview, onCancel, onRefresh }) {
+function ActiveInterviewCard({ interview, onCancel, onRefresh, onJoinMeeting }) {
   const statusCfg = STATUS_CONFIG[interview.status] || STATUS_CONFIG.pending;
   const scheduledDate = interview.scheduledAt ? new Date(interview.scheduledAt) : null;
   const canCancel = ['pending', 'scheduled'].includes(interview.status);
+  const sectorInfo = isSector(interview.stack || interview.sector) ? getSectorById(interview.stack || interview.sector) : null;
 
   return (
     <div className={`card border-2 ${statusCfg.bg} space-y-4`}>
@@ -328,8 +548,19 @@ function ActiveInterviewCard({ interview, onCancel, onRefresh }) {
 
       <div className="grid grid-cols-2 gap-4 text-sm">
         <div>
-          <p className="text-gray-400 text-xs mb-1">Tech Stack</p>
-          <p className="text-white font-semibold">{interview.stack}</p>
+          <p className="text-gray-400 text-xs mb-1">
+            {sectorInfo ? 'Business Sector' : 'Tech Stack'}
+          </p>
+          <p className="text-white font-semibold flex items-center gap-1.5">
+            {sectorInfo ? (
+              <>
+                <span>{sectorInfo.icon}</span>
+                <span>{interview.stack}</span>
+              </>
+            ) : (
+              interview.stack
+            )}
+          </p>
         </div>
         <div>
           <p className="text-gray-400 text-xs mb-1">Level</p>
@@ -373,17 +604,16 @@ function ActiveInterviewCard({ interview, onCancel, onRefresh }) {
         </div>
       )}
 
-      {/* Zoom join link */}
+      {/* Embedded In-App Video Meeting Join */}
       {interview.zoomJoinUrl && (
-        <a
-          href={interview.zoomJoinUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center justify-center gap-2 w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-colors"
+        <button
+          type="button"
+          onClick={onJoinMeeting}
+          className="flex items-center justify-center gap-2 w-full py-3.5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-blue-600/20 active:scale-[0.99]"
         >
-          <HiExternalLink className="w-5 h-5" />
+          <HiVideoCamera className="w-5 h-5" />
           Join Zoom Meeting
-        </a>
+        </button>
       )}
 
       {interview.zoomPassword && (
@@ -411,6 +641,7 @@ function PastInterviewCard({ interview }) {
   const statusCfg = STATUS_CONFIG[interview.status] || STATUS_CONFIG.pending;
   const scheduledDate = interview.scheduledAt ? new Date(interview.scheduledAt) : null;
   const hasResult = interview.resultReleasedAt != null;
+  const sectorInfo = isSector(interview.stack || interview.sector) ? getSectorById(interview.stack || interview.sector) : null;
 
   return (
     <div className="card hover:border-dark-border transition-all">
@@ -419,8 +650,14 @@ function PastInterviewCard({ interview }) {
         <div className="flex-1">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div>
-              <p className="text-white text-sm font-semibold">
-                {interview.stack} · {LEVEL_LABELS[interview.level] || `Level ${interview.level}`}
+              <p className="text-white text-sm font-semibold flex items-center gap-1.5">
+                {sectorInfo && <span>{sectorInfo.icon}</span>}
+                <span>{interview.stack} · {LEVEL_LABELS[interview.level] || `Level ${interview.level}`}</span>
+                {sectorInfo && (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-900/30 text-amber-300 border border-amber-500/30">
+                    Business
+                  </span>
+                )}
               </p>
               {scheduledDate && (
                 <p className="text-gray-500 text-xs mt-0.5">{scheduledDate.toLocaleDateString()}</p>

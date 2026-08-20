@@ -114,11 +114,11 @@ export default function InterviewStart() {
   }, [level, mode]);
 
   const handleStart = async () => {
+    if (!stack) return toast.error(`Please select a ${interviewType === 'business' ? 'sector' : 'tech stack'}`);
     if (mode === 'interview_team') {
-      navigate('/candidate/interview/team');
+      navigate('/candidate/interview/team', { state: { stack, level, interviewType } });
       return;
     }
-    if (!stack) return toast.error(`Please select a ${interviewType === 'business' ? 'sector' : 'tech stack'}`);
     if (mode === 'standard' && !eligibility?.eligible) {
       return toast.error(eligibility?.reason || 'Not eligible');
     }
@@ -193,104 +193,107 @@ export default function InterviewStart() {
       </div>
 
       {/* Interview Type Toggle (Tech vs Business) */}
-      {mode !== 'interview_team' && (
-        <div className="card mb-6">
-          <h2 className="section-title mb-4">Select Interview Type</h2>
-          <div className="grid grid-cols-2 gap-3 mb-6">
-            <button
-              onClick={() => setInterviewType('tech')}
-              className={`p-4 rounded-xl border-2 text-left transition-all flex items-center gap-3 ${
-                interviewType === 'tech'
-                  ? 'border-primary-500 bg-primary-900/30'
-                  : 'border-dark-border hover:border-gray-600 bg-dark-800/50'
-              }`}
-            >
-              <HiCode className={`w-6 h-6 flex-shrink-0 ${interviewType === 'tech' ? 'text-primary-400' : 'text-gray-400'}`} />
-              <div>
-                <div className={`font-bold text-sm ${interviewType === 'tech' ? 'text-white' : 'text-gray-300'}`}>Tech Stack</div>
-                <div className="text-xs text-gray-400">Software, programming, engineering</div>
-              </div>
-            </button>
-            <button
-              onClick={() => setInterviewType('business')}
-              className={`p-4 rounded-xl border-2 text-left transition-all flex items-center gap-3 ${
-                interviewType === 'business'
-                  ? 'border-amber-500 bg-amber-900/20'
-                  : 'border-dark-border hover:border-gray-600 bg-dark-800/50'
-              }`}
-            >
-              <HiBriefcase className={`w-6 h-6 flex-shrink-0 ${interviewType === 'business' ? 'text-amber-400' : 'text-gray-400'}`} />
-              <div>
-                <div className={`font-bold text-sm ${interviewType === 'business' ? 'text-white' : 'text-gray-300'}`}>Business Sector</div>
-                <div className="text-xs text-gray-400">Marketing, Sales, HR, Finance, and more</div>
-              </div>
-            </button>
-          </div>
+      <div className="card mb-6">
+        <h2 className="section-title mb-4">Select Interview Type</h2>
+        <div className="grid grid-cols-2 gap-3 mb-6">
+          <button
+            onClick={() => setInterviewType('tech')}
+            className={`p-4 rounded-xl border-2 text-left transition-all flex items-center gap-3 ${
+              interviewType === 'tech'
+                ? 'border-primary-500 bg-primary-900/30'
+                : 'border-dark-border hover:border-gray-600 bg-dark-800/50'
+            }`}
+          >
+            <HiCode className={`w-6 h-6 flex-shrink-0 ${interviewType === 'tech' ? 'text-primary-400' : 'text-gray-400'}`} />
+            <div>
+              <div className={`font-bold text-sm ${interviewType === 'tech' ? 'text-white' : 'text-gray-300'}`}>Tech Stack</div>
+              <div className="text-xs text-gray-400">Software, programming, engineering</div>
+            </div>
+          </button>
+          <button
+            onClick={() => setInterviewType('business')}
+            className={`p-4 rounded-xl border-2 text-left transition-all flex items-center gap-3 ${
+              interviewType === 'business'
+                ? 'border-amber-500 bg-amber-900/20'
+                : 'border-dark-border hover:border-gray-600 bg-dark-800/50'
+            }`}
+          >
+            <HiBriefcase className={`w-6 h-6 flex-shrink-0 ${interviewType === 'business' ? 'text-amber-400' : 'text-gray-400'}`} />
+            <div>
+              <div className={`font-bold text-sm ${interviewType === 'business' ? 'text-white' : 'text-gray-300'}`}>Business Sector</div>
+              <div className="text-xs text-gray-400">Marketing, Sales, HR, Finance, and more</div>
+            </div>
+          </button>
+        </div>
 
-          {/* Tech Stack Picker */}
-          {interviewType === 'tech' && (
-            <>
-              <p className="text-sm text-gray-400 mb-3">Choose the technology you want to be interviewed on</p>
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
-                {TECH_STACKS.map((s) => (
+        {/* Tech Stack Picker */}
+        {interviewType === 'tech' && (
+          <>
+            <p className="text-sm text-gray-400 mb-3">Choose the technology you want to be interviewed on</p>
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+              {TECH_STACKS.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setStack(s)}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium border transition-all ${
+                    stack === s
+                      ? 'border-primary-500 bg-primary-900/40 text-primary-300'
+                      : 'border-dark-border text-gray-400 hover:border-primary-700 hover:text-white'
+                  }`}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+            {stack && <p className="mt-3 text-sm text-accent-400">Selected: <span className="font-semibold">{stack}</span></p>}
+          </>
+        )}
+
+        {/* Business Sector Picker */}
+        {interviewType === 'business' && (
+          <>
+            <p className="text-sm text-gray-400 mb-3">Choose the business sector you want to be interviewed on</p>
+            {mode === 'ai_agent' && (
+              <div className="mb-4 p-3 rounded-lg bg-amber-900/10 border border-amber-500/30 text-xs text-amber-300">
+                🎙️ Business sector AI interviews are <strong>entirely voice/scenario-based</strong> — no coding challenges. The AI adapts its persona based on the sector (e.g., acts as a customer for Sales).
+              </div>
+            )}
+            {mode === 'interview_team' && (
+              <div className="mb-4 p-3 rounded-lg bg-cyan-900/10 border border-cyan-500/30 text-xs text-cyan-300">
+                👥 In Business Sector team interviews, an expert human interviewer matching this business domain will conduct your live Zoom session.
+              </div>
+            )}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {SECTORS.map((sector) => {
+                const isSelected = stack === sector.id;
+                return (
                   <button
-                    key={s}
-                    onClick={() => setStack(s)}
-                    className={`px-3 py-2 rounded-lg text-sm font-medium border transition-all ${
-                      stack === s
-                        ? 'border-primary-500 bg-primary-900/40 text-primary-300'
-                        : 'border-dark-border text-gray-400 hover:border-primary-700 hover:text-white'
+                    key={sector.id}
+                    onClick={() => setStack(sector.id)}
+                    className={`p-3 rounded-xl border-2 text-left transition-all group ${
+                      isSelected
+                        ? `${sector.border} ${sector.bg}`
+                        : 'border-dark-border hover:border-gray-500 bg-dark-800/50'
                     }`}
                   >
-                    {s}
+                    <div className="text-2xl mb-2">{sector.icon}</div>
+                    <div className={`font-semibold text-xs leading-tight ${isSelected ? 'text-white' : 'text-gray-300'}`}>
+                      {sector.label}
+                    </div>
                   </button>
-                ))}
-              </div>
-              {stack && <p className="mt-3 text-sm text-accent-400">Selected: <span className="font-semibold">{stack}</span></p>}
-            </>
-          )}
-
-          {/* Business Sector Picker */}
-          {interviewType === 'business' && (
-            <>
-              <p className="text-sm text-gray-400 mb-3">Choose the business sector you want to be interviewed on</p>
-              {mode === 'ai_agent' && (
-                <div className="mb-4 p-3 rounded-lg bg-amber-900/10 border border-amber-500/30 text-xs text-amber-300">
-                  🎙️ Business sector AI interviews are <strong>entirely voice/scenario-based</strong> — no coding challenges. The AI adapts its persona based on the sector (e.g., acts as a customer for Sales).
-                </div>
-              )}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {SECTORS.map((sector) => {
-                  const isSelected = stack === sector.id;
-                  return (
-                    <button
-                      key={sector.id}
-                      onClick={() => setStack(sector.id)}
-                      className={`p-3 rounded-xl border-2 text-left transition-all group ${
-                        isSelected
-                          ? `${sector.border} ${sector.bg}`
-                          : 'border-dark-border hover:border-gray-500 bg-dark-800/50'
-                      }`}
-                    >
-                      <div className="text-2xl mb-2">{sector.icon}</div>
-                      <div className={`font-semibold text-xs leading-tight ${isSelected ? 'text-white' : 'text-gray-300'}`}>
-                        {sector.label}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-              {stack && selectedSector && (
-                <p className="mt-3 text-sm flex items-center gap-2">
-                  <span>{selectedSector.icon}</span>
-                  <span className={`font-semibold ${selectedSector.color}`}>{selectedSector.id}</span>
-                  <span className="text-gray-500">selected</span>
-                </p>
-              )}
-            </>
-          )}
-        </div>
-      )}
+                );
+              })}
+            </div>
+            {stack && selectedSector && (
+              <p className="mt-3 text-sm flex items-center gap-2">
+                <span>{selectedSector.icon}</span>
+                <span className={`font-semibold ${selectedSector.color}`}>{selectedSector.id}</span>
+                <span className="text-gray-500">selected</span>
+              </p>
+            )}
+          </>
+        )}
+      </div>
 
       {/* Level selector */}
       <div className="card mb-6">

@@ -9,52 +9,117 @@ const PASS_THRESHOLD = 50; // score >= 50 = passed
 const COOLDOWN_DAYS = 0;
 
 // ─────────────────────────────────────────────
-// Helper: find a matching available interviewer
+// Helper: find the earliest available interviewer with a 30-min rest gap
 // ─────────────────────────────────────────────
-async function findAvailableInterviewer(stack, preferredDateTime, excludeIds = []) {
-  const dayOfWeek = new Date(preferredDateTime).getDay(); // 0-6
-  const hours = new Date(preferredDateTime).getUTCHours();
-  const minutes = new Date(preferredDateTime).getUTCMinutes();
-  const requestedTime = hours * 60 + minutes; // minutes since midnight
-  const stackIsSector = isSector(stack);
+async function findEarliestAvailableInterviewer(stack, excludeIds = [], interviewType = null) {
+  const stackIsSector = (interviewType === 'business') || isSector(stack);
+  const escapedStack = stack.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const stackRegex = new RegExp(`^${escapedStack}$`, 'i');
 
-  // Match on sectors array for business sectors, expertise array for tech stacks
   const expertiseQuery = stackIsSector
-    ? { 'interviewerProfile.sectors': stack }
-    : { 'interviewerProfile.expertise': stack };
+    ? {
+        $or: [
+          { 'interviewerProfile.sectors': stack },
+          { 'interviewerProfile.sectors': stackRegex },
+        ],
+      }
+    : {
+        $or: [
+          { 'interviewerProfile.expertise': stack },
+          { 'interviewerProfile.expertise': stackRegex },
+        ],
+      };
 
-  const candidates = await User.find({
+  const interviewers = await User.find({
     role: 'INTERVIEWER',
     'interviewerProfile.isActive': true,
     ...expertiseQuery,
     _id: { $nin: excludeIds },
-  });
+  }).sort({ 'interviewerProfile.totalInterviewsConducted': -1 });
 
-  for (const interviewer of candidates) {
-    const slots = interviewer.interviewerProfile?.availabilitySlots || [];
-    const match = slots.find((slot) => {
-      if (slot.dayOfWeek !== dayOfWeek) return false;
-      const [sh, sm] = slot.startTime.split(':').map(Number);
-      const [eh, em] = slot.endTime.split(':').map(Number);
-      const slotStart = sh * 60 + sm;
-      const slotEnd = eh * 60 + em;
-      return requestedTime >= slotStart && requestedTime < slotEnd;
-    });
+  if (!interviewers || interviewers.length === 0) {
+    return null;
+  }
 
-    if (match) {
-      // Make sure this interviewer doesn't have another interview scheduled at same time
-      const conflicting = await TeamInterview.findOne({
+  const now = new Date();
+  const minStartTime = new Date(now.getTime() + 15 * 60 * 1000); // minimum 15 min buffer from now
+  const INTERVIEW_DURATION_MS = 60 * 60 * 1000; // 60 minutes
+  const BUFFER_MS = 30 * 60 * 1000; // 30 minutes rest gap between interviews
+
+  let earliestMatch = null;
+
+  // Search over the upcoming 14 days
+  for (let dayOffset = 0; dayOffset < 14; dayOffset++) {
+    const targetDate = new Date(now.getTime() + dayOffset * 24 * 60 * 60 * 1000);
+    const dayOfWeek = targetDate.getUTCDay(); // 0 = Sunday
+    const year = targetDate.getUTCFullYear();
+    const month = targetDate.getUTCMonth();
+    const date = targetDate.getUTCDate();
+
+    for (const interviewer of interviewers) {
+      const slots = interviewer.interviewerProfile?.availabilitySlots || [];
+      const daySlots = slots.filter((s) => s.dayOfWeek === dayOfWeek);
+      if (daySlots.length === 0) continue;
+
+      // Query all existing interviews for this interviewer around this target date
+      const dayStart = new Date(Date.UTC(year, month, date, 0, 0, 0));
+      const dayEnd = new Date(Date.UTC(year, month, date + 1, 0, 0, 0));
+
+      const existingInterviews = await TeamInterview.find({
         interviewer: interviewer._id,
         status: { $in: ['pending', 'scheduled', 'active'] },
         scheduledAt: {
-          $gte: new Date(new Date(preferredDateTime).getTime() - 60 * 60 * 1000),
-          $lte: new Date(new Date(preferredDateTime).getTime() + 60 * 60 * 1000),
+          $gte: new Date(dayStart.getTime() - 4 * 60 * 60 * 1000),
+          $lte: new Date(dayEnd.getTime() + 4 * 60 * 60 * 1000),
         },
       });
-      if (!conflicting) return interviewer;
+
+      for (const slot of daySlots) {
+        if (!slot.startTime || !slot.endTime) continue;
+        const [sh, sm] = slot.startTime.split(':').map(Number);
+        const [eh, em] = slot.endTime.split(':').map(Number);
+
+        const slotStartTime = new Date(Date.UTC(year, month, date, sh, sm, 0));
+        const slotEndTime = new Date(Date.UTC(year, month, date, eh, em, 0));
+
+        // Iterate candidate start times in 30-minute intervals within the slot
+        for (
+          let candidateTime = new Date(slotStartTime.getTime());
+          candidateTime.getTime() + INTERVIEW_DURATION_MS <= slotEndTime.getTime();
+          candidateTime = new Date(candidateTime.getTime() + 30 * 60 * 1000)
+        ) {
+          if (candidateTime < minStartTime) continue;
+
+          const cStart = candidateTime.getTime();
+          const cEnd = cStart + INTERVIEW_DURATION_MS;
+
+          // Check if candidate time violates the 30-minute rest buffer around any existing interview
+          const hasConflict = existingInterviews.some((ex) => {
+            const exStart = new Date(ex.scheduledAt).getTime();
+            const exEnd = exStart + INTERVIEW_DURATION_MS;
+            // Buffer zone: [exStart - BUFFER_MS, exEnd + BUFFER_MS]
+            return cStart < (exEnd + BUFFER_MS) && cEnd > (exStart - BUFFER_MS);
+          });
+
+          if (!hasConflict) {
+            if (!earliestMatch || candidateTime < earliestMatch.scheduledAt) {
+              earliestMatch = {
+                interviewer,
+                scheduledAt: candidateTime,
+              };
+            }
+          }
+        }
+      }
+    }
+
+    // If an earliest match was found for this day or earlier, no future day can beat it
+    if (earliestMatch && earliestMatch.scheduledAt < new Date(Date.UTC(year, month, date + 1, 0, 0, 0))) {
+      break;
     }
   }
-  return null;
+
+  return earliestMatch;
 }
 
 // Helper: check level prerequisite for team interviews
@@ -123,17 +188,17 @@ const checkEligibility = async (req, res, next) => {
 };
 
 // ─────────────────────────────────────────────
-// @desc  Request a new team interview
+// @desc  Request a new team interview (Auto-matches first available interviewer time)
 // @route POST /api/team-interviews/request
 // @access Private (CANDIDATE)
 // ─────────────────────────────────────────────
 const requestInterview = async (req, res, next) => {
   try {
     const candidateId = req.user._id;
-    const { stack, level, preferredDateTime } = req.body;
+    const { stack, level, interviewType } = req.body;
 
-    if (!stack || !level || !preferredDateTime) {
-      return res.status(400).json({ success: false, message: 'stack/sector, level, and preferredDateTime are required' });
+    if (!stack || !level) {
+      return res.status(400).json({ success: false, message: 'stack/sector and level are required' });
     }
 
     // Eligibility checks
@@ -159,42 +224,28 @@ const requestInterview = async (req, res, next) => {
       return res.status(403).json({ success: false, message: levelCheck.reason });
     }
 
-    const preferredDate = new Date(preferredDateTime);
-    if (preferredDate < new Date()) {
-      return res.status(400).json({ success: false, message: 'Please select a future date/time.' });
-    }
+    const interviewMode = (interviewType === 'business' || isSector(stack)) ? 'business' : 'technical';
+    const sector = interviewMode === 'business' ? stack : null;
 
-    const interviewMode = isSector(stack) ? 'business' : 'technical';
-    const sector = isSector(stack) ? stack : null;
+    // Search and auto-match the earliest available slot with 30-min gap
+    const match = await findEarliestAvailableInterviewer(stack, [], interviewType);
 
-    // Find matching interviewer
-    const interviewer = await findAvailableInterviewer(stack, preferredDate);
-
-    if (!interviewer) {
-      // Create with no_interviewer status — inform candidate
-      const interview = await TeamInterview.create({
-        candidate: candidateId,
-        stack,
-        sector,
-        interviewMode,
-        level: parseInt(level),
-        preferredDateTime: preferredDate,
-        status: 'no_interviewer',
-      });
+    if (!match) {
       return res.status(200).json({
         success: true,
-        message: 'No interviewer is currently available at your preferred time. Please try a different time slot.',
-        interview,
+        message: 'No interviewer is currently available for this stack/domain in the upcoming schedule. Please check back later or choose another stack.',
         noInterviewer: true,
       });
     }
+
+    const { interviewer, scheduledAt } = match;
 
     // Create Zoom meeting
     let zoomData;
     try {
       zoomData = await createMeeting({
         topic: `AI Platform Interview — ${stack} Level ${level}`,
-        startTime: preferredDate,
+        startTime: scheduledAt,
         durationMinutes: 60,
         agenda: `Technical interview for ${req.user.name} — ${stack} (Level ${level})`,
       });
@@ -211,8 +262,8 @@ const requestInterview = async (req, res, next) => {
       sector,
       interviewMode,
       level: parseInt(level),
-      preferredDateTime: preferredDate,
-      scheduledAt: preferredDate,
+      preferredDateTime: scheduledAt,
+      scheduledAt,
       status: 'scheduled',
       zoomMeetingId: zoomData.meetingId,
       zoomJoinUrl: zoomData.joinUrl,
@@ -220,41 +271,41 @@ const requestInterview = async (req, res, next) => {
       zoomPassword: zoomData.password,
     });
 
-    // Notify candidate
+    // Notify candidate with scheduled time
     await createNotification(candidateId, {
       type: 'interview_scheduled',
       title: '✅ Team Interview Scheduled!',
-      message: `Your ${stack} (Level ${level}) team interview has been scheduled with ${interviewer.name}.`,
+      message: `Your ${stack} (Level ${level}) team interview has been automatically scheduled with ${interviewer.name} for ${scheduledAt.toUTCString()}.`,
       data: {
         teamInterviewId: interview._id,
         zoomJoinUrl: zoomData.joinUrl,
-        scheduledAt: preferredDate,
+        scheduledAt,
         interviewer: { name: interviewer.name },
       },
     });
 
-    // Notify interviewer
+    // Notify interviewer with assigned time
     await createNotification(interviewer._id, {
       type: 'interview_scheduled',
       title: '📋 New Interview Assigned',
-      message: `You have been assigned to interview ${req.user.name} for ${stack} (Level ${level}) at ${preferredDate.toUTCString()}.`,
+      message: `You have been assigned to interview ${req.user.name} for ${stack} (Level ${level}) at ${scheduledAt.toUTCString()}.`,
       data: {
         teamInterviewId: interview._id,
         zoomStartUrl: zoomData.startUrl,
         zoomJoinUrl: zoomData.joinUrl,
-        scheduledAt: preferredDate,
+        scheduledAt,
         candidate: { name: req.user.name },
       },
     });
 
-    logger.info(`Team interview ${interview._id} scheduled: ${req.user.name} with ${interviewer.name}`);
+    logger.info(`Team interview ${interview._id} scheduled: ${req.user.name} with ${interviewer.name} at ${scheduledAt.toISOString()}`);
 
     const populated = await TeamInterview.findById(interview._id)
       .populate('interviewer', 'name profileImage');
 
     res.status(201).json({
       success: true,
-      message: 'Interview scheduled successfully!',
+      message: `Interview automatically scheduled for ${scheduledAt.toLocaleString()} with ${interviewer.name}!`,
       interview: populated,
     });
   } catch (err) {
@@ -367,14 +418,16 @@ const declineInterview = async (req, res, next) => {
     interview.declinedByInterviewers = declinedIds;
     interview.interviewerDeclinedAt = new Date();
 
-    // Try to find a replacement interviewer
-    const replacement = await findAvailableInterviewer(
+    // Try to find a replacement interviewer with earliest available slot
+    const replacementMatch = await findEarliestAvailableInterviewer(
       interview.stack,
-      interview.scheduledAt,
-      declinedIds
+      declinedIds,
+      interview.interviewMode === 'business' ? 'business' : 'tech'
     );
 
-    if (replacement) {
+    if (replacementMatch) {
+      const { interviewer: replacement, scheduledAt: newScheduledAt } = replacementMatch;
+
       // Reassign to new interviewer — create a new Zoom meeting
       let zoomData;
       try {
@@ -383,7 +436,7 @@ const declineInterview = async (req, res, next) => {
 
         zoomData = await createMeeting({
           topic: `AI Platform Interview — ${interview.stack} Level ${interview.level}`,
-          startTime: interview.scheduledAt,
+          startTime: newScheduledAt,
           durationMinutes: 60,
           agenda: `Technical interview for ${interview.candidate?.name} — ${interview.stack} (Level ${interview.level})`,
         });
@@ -393,6 +446,8 @@ const declineInterview = async (req, res, next) => {
       }
 
       interview.interviewer = replacement._id;
+      interview.scheduledAt = newScheduledAt;
+      interview.preferredDateTime = newScheduledAt;
       interview.zoomMeetingId = zoomData.meetingId;
       interview.zoomJoinUrl = zoomData.joinUrl;
       interview.zoomStartUrl = zoomData.startUrl;
@@ -403,11 +458,11 @@ const declineInterview = async (req, res, next) => {
       await createNotification(replacement._id, {
         type: 'interview_scheduled',
         title: '📋 Interview Assigned to You',
-        message: `You have been assigned to interview ${interview.candidate?.name} for ${interview.stack} (Level ${interview.level}).`,
+        message: `You have been assigned to interview ${interview.candidate?.name} for ${interview.stack} (Level ${interview.level}) at ${newScheduledAt.toUTCString()}.`,
         data: {
           teamInterviewId: interview._id,
           zoomStartUrl: zoomData.startUrl,
-          scheduledAt: interview.scheduledAt,
+          scheduledAt: newScheduledAt,
         },
       });
 
@@ -415,15 +470,15 @@ const declineInterview = async (req, res, next) => {
       await createNotification(interview.candidate._id, {
         type: 'interview_reassigned',
         title: '🔄 Interviewer Reassigned',
-        message: `Your interviewer changed. Your ${interview.stack} interview is still on at the same time with a new interviewer.`,
+        message: `Your interviewer changed. Your ${interview.stack} interview is scheduled with ${replacement.name} for ${newScheduledAt.toUTCString()}.`,
         data: {
           teamInterviewId: interview._id,
           zoomJoinUrl: zoomData.joinUrl,
-          scheduledAt: interview.scheduledAt,
+          scheduledAt: newScheduledAt,
         },
       });
 
-      return res.json({ success: true, message: 'Interview declined and reassigned to another interviewer.', reassigned: true });
+      return res.json({ success: true, message: 'Interview declined and reassigned to another available interviewer.', reassigned: true });
     }
 
     // No replacement found — cancel the interview

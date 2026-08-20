@@ -32,7 +32,7 @@ function createWindow() {
     frame: false,
     title: 'Interview Tracker App',
     icon: appIcon,
-    show: false,
+    show: true,
     autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, '../preload/preload.js'),
@@ -49,15 +49,21 @@ function createWindow() {
   lockdownManager.setMainWindow(mainWindow);
   registerTrackerIpc(mainWindow);
 
-  mainWindow.once('ready-to-show', () => {
-    mainWindow?.show();
+  mainWindow.show();
+  mainWindow.focus();
+
+  mainWindow.webContents.on('did-fail-load', (_e, code, desc, url) => {
+    console.error(`[Electron] Failed to load ${url}: (${code}) ${desc}`);
   });
 
   // Load dev server or production HTML
+  const devServerUrl = process.env.VITE_DEV_SERVER_URL || 'http://localhost:5174';
   if (process.env.VITE_DEV_SERVER_URL) {
+    console.log('[Electron] Loading dev server:', process.env.VITE_DEV_SERVER_URL);
     mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
   } else {
-    mainWindow.loadFile(path.join(__dirname, '../../dist/index.html'));
+    console.log('[Electron] Loading fallback URL:', devServerUrl);
+    mainWindow.loadURL(devServerUrl);
   }
 
   // Handle external links safely

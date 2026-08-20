@@ -14,7 +14,7 @@ const teamInterviewSchema = new mongoose.Schema(
       default: 'pending',
     },
     // Scheduling
-    preferredDateTime: { type: Date, required: true },
+    preferredDateTime: { type: Date, default: null },
     scheduledAt: { type: Date, default: null },
     // Zoom meeting details
     zoomMeetingId: { type: String, default: '' },
