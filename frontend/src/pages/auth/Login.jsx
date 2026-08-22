@@ -188,11 +188,12 @@ export default function Login() {
 
               {/* Demo credentials */}
               <div className="mt-6 p-4 bg-dark-800 rounded-lg border border-dark-border">
-                <p className="text-xs text-gray-400 font-medium mb-2">Demo Credentials (passwords reset):</p>
+                <p className="text-xs text-gray-400 font-medium mb-2">Demo Credentials (passwords: password123):</p>
                 <div className="space-y-1 text-xs text-gray-500">
                   <p>Admin: <span className="text-gray-300">admin@aiplatform.com / password123</span></p>
                   <p>Candidate: <span className="text-gray-300">candidate_test@example.com / password123</span></p>
                   <p>Recruiter: <span className="text-gray-300">recruiter@contest.com / password123</span></p>
+                  <p>Interviewer: <span className="text-gray-300">interviewer@aiplatform.com / password123</span></p>
                 </div>
               </div>
             </>

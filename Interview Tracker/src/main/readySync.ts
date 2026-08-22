@@ -72,6 +72,26 @@ export class ReadySyncManager extends EventEmitter {
       }
     });
 
+    let lastViolationCaptureTime = 0;
+    this.socket.on('tracker:trigger_violation_capture', async (data: { reason?: string; targetName?: string; interviewId?: string }) => {
+      const now = Date.now();
+      if (now - lastViolationCaptureTime < 3000) {
+        console.log('[ReadySync] Duplicate violation capture trigger ignored within cooldown');
+        return;
+      }
+      lastViolationCaptureTime = now;
+
+      console.warn('[ReadySync] Triggering single violation screenshot capture:', data);
+      if (data?.interviewId) {
+        this.interviewId = data.interviewId;
+        screenshotCaptureManager.setInterviewId(data.interviewId);
+      }
+      await screenshotCaptureManager.captureClosedWindowScreenshot(
+        data?.reason || 'Clipboard Paste Attempt - Pasting text into answer box',
+        data?.targetName || 'Candidate Answer Box'
+      );
+    });
+
     this.socket.on('tracker:force_terminate', (data: { reason?: string }) => {
       console.warn('[ReadySync] Force termination requested by server:', data?.reason);
       this.setStatus('terminated');

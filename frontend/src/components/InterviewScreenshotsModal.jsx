@@ -144,13 +144,24 @@ export default function InterviewScreenshotsModal({ interview, onClose }) {
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               {currentItems.map((item, idx) => {
                 const isViolation = item.category === 'closed_windows';
+                const isPasteViolation = Boolean(
+                  item.reason?.toLowerCase().includes('paste') ||
+                  item.reason?.toLowerCase().includes('clipboard') ||
+                  item.targetName?.toLowerCase().includes('paste')
+                );
                 const date = new Date(item.capturedAt);
 
                 return (
                   <div
                     key={item._id || idx}
                     onClick={() => setLightboxImg(item)}
-                    className="group cursor-pointer rounded-xl border border-dark-border bg-dark-800/80 overflow-hidden hover:border-primary-500/50 hover:shadow-xl transition-all flex flex-col"
+                    className={`group cursor-pointer rounded-xl border overflow-hidden hover:shadow-xl transition-all flex flex-col ${
+                      isPasteViolation
+                        ? 'border-amber-500/40 bg-dark-800/95 hover:border-amber-500/70'
+                        : isViolation
+                        ? 'border-rose-500/30 bg-dark-800/80 hover:border-rose-500/60'
+                        : 'border-dark-border bg-dark-800/80 hover:border-primary-500/50'
+                    }`}
                   >
                     {/* Thumbnail Image */}
                     <div className="relative aspect-video bg-black overflow-hidden flex items-center justify-center">
@@ -172,12 +183,18 @@ export default function InterviewScreenshotsModal({ interview, onClose }) {
                       {/* Source tag */}
                       <span
                         className={`absolute top-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded-md backdrop-blur-md shadow-md ${
-                          isViolation
+                          isPasteViolation
+                            ? 'bg-amber-950/90 text-amber-300 border border-amber-500/50'
+                            : isViolation
                             ? 'bg-rose-950/80 text-rose-300 border border-rose-500/40'
                             : 'bg-dark-900/80 text-cyan-300 border border-cyan-500/30'
                         }`}
                       >
-                        {isViolation ? '⚠️ Closed Window' : item.captureSource || 'Interval'}
+                        {isPasteViolation
+                          ? '🚫 Paste Violation'
+                          : isViolation
+                          ? '⚠️ Closed Window'
+                          : item.captureSource || 'Interval'}
                       </span>
                     </div>
 
@@ -190,12 +207,12 @@ export default function InterviewScreenshotsModal({ interview, onClose }) {
 
                       {item.targetName && (
                         <p className="text-gray-300 font-mono text-[11px] truncate" title={item.targetName}>
-                          Target: <strong className="text-white">{item.targetName}</strong>
+                          Target: <strong className={isPasteViolation ? 'text-amber-300' : 'text-white'}>{item.targetName}</strong>
                         </p>
                       )}
 
                       {item.reason && (
-                        <p className="text-rose-400 text-[11px] font-medium truncate">
+                        <p className={`text-[11px] font-medium truncate ${isPasteViolation ? 'text-amber-400 font-semibold' : 'text-rose-400'}`}>
                           Reason: {item.reason}
                         </p>
                       )}
@@ -243,14 +260,24 @@ export default function InterviewScreenshotsModal({ interview, onClose }) {
             />
             <div className="mt-3 text-center text-xs text-gray-300 bg-dark-900/80 px-4 py-2 rounded-xl border border-dark-border">
               <span className="font-semibold text-white">
-                {lightboxImg.category === 'closed_windows' ? '⚠️ Closed Window Capture' : 'Routine Capture'}
+                {lightboxImg.reason?.toLowerCase().includes('paste')
+                  ? '🚫 Paste Violation Capture'
+                  : lightboxImg.category === 'closed_windows'
+                  ? '⚠️ Closed Window Capture'
+                  : 'Routine Capture'}
               </span>
               <span className="mx-2 text-gray-500">•</span>
               <span>{new Date(lightboxImg.capturedAt).toLocaleString()}</span>
               {lightboxImg.targetName && (
                 <>
                   <span className="mx-2 text-gray-500">•</span>
-                  <span className="font-mono text-cyan-300">{lightboxImg.targetName}</span>
+                  <span className="font-mono text-amber-300">{lightboxImg.targetName}</span>
+                </>
+              )}
+              {lightboxImg.reason && (
+                <>
+                  <span className="mx-2 text-gray-500">•</span>
+                  <span className="text-rose-400">{lightboxImg.reason}</span>
                 </>
               )}
             </div>

@@ -98,6 +98,29 @@ function initSocket(httpServer) {
       }
     });
 
+    // Violation attempt from website (e.g. paste attempt)
+    socket.on('tracker:violation_attempt', (data) => {
+      try {
+        const candId = data?.candidateId || socket.user?.id;
+        const interviewId = data?.interviewId;
+        const reason = data?.reason || 'Clipboard Paste Attempt - Pasting text into answer box';
+        const targetName = data?.targetName || 'Candidate Answer Box';
+
+        logger.warn(`Proctoring violation event received for candidate ${candId}: ${reason}`);
+
+        if (candId) {
+          emitToCandidate(candId, 'tracker:trigger_violation_capture', {
+            candidateId: candId,
+            interviewId,
+            reason,
+            targetName,
+          });
+        }
+      } catch (err) {
+        logger.error(`Error in tracker:violation_attempt: ${err.message}`);
+      }
+    });
+
     socket.on('disconnect', () => {
       logger.info(`Socket disconnected: ${socket.id}`);
     });

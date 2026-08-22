@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useLocation, useParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { io } from 'socket.io-client';
 import api from '../../services/api';
 import { HiClock, HiChevronLeft, HiChevronRight, HiCheckCircle } from 'react-icons/hi';
+import { handlePasteViolation } from '../../utils/proctoring';
 
 export default function InterviewRoom() {
   const { id } = useParams();
@@ -15,6 +16,7 @@ export default function InterviewRoom() {
   const [timeLeft, setTimeLeft] = useState((interview?.durationMinutes || 60) * 60);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const socketRef = useRef(null);
 
   const questions = interview?.questions || [];
   const totalQ = questions.length;
@@ -27,6 +29,7 @@ export default function InterviewRoom() {
       auth: { token: localStorage.getItem('token') },
       transports: ['websocket', 'polling'],
     });
+    socketRef.current = socket;
 
     socket.emit('tracker:join', { interviewId: id });
 
@@ -45,6 +48,7 @@ export default function InterviewRoom() {
     return () => {
       clearInterval(timer);
       socket.disconnect();
+      socketRef.current = null;
     };
   }, [id, interview, navigate]);
 
@@ -138,6 +142,7 @@ export default function InterviewRoom() {
               placeholder={q?.questionType === 'coding' ? '// Write your code here...' : 'Type your answer here...'}
               value={answers[currentQ] || ''}
               onChange={(e) => setAnswers((a) => ({ ...a, [currentQ]: e.target.value }))}
+              onPaste={(e) => handlePasteViolation(e, id, `Standard Interview Q${currentQ + 1} Editor`, socketRef.current)}
             />
             {answers[currentQ]?.trim() && (
               <p className="text-xs text-accent-400 mt-1 flex items-center gap-1"><HiCheckCircle /> Answer saved</p>

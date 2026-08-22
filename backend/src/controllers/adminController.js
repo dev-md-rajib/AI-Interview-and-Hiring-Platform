@@ -7,6 +7,7 @@ const InterviewLevel = require('../models/InterviewLevel');
 const QuestionBank = require('../models/QuestionBank');
 const ActivityLog = require('../models/ActivityLog');
 const AiAgentInterview = require('../models/AiAgentInterview');
+const TeamInterview = require('../models/TeamInterview');
 const Report = require('../models/Report');
 
 // @desc    Get platform analytics
@@ -166,6 +167,100 @@ const deleteQuestion = async (req, res, next) => {
   }
 };
 
+// Helper: Get candidate appropriate interview matching profile level verdict calculation
+const getCandidateAppropriateInterview = async (userId, requiredStacks = []) => {
+  const [standardHistory, aiHistory, zoomHistory] = await Promise.all([
+    Interview.find({ candidate: userId, status: 'completed' })
+      .select('level stack totalScore passed completedAt feedback')
+      .lean(),
+    AiAgentInterview.find({ candidate: userId, status: 'completed' })
+      .select('level stack totalScore passed completedAt feedback')
+      .lean(),
+    TeamInterview.find({ candidate: userId, status: 'completed', resultReleasedAt: { $ne: null } })
+      .select('level stack interviewerScore passed completedAt interviewerFeedback')
+      .lean(),
+  ]);
+
+  const formattedStandard = standardHistory.map(iv => ({ ...iv, evaluator: 'Normal Query' }));
+  const formattedAi = aiHistory.map(iv => ({ ...iv, evaluator: 'AI Agent' }));
+  const formattedZoom = zoomHistory.map(iv => ({
+    ...iv,
+    totalScore: iv.interviewerScore,
+    feedback: iv.interviewerFeedback,
+    evaluator: 'Human Team',
+  }));
+
+  const interviewHistory = [...formattedStandard, ...formattedAi, ...formattedZoom].sort(
+    (a, b) => new Date(b.completedAt) - new Date(a.completedAt)
+  );
+
+  // Calculate Highest Priority Verdicts per Level (matches profileController logic)
+  const evaluatorPriority = { 'Human Team': 3, 'AI Agent': 2, 'Normal Query': 1 };
+  const passedInterviews = interviewHistory.filter(iv => iv.passed);
+  const levelVerdictsMap = {};
+
+  passedInterviews.forEach(iv => {
+    const currentHighest = levelVerdictsMap[iv.level];
+    if (!currentHighest) {
+      levelVerdictsMap[iv.level] = iv;
+    } else {
+      const currentPrio = evaluatorPriority[currentHighest.evaluator] || 0;
+      const newPrio = evaluatorPriority[iv.evaluator] || 0;
+      if (newPrio > currentPrio || (newPrio === currentPrio && iv.totalScore > currentHighest.totalScore)) {
+        levelVerdictsMap[iv.level] = iv;
+      }
+    }
+  });
+
+  const calculatedCurrentLevel = passedInterviews.length > 0
+    ? Math.max(...passedInterviews.map(i => i.level))
+    : 0;
+
+  let appropriateInterview = null;
+
+  // If specific required stacks were queried, find the candidate's highest passed matching verdict for those stacks
+  if (Array.isArray(requiredStacks) && requiredStacks.length > 0) {
+    for (const reqStack of requiredStacks) {
+      if (!reqStack) continue;
+      const regex = new RegExp(`^${reqStack}$`, 'i');
+      const matchingPassed = passedInterviews
+        .filter(iv => regex.test(iv.stack))
+        .sort((a, b) => {
+          if (b.level !== a.level) return b.level - a.level;
+          const prioB = evaluatorPriority[b.evaluator] || 0;
+          const prioA = evaluatorPriority[a.evaluator] || 0;
+          if (prioB !== prioA) return prioB - prioA;
+          return b.totalScore - a.totalScore;
+        });
+
+      if (matchingPassed.length > 0) {
+        appropriateInterview = matchingPassed[0];
+        break;
+      }
+    }
+  }
+
+  // Default to highest level appropriate verdict shown in candidate profile
+  if (!appropriateInterview) {
+    if (calculatedCurrentLevel > 0 && levelVerdictsMap[calculatedCurrentLevel]) {
+      appropriateInterview = levelVerdictsMap[calculatedCurrentLevel];
+    } else if (interviewHistory.length > 0) {
+      appropriateInterview = interviewHistory[0];
+    }
+  }
+
+  const calculatedScore = calculatedCurrentLevel > 0 && levelVerdictsMap[calculatedCurrentLevel]
+    ? levelVerdictsMap[calculatedCurrentLevel].totalScore || 0
+    : interviewHistory.length > 0 ? (interviewHistory[0].totalScore || 0) : 0;
+
+  return {
+    calculatedCurrentLevel,
+    calculatedScore,
+    appropriateInterview,
+    levelVerdictsMap,
+  };
+};
+
 // @desc    Search candidates
 // @route   GET /api/admin/candidates/search
 // @access  Private (ADMIN, RECRUITER)
@@ -174,13 +269,14 @@ const searchCandidates = async (req, res, next) => {
     const { minExp, availability, page = 1, limit = 20, requirements } = req.query;
 
     let passedCandidates = null; // null means no restrictions yet
+    let requiredStacks = [];
 
     // Handle new multi-stack requirements array
     if (requirements) {
       try {
         const reqs = JSON.parse(requirements); // Array of {stack, level, minScore}
         if (Array.isArray(reqs) && reqs.length > 0) {
-          
+          requiredStacks = reqs.map(r => r.stack).filter(Boolean);
           let candidateSets = [];
           
           for (const req of reqs) {
@@ -190,13 +286,25 @@ const searchCandidates = async (req, res, next) => {
             if (req.minScore) {
               query.totalScore = { $gte: parseInt(req.minScore) };
             }
+
+            const zoomQuery = { status: 'completed', passed: true, resultReleasedAt: { $ne: null } };
+            if (req.stack) zoomQuery.stack = new RegExp(req.stack, 'i');
+            if (req.level) zoomQuery.level = parseInt(req.level);
+            if (req.minScore) {
+              zoomQuery.interviewerScore = { $gte: parseInt(req.minScore) };
+            }
             
-            // Find candidates matching this specific requirement in BOTH standard and AI interviews
+            // Find candidates matching this specific requirement in Standard, AI, and Team interviews
             const stdMatches = await Interview.distinct('candidate', query);
             const aiMatches = await AiAgentInterview.distinct('candidate', query);
+            const zoomMatches = await TeamInterview.distinct('candidate', zoomQuery);
             
             // Combine and unique the candidates who satisfied THIS requirement
-            const matchesForThisReq = [...new Set([...stdMatches.map(id => id.toString()), ...aiMatches.map(id => id.toString())])];
+            const matchesForThisReq = [...new Set([
+              ...stdMatches.map(id => id.toString()),
+              ...aiMatches.map(id => id.toString()),
+              ...zoomMatches.map(id => id.toString()),
+            ])];
             candidateSets.push(matchesForThisReq);
           }
 
@@ -219,6 +327,7 @@ const searchCandidates = async (req, res, next) => {
     // For backwards compatibility / legacy single-stack search (if used by other parts of the app)
     const { stack, level, minScore, maxScore } = req.query;
     if (!requirements && (stack || level || minScore || maxScore)) {
+        if (stack) requiredStacks.push(stack);
         const legacyQuery = { status: 'completed', passed: true };
         if (level) legacyQuery.level = parseInt(level);
         if (minScore || maxScore) {
@@ -226,12 +335,25 @@ const searchCandidates = async (req, res, next) => {
           if (minScore) legacyQuery.totalScore.$gte = parseInt(minScore);
           if (maxScore) legacyQuery.totalScore.$lte = parseInt(maxScore);
         }
+
+        const zoomLegacyQuery = { status: 'completed', passed: true, resultReleasedAt: { $ne: null } };
+        if (level) zoomLegacyQuery.level = parseInt(level);
+        if (minScore || maxScore) {
+          zoomLegacyQuery.interviewerScore = {};
+          if (minScore) zoomLegacyQuery.interviewerScore.$gte = parseInt(minScore);
+          if (maxScore) zoomLegacyQuery.interviewerScore.$lte = parseInt(maxScore);
+        }
         
         let legacyCandidates = [];
         if (Object.keys(legacyQuery).length > 2) {
            const stdLegacy = await Interview.distinct('candidate', legacyQuery);
            const aiLegacy = await AiAgentInterview.distinct('candidate', legacyQuery);
-           legacyCandidates = [...new Set([...stdLegacy.map(id => id.toString()), ...aiLegacy.map(id => id.toString())])];
+           const zoomLegacy = await TeamInterview.distinct('candidate', zoomLegacyQuery);
+           legacyCandidates = [...new Set([
+             ...stdLegacy.map(id => id.toString()),
+             ...aiLegacy.map(id => id.toString()),
+             ...zoomLegacy.map(id => id.toString()),
+           ])];
            profileQuery.user = { $in: legacyCandidates };
         }
         if (stack) profileQuery.expertise = { $in: [new RegExp(stack, 'i')] };
@@ -249,23 +371,38 @@ const searchCandidates = async (req, res, next) => {
       CandidateProfile.countDocuments(profileQuery),
     ]);
 
-    // Enrich with best interview score (from both sources)
+    // Enrich with appropriate interview score matching profile level verdicts
     const enriched = await Promise.all(
       profiles.map(async (p) => {
-        const stdBest = await Interview.findOne({ candidate: p.user._id, status: 'completed', passed: true })
-          .sort({ totalScore: -1 })
-          .select('level totalScore stack');
-          
-        const aiBest = await AiAgentInterview.findOne({ candidate: p.user._id, status: 'completed', passed: true })
-          .sort({ totalScore: -1 })
-          .select('level totalScore stack');
+        if (!p.user) return p.toObject();
 
-        let bestInterview = null;
-        if (stdBest && aiBest) bestInterview = stdBest.totalScore > aiBest.totalScore ? stdBest : aiBest;
-        else if (stdBest) bestInterview = stdBest;
-        else if (aiBest) bestInterview = aiBest;
+        const { calculatedCurrentLevel, calculatedScore, appropriateInterview } =
+          await getCandidateAppropriateInterview(p.user._id, requiredStacks);
 
-        return { ...p.toObject(), bestInterview };
+        // Keep profile synchronization in DB
+        if (p.currentLevel !== calculatedCurrentLevel || p.overallScore !== calculatedScore) {
+          p.currentLevel = calculatedCurrentLevel;
+          p.overallScore = calculatedScore;
+          await CandidateProfile.findByIdAndUpdate(p._id, {
+            currentLevel: calculatedCurrentLevel,
+            overallScore: calculatedScore,
+          });
+        }
+
+        const bestInterview = appropriateInterview ? {
+          _id: appropriateInterview._id,
+          level: appropriateInterview.level,
+          totalScore: appropriateInterview.totalScore,
+          stack: appropriateInterview.stack,
+          evaluator: appropriateInterview.evaluator,
+        } : null;
+
+        return {
+          ...p.toObject(),
+          currentLevel: calculatedCurrentLevel,
+          overallScore: calculatedScore,
+          bestInterview,
+        };
       })
     );
 

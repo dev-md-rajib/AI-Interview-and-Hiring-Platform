@@ -42,7 +42,7 @@ const userSchema = new mongoose.Schema(
     // Candidate-specific: cooldown after cancel/fail a team interview
     teamInterviewCooldownUntil: { type: Date, default: null },
     // Interviewer-specific profile
-    interviewerProfile: { type: interviewerProfileSchema, default: null },
+    interviewerProfile: { type: interviewerProfileSchema, default: undefined },
   },
   { timestamps: true }
 );

@@ -10,6 +10,7 @@ const {
   uploadScreenshot,
   endInterview,
   getScreenshotsForInterview,
+  reportViolation,
 } = require('../controllers/trackerController');
 const { protect, optionalAuth } = require('../middleware/auth');
 
@@ -50,6 +51,7 @@ router.get('/status', protect, getTrackerStatus);
 router.post('/consent', protect, sendConsent);
 router.post('/ready', protect, sendReady);
 router.post('/screenshot', optionalAuth, upload.single('image'), uploadScreenshot);
+router.post('/violation', protect, reportViolation);
 router.post('/end', protect, endInterview);
 
 // Public / Recruiter inspection route

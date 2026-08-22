@@ -13,19 +13,69 @@ import { getOpenWindows, DetectedWindow } from './windowDetection';
 import { activityLoggerManager } from './activityLogger';
 import { screenshotCaptureManager } from './screenshotCapture';
 
-const ALLOWED_PROCESS_NAMES = [
+const SYSTEM_IGNORED_PROCESSES = new Set([
+  'textinputhost',
+  'ctfmon',
+  'tabtip',
+  'inputpersonalizations',
+  'explorer',
+  'shellexperiencehost',
+  'startmenuexperiencehost',
+  'searchhost',
+  'searchui',
+  'searchapp',
+  'applicationframehost',
+  'systemsettings',
+  'lockapp',
+  'taskmgr',
+  'dwm',
+  'csrss',
+  'winlogon',
+  'services',
+  'lsass',
+  'svchost',
+  'smss',
+  'fontdrvhost',
+  'sihost',
+  'securityhealthservice',
+  'securityhealthsystray',
+  'runtimebroker',
+  'smartscreen',
   'electron',
   'tracker-app',
   'interviewtracker',
   'interview tracker',
-  'explorer',
   'antigravity',
   'antigravity-ide',
   'gemini',
-  'chrome',
-  'msedge',
-  'brave'
+  'node',
+  'cmd',
+  'powershell',
+  'pwsh',
+  'conhost',
+  'windowsterminal',
+  'code',
+  'nvcontainer',
+  'nvdisplay.container',
+  'amdrsserv',
+  'igfxhk',
+  'audiodg',
+  'system',
+]);
+
+const SYSTEM_IGNORED_TITLES = [
+  'windows input experience',
+  'microsoft text input application',
+  'program manager',
+  'default ime',
+  'msctfime ui',
+  'task switching',
+  'desktop window manager',
+  'settings',
+  'snap assist',
 ];
+
+const KNOWN_BROWSERS = new Set(['chrome', 'msedge', 'brave', 'firefox', 'opera', 'vivaldi']);
 
 export type LockdownEventType = 'blocked_attempt';
 export type LockdownEventHandler = (type: LockdownEventType, detail: string) => void;
@@ -34,6 +84,7 @@ let pollTimer: NodeJS.Timeout | null = null;
 let onEvent: LockdownEventHandler = () => {};
 let allowedTitleSubstring: string | null = null; // set to the interview window's title once launched
 let userAllowedPids: Set<number> = new Set();
+const recentlyClosedPids = new Map<number, number>();
 
 export function setEventHandler(handler: LockdownEventHandler) {
   onEvent = handler;
@@ -140,6 +191,13 @@ let isEnforcingActive = false;
 async function closeActiveTab(win: DetectedWindow) {
   if (!isEnforcingActive) return;
 
+  const now = Date.now();
+  const lastAttempt = recentlyClosedPids.get(win.pid) || 0;
+  if (now - lastAttempt < 4000) {
+    return;
+  }
+  recentlyClosedPids.set(win.pid, now);
+
   // 1. Capture evidence screenshot BEFORE closing the tab
   try {
     await screenshotCaptureManager.captureClosedWindowScreenshot('unauthorized_tab', `${win.processName}: ${win.title}`);
@@ -184,6 +242,13 @@ ${TAB_CLOSER_CS}
 async function closeWindow(win: DetectedWindow) {
   if (!isEnforcingActive) return;
 
+  const now = Date.now();
+  const lastAttempt = recentlyClosedPids.get(win.pid) || 0;
+  if (now - lastAttempt < 5000) {
+    return;
+  }
+  recentlyClosedPids.set(win.pid, now);
+
   // 1. Capture evidence screenshot BEFORE terminating the application
   try {
     await screenshotCaptureManager.captureClosedWindowScreenshot('unauthorized_app', `${win.processName}: ${win.title}`);
@@ -218,32 +283,36 @@ async function enforceOnce() {
 
   for (const win of windows) {
     if (!isEnforcingActive) return;
-    const pName = win.processName.toLowerCase();
+    const pName = (win.processName || '').toLowerCase().trim();
+    const titleLower = (win.title || '').toLowerCase().trim();
 
-    // 1. Core OS / Tracker / IDE processes are always safe
+    // 1. Skip system input, IME, Windows shell, IDE, or ignored processes
     if (
-      pName === 'electron' ||
-      pName === 'tracker-app' ||
-      pName === 'interviewtracker' ||
-      pName === 'interview tracker' ||
-      pName === 'explorer' ||
+      SYSTEM_IGNORED_PROCESSES.has(pName) ||
+      pName.includes('electron') ||
       pName.includes('antigravity') ||
-      pName.includes('gemini')
+      pName.includes('gemini') ||
+      pName.includes('input') ||
+      pName.includes('tracker')
     ) {
       continue;
     }
 
-    // 2. Is this the chosen application / browser?
-    const isChosenApp =
-      userAllowedPids.has(win.pid) ||
-      (allowedTitleSubstring && ['chrome', 'msedge', 'brave', 'firefox', 'opera', 'vivaldi'].includes(pName));
+    // 2. Skip system / overlay window titles (e.g. Windows Input Experience when clicking a text box)
+    if (!titleLower || SYSTEM_IGNORED_TITLES.some((t) => titleLower.includes(t))) {
+      continue;
+    }
+
+    // 3. Is this the chosen browser or user-allowed application?
+    const isBrowser = KNOWN_BROWSERS.has(pName);
+    const isChosenApp = userAllowedPids.has(win.pid) || isBrowser;
 
     if (isChosenApp) {
       // Check if candidate is currently on the chosen allowed tab
-      if (allowedTitleSubstring) {
+      if (allowedTitleSubstring && allowedTitleSubstring.trim()) {
         const isMatch =
-          win.title.toLowerCase().includes(allowedTitleSubstring.toLowerCase()) ||
-          allowedTitleSubstring.toLowerCase().includes(win.title.toLowerCase());
+          titleLower.includes(allowedTitleSubstring.toLowerCase()) ||
+          allowedTitleSubstring.toLowerCase().includes(titleLower);
 
         if (!isMatch) {
           // Changed to another tab or opened a new tab in the chosen app -> CLOSE ONLY THE TAB!
@@ -253,7 +322,7 @@ async function enforceOnce() {
       continue;
     }
 
-    // 3. Any OTHER unauthorized application -> CLOSE THE ENTIRE APP!
+    // 4. Any OTHER unauthorized application -> CLOSE THE ENTIRE APP!
     closeWindow(win);
   }
 }

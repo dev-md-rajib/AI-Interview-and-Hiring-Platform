@@ -25,18 +25,27 @@ const updateProfile = async (req, res, next) => {
   try {
     const { expertise, sectors, availabilitySlots, bio, isActive } = req.body;
 
-    const updateData = {};
-    if (expertise !== undefined) updateData['interviewerProfile.expertise'] = expertise;
-    if (sectors !== undefined) updateData['interviewerProfile.sectors'] = sectors;
-    if (availabilitySlots !== undefined) updateData['interviewerProfile.availabilitySlots'] = availabilitySlots;
-    if (bio !== undefined) updateData['interviewerProfile.bio'] = bio;
-    if (isActive !== undefined) updateData['interviewerProfile.isActive'] = isActive;
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 
-    const user = await User.findByIdAndUpdate(
-      req.user._id,
-      { $set: updateData },
-      { new: true, runValidators: true }
-    ).select('-password');
+    if (!user.interviewerProfile) {
+      user.interviewerProfile = {
+        expertise: [],
+        sectors: [],
+        availabilitySlots: [],
+        isActive: true,
+        totalInterviewsConducted: 0,
+        bio: '',
+      };
+    }
+
+    if (expertise !== undefined) user.interviewerProfile.expertise = expertise;
+    if (sectors !== undefined) user.interviewerProfile.sectors = sectors;
+    if (availabilitySlots !== undefined) user.interviewerProfile.availabilitySlots = availabilitySlots;
+    if (bio !== undefined) user.interviewerProfile.bio = bio;
+    if (isActive !== undefined) user.interviewerProfile.isActive = isActive;
+
+    await user.save();
 
     res.json({ success: true, message: 'Profile updated successfully.', user });
   } catch (err) {

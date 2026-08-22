@@ -305,6 +305,32 @@ const getScreenshotsForInterview = async (req, res, next) => {
   }
 };
 
+// @desc    Report a proctoring violation from the website (e.g. paste attempt) and trigger tracker screenshot capture
+// @route   POST /api/tracker/violation
+// @access  Private (CANDIDATE)
+const reportViolation = async (req, res, next) => {
+  try {
+    const candidateId = req.user?._id;
+    const { interviewId, reason, targetName } = req.body;
+
+    logger.warn(`Proctoring violation reported for candidate ${candidateId}: ${reason} (Target: ${targetName})`);
+
+    // Emit to candidate's tracker desktop app to trigger an immediate violation capture
+    if (candidateId) {
+      emitToCandidate(candidateId, 'tracker:trigger_violation_capture', {
+        candidateId,
+        interviewId: interviewId || '',
+        reason: reason || 'Clipboard Paste Attempt - Pasting text into answer box',
+        targetName: targetName || 'Candidate Answer Box',
+      });
+    }
+
+    res.status(200).json({ success: true, message: 'Violation reported to proctoring tracker' });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getNextInterview,
   getTrackerStatus,
@@ -313,4 +339,5 @@ module.exports = {
   uploadScreenshot,
   endInterview,
   getScreenshotsForInterview,
+  reportViolation,
 };

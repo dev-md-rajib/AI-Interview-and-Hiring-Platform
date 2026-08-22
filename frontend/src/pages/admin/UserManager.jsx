@@ -28,6 +28,7 @@ export default function UserManager() {
           <option value="">All Roles</option>
           <option value="CANDIDATE">Candidates</option>
           <option value="RECRUITER">Recruiters</option>
+          <option value="INTERVIEWER">Interviewers</option>
           <option value="ADMIN">Admins</option>
         </select>
       </div>
@@ -44,7 +45,19 @@ export default function UserManager() {
                   <tr key={user._id} className="hover:bg-dark-800/50">
                     <td className="px-4 py-3 text-white font-medium">{user.name}</td>
                     <td className="px-4 py-3 text-gray-400">{user.email}</td>
-                    <td className="px-4 py-3"><span className={`badge ${user.role === 'ADMIN' ? 'bg-yellow-900 text-yellow-300' : user.role === 'RECRUITER' ? 'bg-blue-900 text-blue-300' : 'badge-primary'}`}>{user.role}</span></td>
+                    <td className="px-4 py-3">
+                      <span className={`badge ${
+                        user.role === 'ADMIN'
+                          ? 'bg-yellow-900 text-yellow-300'
+                          : user.role === 'RECRUITER'
+                          ? 'bg-blue-900 text-blue-300'
+                          : user.role === 'INTERVIEWER'
+                          ? 'bg-purple-900 text-purple-300'
+                          : 'badge-primary'
+                      }`}>
+                        {user.role}
+                      </span>
+                    </td>
                     <td className="px-4 py-3">{user.isVerified ? <HiCheckCircle className="w-5 h-5 text-accent-400" /> : <HiXCircle className="w-5 h-5 text-gray-500" />}</td>
                     <td className="px-4 py-3 text-gray-400">{new Date(user.createdAt).toLocaleDateString()}</td>
                     <td className="px-4 py-3">

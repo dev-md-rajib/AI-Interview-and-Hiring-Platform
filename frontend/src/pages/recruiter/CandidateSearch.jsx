@@ -126,7 +126,12 @@ export default function CandidateSearch() {
                 {c.bestInterview && (
                   <div className="ml-auto text-right">
                     <div className="text-primary-400 font-bold">{c.bestInterview.totalScore}%</div>
-                    <div className="text-gray-500 text-xs">L{c.bestInterview.level} {c.bestInterview.stack}</div>
+                    <div className="text-gray-500 text-xs">
+                      L{c.bestInterview.level} {c.bestInterview.stack}
+                      {c.bestInterview.evaluator && (
+                        <span className="text-[10px] text-gray-400 block font-normal">{c.bestInterview.evaluator}</span>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>

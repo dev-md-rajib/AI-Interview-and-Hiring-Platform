@@ -9,6 +9,7 @@ import {
 } from 'react-icons/hi';
 import { FilesetResolver, FaceLandmarker } from '@mediapipe/tasks-vision';
 import { getSectorById, isSector } from '../../constants/sectors';
+import { handlePasteViolation } from '../../utils/proctoring';
 
 /* ─── Proctoring Config & Math ────────────────────────────── */
 const YAW_THRESHOLD = 10;
@@ -548,6 +549,8 @@ export default function AIAgentInterviewRoom() {
     }
   }, [cheatCount, stopSpeech, stopProctoring]);
 
+  const socketRef = useRef(null);
+
   // Listen for tracker desktop app interview termination
   useEffect(() => {
     const socketUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
@@ -555,6 +558,7 @@ export default function AIAgentInterviewRoom() {
       auth: { token: localStorage.getItem('token') },
       transports: ['websocket', 'polling'],
     });
+    socketRef.current = socket;
 
     socket.emit('tracker:join', { interviewId: id });
 
@@ -565,6 +569,7 @@ export default function AIAgentInterviewRoom() {
 
     return () => {
       socket.disconnect();
+      socketRef.current = null;
     };
   }, [id, endInterview]);
 
@@ -794,6 +799,7 @@ export default function AIAgentInterviewRoom() {
             placeholder={`// Write your ${initData?.stack || 'code'} solution here...\n// The AI interviewer will review and evaluate your code.`}
             value={codeAnswer}
             onChange={(e) => setCodeAnswer(e.target.value)}
+            onPaste={(e) => handlePasteViolation(e, id, 'AI Agent Interview Code Editor', socketRef.current)}
             spellCheck={false}
           />
           <div className="flex items-center justify-between mt-3">
@@ -861,7 +867,10 @@ export default function AIAgentInterviewRoom() {
           {/* Text fallback */}
           {phase === 'interviewing' && (
             <div className="mt-4 pt-4 border-t border-dark-border">
-              <TextAnswerFallback onSubmit={handleVoiceAnswer} />
+              <TextAnswerFallback
+                onSubmit={handleVoiceAnswer}
+                onPaste={(e) => handlePasteViolation(e, id, 'AI Agent Interview Text Fallback', socketRef.current)}
+              />
             </div>
           )}
         </div>
@@ -883,7 +892,7 @@ export default function AIAgentInterviewRoom() {
 }
 
 /* ─── Text fallback for when TTS not usable ─────────────────── */
-function TextAnswerFallback({ onSubmit }) {
+function TextAnswerFallback({ onSubmit, onPaste }) {
   const [text, setText] = useState('');
   const handleSubmit = () => {
     if (!text.trim()) return;
@@ -897,6 +906,7 @@ function TextAnswerFallback({ onSubmit }) {
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
+          onPaste={onPaste}
           onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSubmit())}
           placeholder="Type your conceptual answer here... (Press Shift+Enter for new line)"
           className="w-full bg-dark-800 border border-dark-border rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-primary-500 transition-colors resize-none h-24 shadow-inner"
