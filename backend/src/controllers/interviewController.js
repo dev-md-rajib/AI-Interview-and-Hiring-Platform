@@ -302,16 +302,16 @@ const getInterviewResult = async (req, res, next) => {
 const getMyInterviews = async (req, res, next) => {
   try {
     const standardInterviews = await Interview.find({ candidate: req.user._id })
-      .select('level stack totalScore passed status startedAt completedAt')
+      .select('level stack totalScore passed status startedAt completedAt feedback strengths weaknesses')
       .lean();
       
     const aiAgentInterviews = await AiAgentInterview.find({ candidate: req.user._id })
-      .select('level stack totalScore passed status startedAt completedAt')
+      .select('level stack totalScore passed status startedAt completedAt feedback strengths weaknesses recommendations')
       .lean();
 
     const combined = [
-      ...standardInterviews.map((i) => ({ ...i, mode: 'Standard' })),
-      ...aiAgentInterviews.map((i) => ({ ...i, mode: 'AI Agent' }))
+      ...standardInterviews.map((i) => ({ ...i, mode: 'Standard', evaluator: 'Normal Query' })),
+      ...aiAgentInterviews.map((i) => ({ ...i, mode: 'AI Agent', evaluator: 'AI Agent' }))
     ];
 
     // Sort descending by startedAt or createdAt

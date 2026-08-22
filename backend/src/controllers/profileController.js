@@ -13,23 +13,39 @@ const getMyProfile = async (req, res, next) => {
       profile = await CandidateProfile.create({ user: req.user._id });
     }
 
-    // Attach interview history (combine both types)
+    // Attach interview history (combine all interview types with full feedback)
     const standardHistory = await Interview.find({ candidate: req.user._id, status: 'completed' })
-      .select('level stack totalScore passed completedAt feedback')
+      .select('level stack totalScore passed completedAt feedback strengths weaknesses')
       .lean();
     const aiHistory = await AiAgentInterview.find({ candidate: req.user._id, status: 'completed' })
-      .select('level stack totalScore passed completedAt feedback')
+      .select('level stack totalScore passed completedAt feedback strengths weaknesses recommendations')
       .lean();
     const zoomHistory = await TeamInterview.find({ candidate: req.user._id, status: 'completed', resultReleasedAt: { $ne: null } })
-      .select('level stack interviewerScore passed completedAt interviewerFeedback')
+      .select('level stack interviewerScore passed completedAt interviewerFeedback interviewerStrengths interviewerWeaknesses interviewer')
+      .populate('interviewer', 'name profileImage')
       .lean();
 
-    const formattedStandard = standardHistory.map(iv => ({ ...iv, evaluator: 'Normal Query' }));
-    const formattedAi = aiHistory.map(iv => ({ ...iv, evaluator: 'AI Agent' }));
+    const formattedStandard = standardHistory.map(iv => ({
+      ...iv,
+      evaluator: 'Normal Query',
+      feedback: iv.feedback || '',
+      strengths: iv.strengths || [],
+      weaknesses: iv.weaknesses || [],
+    }));
+    const formattedAi = aiHistory.map(iv => ({
+      ...iv,
+      evaluator: 'AI Agent',
+      feedback: iv.feedback || '',
+      strengths: iv.strengths || [],
+      weaknesses: iv.weaknesses || [],
+      recommendations: iv.recommendations || '',
+    }));
     const formattedZoom = zoomHistory.map(iv => ({
       ...iv,
       totalScore: iv.interviewerScore,
-      feedback: iv.interviewerFeedback,
+      feedback: iv.interviewerFeedback || '',
+      strengths: iv.interviewerStrengths || [],
+      weaknesses: iv.interviewerWeaknesses || [],
       evaluator: 'Human Team',
     }));
 
@@ -171,20 +187,37 @@ const getPublicProfile = async (req, res, next) => {
     if (!profile) return res.status(404).json({ success: false, message: 'Profile not found' });
 
     const standardHistory = await Interview.find({ candidate: req.params.userId, status: 'completed' })
-      .select('level stack totalScore passed completedAt')
+      .select('level stack totalScore passed completedAt feedback strengths weaknesses')
       .lean();
     const aiHistory = await AiAgentInterview.find({ candidate: req.params.userId, status: 'completed' })
-      .select('level stack totalScore passed completedAt')
+      .select('level stack totalScore passed completedAt feedback strengths weaknesses recommendations')
       .lean();
     const zoomHistory = await TeamInterview.find({ candidate: req.params.userId, status: 'completed', resultReleasedAt: { $ne: null } })
-      .select('level stack interviewerScore passed completedAt')
+      .select('level stack interviewerScore passed completedAt interviewerFeedback interviewerStrengths interviewerWeaknesses interviewer')
+      .populate('interviewer', 'name profileImage')
       .lean();
 
-    const formattedStandard = standardHistory.map(iv => ({ ...iv, evaluator: 'Normal Query' }));
-    const formattedAi = aiHistory.map(iv => ({ ...iv, evaluator: 'AI Agent' }));
+    const formattedStandard = standardHistory.map(iv => ({
+      ...iv,
+      evaluator: 'Normal Query',
+      feedback: iv.feedback || '',
+      strengths: iv.strengths || [],
+      weaknesses: iv.weaknesses || [],
+    }));
+    const formattedAi = aiHistory.map(iv => ({
+      ...iv,
+      evaluator: 'AI Agent',
+      feedback: iv.feedback || '',
+      strengths: iv.strengths || [],
+      weaknesses: iv.weaknesses || [],
+      recommendations: iv.recommendations || '',
+    }));
     const formattedZoom = zoomHistory.map(iv => ({
       ...iv,
       totalScore: iv.interviewerScore,
+      feedback: iv.interviewerFeedback || '',
+      strengths: iv.interviewerStrengths || [],
+      weaknesses: iv.interviewerWeaknesses || [],
       evaluator: 'Human Team',
     }));
 

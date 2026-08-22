@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
-import { HiMail, HiFlag, HiX, HiPhotograph } from 'react-icons/hi';
+import { HiMail, HiFlag, HiX, HiPhotograph, HiChatAlt2 } from 'react-icons/hi';
 import toast from 'react-hot-toast';
 import InterviewScreenshotsModal from '../../components/InterviewScreenshotsModal';
+import InterviewFeedbackModal from '../../components/InterviewFeedbackModal';
+import InterviewHistoryFilter from '../../components/InterviewHistoryFilter';
 
 export default function CandidateView() {
   const { id } = useParams();
@@ -12,6 +14,23 @@ export default function CandidateView() {
   const [loading, setLoading] = useState(true);
   const [isReporting, setIsReporting] = useState(false);
   const [reportReason, setReportReason] = useState('');
+  const [selectedInterviewForScreenshots, setSelectedInterviewForScreenshots] = useState(null);
+  const [selectedFeedbackInterview, setSelectedFeedbackInterview] = useState(null);
+
+  // Filter states
+  const [search, setSearch] = useState('');
+  const [evaluator, setEvaluator] = useState('all');
+  const [level, setLevel] = useState('all');
+  const [result, setResult] = useState('all');
+  const [sortBy, setSortBy] = useState('newest');
+
+  const handleResetFilters = () => {
+    setSearch('');
+    setEvaluator('all');
+    setLevel('all');
+    setResult('all');
+    setSortBy('newest');
+  };
 
   useEffect(() => {
     api.get(`/profile/${id}`).then(({ data }) => setData(data)).finally(() => setLoading(false));
@@ -36,12 +55,64 @@ export default function CandidateView() {
     }
   };
 
-  const [selectedInterviewForScreenshots, setSelectedInterviewForScreenshots] = useState(null);
-
   if (loading) return <div className="flex justify-center h-64 items-center"><div className="w-8 h-8 border-3 border-primary-500/30 border-t-primary-500 rounded-full animate-spin" /></div>;
   if (!data) return <div className="text-center py-16 text-gray-400">Profile not found</div>;
 
-  const { profile, interviewHistory, levelVerdicts } = data;
+  const { profile, interviewHistory = [], levelVerdicts } = data;
+
+  // Filter and sort
+  const filteredHistory = interviewHistory
+    .filter((item) => {
+      if (search && search.trim()) {
+        const q = search.trim().toLowerCase();
+        const stackMatch = item.stack?.toLowerCase().includes(q);
+        const sectorMatch = item.sector?.toLowerCase().includes(q);
+        const evalMatch = (item.evaluator || item.mode)?.toLowerCase().includes(q);
+        if (!stackMatch && !sectorMatch && !evalMatch) return false;
+      }
+
+      if (evaluator !== 'all') {
+        const itemEval = item.evaluator || item.mode || '';
+        if (evaluator === 'Standard') {
+          if (!['Standard', 'Normal Query'].includes(itemEval)) return false;
+        } else if (evaluator === 'AI Agent') {
+          if (!['AI Agent', 'ai_agent'].includes(itemEval)) return false;
+        } else if (evaluator === 'Human Team') {
+          if (!['human team', 'zoom live', 'human'].includes(itemEval.toLowerCase())) return false;
+        }
+      }
+
+      if (level !== 'all') {
+        if (String(item.level) !== String(level)) return false;
+      }
+
+      if (result === 'passed') {
+        if (!item.passed) return false;
+      } else if (result === 'failed') {
+        if (item.passed) return false;
+      }
+
+      return true;
+    })
+    .sort((a, b) => {
+      if (sortBy === 'newest') {
+        return new Date(b.completedAt || b.createdAt || 0) - new Date(a.completedAt || a.createdAt || 0);
+      }
+      if (sortBy === 'oldest') {
+        return new Date(a.completedAt || a.createdAt || 0) - new Date(b.completedAt || b.createdAt || 0);
+      }
+      if (sortBy === 'highest_score') {
+        const scoreA = a.totalScore != null ? a.totalScore : 0;
+        const scoreB = b.totalScore != null ? b.totalScore : 0;
+        return scoreB - scoreA;
+      }
+      if (sortBy === 'lowest_score') {
+        const scoreA = a.totalScore != null ? a.totalScore : 0;
+        const scoreB = b.totalScore != null ? b.totalScore : 0;
+        return scoreA - scoreB;
+      }
+      return 0;
+    });
 
   return (
     <div className="max-w-4xl mx-auto animate-fade-in space-y-6">
@@ -150,45 +221,91 @@ export default function CandidateView() {
 
       {interviewHistory?.length > 0 && (
         <div className="card">
-          <h2 className="section-title">Interview History & Proctoring</h2>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="text-gray-400 uppercase text-xs border-b border-dark-border">
-                <tr>
-                  {['Stack', 'Level', 'Evaluator', 'Score', 'Result', 'Date', 'Proctoring'].map((h) => (
-                    <th key={h} className="text-left pb-2 pr-4">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-dark-border">
-                {interviewHistory.map((iv) => (
-                  <tr key={iv._id} className="hover:bg-dark-800/40 transition-colors">
-                    <td className="py-3 pr-4 text-white font-medium">{iv.stack}</td>
-                    <td className="py-3 pr-4 text-gray-400">L{iv.level}</td>
-                    <td className="py-3 pr-4 text-gray-400">{iv.evaluator}</td>
-                    <td className="py-3 pr-4 font-bold text-primary-400">{iv.totalScore}%</td>
-                    <td className="py-3 pr-4">
-                      {iv.passed ? <span className="badge-success">Passed</span> : <span className="badge-danger">Failed</span>}
-                    </td>
-                    <td className="py-3 pr-4 text-gray-400 text-xs">
-                      {iv.completedAt ? new Date(iv.completedAt).toLocaleDateString() : '—'}
-                    </td>
-                    <td className="py-3">
-                      <button
-                        onClick={() => setSelectedInterviewForScreenshots({ ...iv, candidate: id })}
-                        className="px-2.5 py-1 rounded-lg bg-dark-800 hover:bg-primary-900/40 hover:text-primary-300 border border-dark-border text-xs text-gray-300 flex items-center gap-1.5 transition-all"
-                        title="View interval and violation screenshots"
-                      >
-                        <HiPhotograph className="w-3.5 h-3.5 text-primary-400" />
-                        <span>Captures</span>
-                      </button>
-                    </td>
+          <h2 className="section-title">Interview History & Evaluations</h2>
+
+          {/* Filters Bar */}
+          <InterviewHistoryFilter
+            search={search}
+            onSearchChange={setSearch}
+            evaluator={evaluator}
+            onEvaluatorChange={setEvaluator}
+            level={level}
+            onLevelChange={setLevel}
+            result={result}
+            onResultChange={setResult}
+            sortBy={sortBy}
+            onSortByChange={setSortBy}
+            onReset={handleResetFilters}
+            totalCount={interviewHistory.length}
+            filteredCount={filteredHistory.length}
+          />
+
+          {filteredHistory.length === 0 ? (
+            <div className="text-center py-10 text-gray-400 text-sm">
+              No interviews match your filter criteria.
+              <div className="mt-2">
+                <button onClick={handleResetFilters} className="btn-secondary text-xs">
+                  Reset Filters
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="text-gray-400 uppercase text-xs border-b border-dark-border">
+                  <tr>
+                    {['Stack', 'Level', 'Evaluator', 'Score', 'Result', 'Date', 'Actions'].map((h) => (
+                      <th key={h} className="text-left pb-2 pr-4">{h}</th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-dark-border">
+                  {filteredHistory.map((iv) => (
+                    <tr key={iv._id} className="hover:bg-dark-800/40 transition-colors">
+                      <td className="py-3 pr-4 text-white font-medium">{iv.stack}</td>
+                      <td className="py-3 pr-4 text-gray-400">L{iv.level}</td>
+                      <td className="py-3 pr-4 text-gray-400">{iv.evaluator}</td>
+                      <td className="py-3 pr-4 font-bold text-primary-400">{iv.totalScore}%</td>
+                      <td className="py-3 pr-4">
+                        {iv.passed ? <span className="badge-success">Passed</span> : <span className="badge-danger">Failed</span>}
+                      </td>
+                      <td className="py-3 pr-4 text-gray-400 text-xs">
+                        {iv.completedAt ? new Date(iv.completedAt).toLocaleDateString() : '—'}
+                      </td>
+                      <td className="py-3">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => setSelectedFeedbackInterview(iv)}
+                            className="px-2.5 py-1 rounded-lg bg-primary-900/30 hover:bg-primary-800/50 border border-primary-500/30 text-xs text-primary-300 flex items-center gap-1.5 font-medium transition-all"
+                            title="View Evaluator Feedback"
+                          >
+                            <HiChatAlt2 className="w-3.5 h-3.5" />
+                            <span>Feedback</span>
+                          </button>
+                          <button
+                            onClick={() => setSelectedInterviewForScreenshots({ ...iv, candidate: id })}
+                            className="px-2.5 py-1 rounded-lg bg-dark-800 hover:bg-dark-700 border border-dark-border text-xs text-gray-300 flex items-center gap-1.5 transition-all"
+                            title="View interval and violation screenshots"
+                          >
+                            <HiPhotograph className="w-3.5 h-3.5 text-gray-400" />
+                            <span>Captures</span>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
+      )}
+
+      {selectedFeedbackInterview && (
+        <InterviewFeedbackModal
+          interview={selectedFeedbackInterview}
+          onClose={() => setSelectedFeedbackInterview(null)}
+        />
       )}
 
       {isReporting && (
