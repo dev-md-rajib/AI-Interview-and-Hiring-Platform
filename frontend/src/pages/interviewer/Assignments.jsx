@@ -200,6 +200,32 @@ export default function InterviewerAssignments() {
     fetchInterviews();
   };
 
+  const handleOpenFeedback = (interview) => {
+    const scheduledDate = interview.scheduledAt ? new Date(interview.scheduledAt) : null;
+    const now = new Date();
+
+    if (scheduledDate && now < scheduledDate && interview.status !== 'completed' && interview.status !== 'active') {
+      const timeStr = scheduledDate.toLocaleTimeString('en-US', {
+        timeZone: 'Asia/Dhaka',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+      });
+      const dateStr = scheduledDate.toLocaleDateString('en-US', {
+        timeZone: 'Asia/Dhaka',
+        month: 'short',
+        day: 'numeric',
+      });
+      toast.error(
+        `Please wait until the interview time starts! Scheduled for ${dateStr} at ${timeStr} (BST, Bangladesh Time).`,
+        { id: `feedback-wait-${interview._id}`, duration: 5000, icon: '⏳' }
+      );
+      return;
+    }
+
+    setFeedbackModal(interview);
+  };
+
   const filtered = interviews.filter((i) => {
     if (filter === 'all') return true;
     if (filter === 'upcoming') return ['scheduled', 'active'].includes(i.status);
@@ -249,9 +275,7 @@ export default function InterviewerAssignments() {
             const statusCfg = STATUS_CONFIG[interview.status] || STATUS_CONFIG.pending;
             const isExpanded = expandedId === interview._id;
             const isUpcoming = ['scheduled', 'active'].includes(interview.status);
-            const canFeedback = ['scheduled', 'active', 'completed'].includes(interview.status) && !interview.feedbackSubmittedAt;
             const scheduledDate = interview.scheduledAt ? new Date(interview.scheduledAt) : null;
-            const isPast = scheduledDate && scheduledDate < new Date();
 
             return (
               <div key={interview._id} className={`card border ${statusCfg.bg} transition-all`}>
@@ -324,9 +348,9 @@ export default function InterviewerAssignments() {
                       {declining === interview._id ? 'Declining...' : "I'm Not Available"}
                     </button>
                   )}
-                  {(canFeedback && isPast || interview.status === 'completed' && !interview.feedbackSubmittedAt) && (
+                  {!interview.feedbackSubmittedAt && !['cancelled', 'declined'].includes(interview.status) && (
                     <button
-                      onClick={() => setFeedbackModal(interview)}
+                      onClick={() => handleOpenFeedback(interview)}
                       className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-primary-600 to-accent-600 text-white rounded-lg text-xs font-semibold hover:from-primary-700 hover:to-accent-700 transition-all"
                     >
                       <HiStar className="w-3.5 h-3.5" /> Submit Feedback
