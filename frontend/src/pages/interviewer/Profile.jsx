@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import {
-  HiLightBulb, HiClock, HiPlus, HiTrash, HiSave, HiUser, HiCheck, HiBriefcase,
+  HiLightBulb, HiClock, HiPlus, HiTrash, HiSave, HiUser, HiCheck, HiBriefcase, HiVideoCamera,
 } from 'react-icons/hi';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -15,20 +15,41 @@ export default function InterviewerProfile() {
   const [sectors, setSectors] = useState([]);
   const [slots, setSlots] = useState([]);
   const [bio, setBio] = useState('');
+  const [hostEmail, setHostEmail] = useState('');
   const [isActive, setIsActive] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [newSlot, setNewSlot] = useState({ dayOfWeek: 1, startTime: '09:00', endTime: '17:00' });
 
-  useEffect(() => {
-    const profile = user?.interviewerProfile;
+  const populateFields = (profileUser) => {
+    const profile = profileUser?.interviewerProfile;
     if (profile) {
       setExpertise(profile.expertise || []);
       setSectors(profile.sectors || []);
       setSlots(profile.availabilitySlots || []);
       setBio(profile.bio || '');
+      setHostEmail(profile.hostEmail || '');
       setIsActive(profile.isActive !== false);
     }
-  }, [user]);
+  };
+
+  useEffect(() => {
+    // Populate from AuthContext first for instant display
+    if (user?.interviewerProfile) {
+      populateFields(user);
+    }
+
+    // Always fetch fresh data directly from MongoDB database
+    api.get('/interviewer/profile')
+      .then(({ data }) => {
+        if (data.user) {
+          updateUser(data.user);
+          populateFields(data.user);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
 
   const toggleExpertise = (stack) => {
     setExpertise((prev) =>
@@ -67,6 +88,7 @@ export default function InterviewerProfile() {
         sectors,
         availabilitySlots: slots,
         bio,
+        hostEmail: hostEmail.trim(),
         isActive,
       });
       updateUser(data.user);
@@ -84,7 +106,7 @@ export default function InterviewerProfile() {
         <h1 className="text-2xl font-bold text-white flex items-center gap-2">
           <HiLightBulb className="text-cyan-400" /> My Profile & Availability
         </h1>
-        <p className="text-gray-400 mt-1 text-sm">Configure your expertise and weekly availability for interviews.</p>
+        <p className="text-gray-400 mt-1 text-sm">Configure your expertise, Zoom host details, and weekly availability for interviews.</p>
       </div>
 
       {/* Status toggle */}
@@ -101,6 +123,29 @@ export default function InterviewerProfile() {
         >
           <span className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${isActive ? 'translate-x-6' : ''}`} />
         </button>
+      </div>
+
+      {/* Host Email */}
+      <div className="card">
+        <div className="flex items-center gap-2 mb-3">
+          <HiVideoCamera className="text-cyan-400 w-5 h-5" />
+          <h2 className="section-title">Zoom Interview Host Email</h2>
+        </div>
+        <p className="text-xs text-gray-400 mb-3">
+          Enter your Zoom account email address to be designated as the host when Zoom interview sessions are scheduled with you.
+        </p>
+        <div className="space-y-1.5">
+          <input
+            type="email"
+            value={hostEmail}
+            onChange={(e) => setHostEmail(e.target.value)}
+            placeholder="e.g. your-email@zoom.us (Default: rajibmiah978@gmail.com)"
+            className="input text-sm"
+          />
+          <p className="text-[11px] text-gray-500">
+            If no email is provided, <span className="text-cyan-400 font-mono">rajibmiah978@gmail.com</span> will be assigned as the meeting host by default.
+          </p>
+        </div>
       </div>
 
       {/* Bio */}
@@ -185,9 +230,9 @@ export default function InterviewerProfile() {
       <div className="card">
         <div className="flex items-center gap-2 mb-4">
           <HiClock className="text-primary-400" />
-          <h2 className="section-title">Weekly Availability</h2>
+          <h2 className="section-title">Weekly Availability (Bangladesh Time)</h2>
         </div>
-        <p className="text-xs text-gray-400 mb-4">Define your regular weekly time slots when you're available for interviews (UTC time).</p>
+        <p className="text-xs text-gray-400 mb-4">Define your regular weekly time slots when you're available for interviews in Bangladesh Standard Time (BST, UTC+6).</p>
 
         {/* Add new slot */}
         <div className="bg-dark-800 rounded-xl border border-dark-border p-4 mb-4">
@@ -206,7 +251,7 @@ export default function InterviewerProfile() {
               </select>
             </div>
             <div>
-              <label className="label text-xs">Start Time (UTC)</label>
+              <label className="label text-xs">Start Time (BST)</label>
               <input
                 type="time"
                 value={newSlot.startTime}
@@ -215,7 +260,7 @@ export default function InterviewerProfile() {
               />
             </div>
             <div>
-              <label className="label text-xs">End Time (UTC)</label>
+              <label className="label text-xs">End Time (BST)</label>
               <input
                 type="time"
                 value={newSlot.endTime}
@@ -248,7 +293,7 @@ export default function InterviewerProfile() {
                   <div className="flex items-center gap-3">
                     <span className="w-20 text-xs font-semibold text-cyan-300">{DAY_NAMES[slot.dayOfWeek]}</span>
                     <span className="text-white text-sm font-mono">{slot.startTime} – {slot.endTime}</span>
-                    <span className="text-gray-500 text-xs">UTC</span>
+                    <span className="text-cyan-400 text-xs font-medium">BST</span>
                   </div>
                   <button
                     onClick={() => removeSlot(idx)}

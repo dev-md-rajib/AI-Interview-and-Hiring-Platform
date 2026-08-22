@@ -625,12 +625,16 @@ function ActiveInterviewCard({ interview, onCancel, onRefresh, onJoinMeeting }) 
         {scheduledDate && (
           <>
             <div>
-              <p className="text-gray-400 text-xs mb-1">Date</p>
-              <p className="text-white font-semibold">{scheduledDate.toLocaleDateString()}</p>
+              <p className="text-gray-400 text-xs mb-1">Date (BST, Bangladesh Time)</p>
+              <p className="text-white font-semibold">
+                {scheduledDate.toLocaleDateString('en-US', { timeZone: 'Asia/Dhaka', month: 'short', day: 'numeric', year: 'numeric' })}
+              </p>
             </div>
             <div>
-              <p className="text-gray-400 text-xs mb-1">Time (local)</p>
-              <p className="text-white font-semibold">{scheduledDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+              <p className="text-gray-400 text-xs mb-1">Time (BST, Bangladesh Time)</p>
+              <p className="text-cyan-300 font-semibold font-mono">
+                {scheduledDate.toLocaleTimeString('en-US', { timeZone: 'Asia/Dhaka', hour: '2-digit', minute: '2-digit', hour12: true })}
+              </p>
             </div>
           </>
         )}

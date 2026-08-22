@@ -117,12 +117,16 @@ export default function NotificationBell() {
     if (!notification.read) await markRead(notification._id);
 
     // Navigate to in-app room for candidates, or external zoom for others
-    if (notification.type === 'interview_2min') {
+    if (notification.type === 'interview_2min' || notification.type === 'interview_scheduled') {
       if (user?.role === 'CANDIDATE') {
         navigate('/candidate/interview/team', { state: { openMeeting: true } });
         setOpen(false);
-      } else if (notification.data?.zoomJoinUrl) {
-        window.location.href = notification.data.zoomJoinUrl;
+      } else {
+        const zoomUrl = notification.data?.zoomStartUrl || notification.data?.zoomJoinUrl;
+        if (zoomUrl) {
+          window.open(zoomUrl, '_blank', 'noopener,noreferrer');
+          setOpen(false);
+        }
       }
     }
   };

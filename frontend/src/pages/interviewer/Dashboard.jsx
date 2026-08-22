@@ -118,10 +118,10 @@ export default function InterviewerDashboard() {
                 </div>
                 <div className="text-right flex-shrink-0">
                   <p className="text-cyan-300 text-xs font-semibold">
-                    {interview.scheduledAt ? new Date(interview.scheduledAt).toLocaleDateString() : '—'}
+                    {interview.scheduledAt ? new Date(interview.scheduledAt).toLocaleDateString('en-US', { timeZone: 'Asia/Dhaka', month: 'short', day: 'numeric' }) : '—'}
                   </p>
-                  <p className="text-gray-500 text-[10px]">
-                    {interview.scheduledAt ? new Date(interview.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                  <p className="text-gray-400 text-[10px] font-mono">
+                    {interview.scheduledAt ? new Date(interview.scheduledAt).toLocaleTimeString('en-US', { timeZone: 'Asia/Dhaka', hour: '2-digit', minute: '2-digit', hour12: true }) + ' BST' : ''}
                   </p>
                 </div>
               </div>

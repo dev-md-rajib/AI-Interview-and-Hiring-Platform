@@ -278,9 +278,9 @@ export default function InterviewerAssignments() {
                       {interview.stack} · {LEVEL_LABELS[interview.level] || `Level ${interview.level}`}
                     </p>
                     {scheduledDate && (
-                      <p className="text-gray-500 text-xs mt-1 flex items-center gap-1">
-                        <HiClock className="w-3 h-3" />
-                        {scheduledDate.toLocaleDateString()} at {scheduledDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      <p className="text-cyan-300 text-xs mt-1 flex items-center gap-1 font-mono">
+                        <HiClock className="w-3.5 h-3.5 text-cyan-400" />
+                        {scheduledDate.toLocaleDateString('en-US', { timeZone: 'Asia/Dhaka', month: 'short', day: 'numeric', year: 'numeric' })} at {scheduledDate.toLocaleTimeString('en-US', { timeZone: 'Asia/Dhaka', hour: '2-digit', minute: '2-digit', hour12: true })} (BST, Bangladesh Time)
                       </p>
                     )}
                   </div>
@@ -297,6 +297,8 @@ export default function InterviewerAssignments() {
                   {interview.zoomJoinUrl && isUpcoming && (
                     <a
                       href={interview.zoomStartUrl || interview.zoomJoinUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold transition-colors"
                     >
                       <HiPlay className="w-3.5 h-3.5" /> Start Meeting
@@ -305,6 +307,8 @@ export default function InterviewerAssignments() {
                   {interview.zoomJoinUrl && (
                     <a
                       href={interview.zoomJoinUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="flex items-center gap-1.5 px-3 py-1.5 bg-dark-800 hover:bg-dark-700 text-cyan-300 rounded-lg text-xs font-medium border border-cyan-500/20 transition-colors"
                     >
                       <HiExternalLink className="w-3.5 h-3.5" /> Join Link

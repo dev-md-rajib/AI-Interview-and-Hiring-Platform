@@ -114,16 +114,17 @@ async function zoomApiRequest(method, path, body = null) {
  * @param {Date}   options.startTime - Meeting start time
  * @param {number} options.durationMinutes - Duration in minutes (default 60)
  * @param {string} options.agenda - Meeting agenda/description
+ * @param {string} [options.hostEmail] - Email of the host (defaults to rajibmiah978@gmail.com)
  * @returns {{ meetingId, joinUrl, startUrl, password }}
  */
-async function createMeeting({ topic, startTime, durationMinutes = 60, agenda = '' }) {
+async function createMeeting({ topic, startTime, durationMinutes = 60, agenda = '', hostEmail = '' }) {
   const meetingData = {
     topic,
     type: 2, // Scheduled meeting
     start_time: startTime instanceof Date ? startTime.toISOString() : startTime,
     duration: durationMinutes,
     agenda,
-    timezone: 'UTC',
+    timezone: 'Asia/Dhaka',
     settings: {
       host_video: true,
       participant_video: true,
@@ -134,7 +135,24 @@ async function createMeeting({ topic, startTime, durationMinutes = 60, agenda = 
     },
   };
 
-  const response = await zoomApiRequest('POST', '/v2/users/me/meetings', meetingData);
+  const targetHost = (hostEmail && hostEmail.trim()) ? hostEmail.trim().toLowerCase() : 'rajibmiah978@gmail.com';
+  logger.info(`Creating Zoom meeting with host: ${targetHost}`);
+
+  let response;
+  try {
+    response = await zoomApiRequest('POST', `/v2/users/${encodeURIComponent(targetHost)}/meetings`, meetingData);
+  } catch (err) {
+    logger.warn(`Failed to create Zoom meeting for host "${targetHost}" (${err.message}). Attempting fallback...`);
+    if (targetHost !== 'rajibmiah978@gmail.com') {
+      try {
+        response = await zoomApiRequest('POST', `/v2/users/${encodeURIComponent('rajibmiah978@gmail.com')}/meetings`, meetingData);
+      } catch (fallbackErr) {
+        response = await zoomApiRequest('POST', '/v2/users/me/meetings', meetingData);
+      }
+    } else {
+      response = await zoomApiRequest('POST', '/v2/users/me/meetings', meetingData);
+    }
+  }
 
   return {
     meetingId: String(response.id),

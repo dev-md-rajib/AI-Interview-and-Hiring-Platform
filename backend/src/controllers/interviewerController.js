@@ -23,7 +23,7 @@ const getProfile = async (req, res, next) => {
 // ─────────────────────────────────────────────
 const updateProfile = async (req, res, next) => {
   try {
-    const { expertise, sectors, availabilitySlots, bio, isActive } = req.body;
+    const { expertise, sectors, availabilitySlots, bio, isActive, hostEmail } = req.body;
 
     const user = await User.findById(req.user._id);
     if (!user) return res.status(404).json({ success: false, message: 'User not found' });
@@ -36,6 +36,7 @@ const updateProfile = async (req, res, next) => {
         isActive: true,
         totalInterviewsConducted: 0,
         bio: '',
+        hostEmail: '',
       };
     }
 
@@ -44,10 +45,18 @@ const updateProfile = async (req, res, next) => {
     if (availabilitySlots !== undefined) user.interviewerProfile.availabilitySlots = availabilitySlots;
     if (bio !== undefined) user.interviewerProfile.bio = bio;
     if (isActive !== undefined) user.interviewerProfile.isActive = isActive;
+    if (hostEmail !== undefined) {
+      user.interviewerProfile.hostEmail = (hostEmail || '').trim().toLowerCase();
+    }
 
+    user.markModified('interviewerProfile');
     await user.save();
 
-    res.json({ success: true, message: 'Profile updated successfully.', user });
+    logger.info(`Interviewer profile saved for user ${user._id} (${user.email}), hostEmail: "${user.interviewerProfile?.hostEmail}"`);
+
+    const updatedUser = await User.findById(req.user._id).select('-password');
+
+    res.json({ success: true, message: 'Profile updated successfully.', user: updatedUser });
   } catch (err) {
     next(err);
   }

@@ -14,6 +14,7 @@ const interviewerProfileSchema = new mongoose.Schema({
   isActive: { type: Boolean, default: true },
   totalInterviewsConducted: { type: Number, default: 0 },
   bio: { type: String, default: '' },
+  hostEmail: { type: String, default: '', trim: true, lowercase: true }, // Zoom host email for hosting interviews
 }, { _id: false });
 
 const userSchema = new mongoose.Schema(

@@ -12,6 +12,19 @@ const COOLDOWN_DAYS = 0;
 // ─────────────────────────────────────────────
 // Helper: find the earliest available interviewer with a 30-min rest gap
 // ─────────────────────────────────────────────
+function formatBangladeshDateTime(date) {
+  if (!date) return '';
+  return new Date(date).toLocaleString('en-US', {
+    timeZone: 'Asia/Dhaka',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  }) + ' (BST, Bangladesh Time)';
+}
+
 async function findEarliestAvailableInterviewer(stack, excludeIds = [], interviewType = null) {
   const stackIsSector = (interviewType === 'business') || isSector(stack);
   const escapedStack = stack.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -43,35 +56,36 @@ async function findEarliestAvailableInterviewer(stack, excludeIds = [], intervie
   }
 
   const now = new Date();
-  const minStartTime = new Date(now.getTime() + 15 * 60 * 1000); // minimum 15 min buffer from now
+  const minStartTime = new Date(now.getTime() + 1 * 60 * 1000); // minimum 1 min buffer from now
   const INTERVIEW_DURATION_MS = 60 * 60 * 1000; // 60 minutes
-  const BUFFER_MS = 30 * 60 * 1000; // 30 minutes rest gap between interviews
+  const BUFFER_MS = 1 * 60 * 1000; // 1 minute cooldown/gap time between interviews
 
   let earliestMatch = null;
 
-  // Search over the upcoming 14 days
+  // Search over the upcoming 14 days in Bangladesh Local Time (BST, UTC+6)
   for (let dayOffset = 0; dayOffset < 14; dayOffset++) {
-    const targetDate = new Date(now.getTime() + dayOffset * 24 * 60 * 60 * 1000);
-    const dayOfWeek = targetDate.getUTCDay(); // 0 = Sunday
-    const year = targetDate.getUTCFullYear();
-    const month = targetDate.getUTCMonth();
-    const date = targetDate.getUTCDate();
+    const bdNowMs = now.getTime() + 6 * 60 * 60 * 1000; // Bangladesh is UTC+6
+    const targetBdDate = new Date(bdNowMs + dayOffset * 24 * 60 * 60 * 1000);
+    const bdDayOfWeek = targetBdDate.getUTCDay(); // 0 = Sunday, 1 = Monday, ...
+    const bdYear = targetBdDate.getUTCFullYear();
+    const bdMonth = targetBdDate.getUTCMonth();
+    const bdDate = targetBdDate.getUTCDate();
 
     for (const interviewer of interviewers) {
       const slots = interviewer.interviewerProfile?.availabilitySlots || [];
-      const daySlots = slots.filter((s) => s.dayOfWeek === dayOfWeek);
+      const daySlots = slots.filter((s) => s.dayOfWeek === bdDayOfWeek);
       if (daySlots.length === 0) continue;
 
-      // Query all existing interviews for this interviewer around this target date
-      const dayStart = new Date(Date.UTC(year, month, date, 0, 0, 0));
-      const dayEnd = new Date(Date.UTC(year, month, date + 1, 0, 0, 0));
+      // Query all existing interviews for this interviewer around this target date (in UTC)
+      const dayStart = new Date(Date.UTC(bdYear, bdMonth, bdDate, -6, 0, 0));
+      const dayEnd = new Date(Date.UTC(bdYear, bdMonth, bdDate + 1, -6, 0, 0));
 
       const existingInterviews = await TeamInterview.find({
         interviewer: interviewer._id,
         status: { $in: ['pending', 'scheduled', 'active'] },
         scheduledAt: {
-          $gte: new Date(dayStart.getTime() - 4 * 60 * 60 * 1000),
-          $lte: new Date(dayEnd.getTime() + 4 * 60 * 60 * 1000),
+          $gte: new Date(dayStart.getTime() - 2 * 60 * 60 * 1000),
+          $lte: new Date(dayEnd.getTime() + 2 * 60 * 60 * 1000),
         },
       });
 
@@ -80,21 +94,22 @@ async function findEarliestAvailableInterviewer(stack, excludeIds = [], intervie
         const [sh, sm] = slot.startTime.split(':').map(Number);
         const [eh, em] = slot.endTime.split(':').map(Number);
 
-        const slotStartTime = new Date(Date.UTC(year, month, date, sh, sm, 0));
-        const slotEndTime = new Date(Date.UTC(year, month, date, eh, em, 0));
+        // Convert BD local slot time to UTC timestamp: (BD hour - 6)
+        const slotStartTime = new Date(Date.UTC(bdYear, bdMonth, bdDate, sh - 6, sm, 0));
+        const slotEndTime = new Date(Date.UTC(bdYear, bdMonth, bdDate, eh - 6, em, 0));
 
-        // Iterate candidate start times in 30-minute intervals within the slot
+        // Iterate candidate start times in 15-minute intervals within the slot
         for (
           let candidateTime = new Date(slotStartTime.getTime());
           candidateTime.getTime() + INTERVIEW_DURATION_MS <= slotEndTime.getTime();
-          candidateTime = new Date(candidateTime.getTime() + 30 * 60 * 1000)
+          candidateTime = new Date(candidateTime.getTime() + 15 * 60 * 1000)
         ) {
           if (candidateTime < minStartTime) continue;
 
           const cStart = candidateTime.getTime();
           const cEnd = cStart + INTERVIEW_DURATION_MS;
 
-          // Check if candidate time violates the 30-minute rest buffer around any existing interview
+          // Check if candidate time violates the 1-minute rest cooldown around any existing interview
           const hasConflict = existingInterviews.some((ex) => {
             const exStart = new Date(ex.scheduledAt).getTime();
             const exEnd = exStart + INTERVIEW_DURATION_MS;
@@ -115,7 +130,7 @@ async function findEarliestAvailableInterviewer(stack, excludeIds = [], intervie
     }
 
     // If an earliest match was found for this day or earlier, no future day can beat it
-    if (earliestMatch && earliestMatch.scheduledAt < new Date(Date.UTC(year, month, date + 1, 0, 0, 0))) {
+    if (earliestMatch && earliestMatch.scheduledAt < new Date(Date.UTC(bdYear, bdMonth, bdDate + 1, -6, 0, 0))) {
       break;
     }
   }
@@ -244,11 +259,13 @@ const requestInterview = async (req, res, next) => {
     // Create Zoom meeting
     let zoomData;
     try {
+      const hostEmail = interviewer.interviewerProfile?.hostEmail || 'rajibmiah978@gmail.com';
       zoomData = await createMeeting({
         topic: `AI Platform Interview — ${stack} Level ${level}`,
         startTime: scheduledAt,
         durationMinutes: 60,
         agenda: `Technical interview for ${req.user.name} — ${stack} (Level ${level})`,
+        hostEmail,
       });
     } catch (zoomErr) {
       logger.error(`Zoom meeting creation failed: ${zoomErr.message}`);
@@ -272,11 +289,13 @@ const requestInterview = async (req, res, next) => {
       zoomPassword: zoomData.password,
     });
 
+    const bdFormattedTime = formatBangladeshDateTime(scheduledAt);
+
     // Notify candidate with scheduled time
     await createNotification(candidateId, {
       type: 'interview_scheduled',
       title: '✅ Team Interview Scheduled!',
-      message: `Your ${stack} (Level ${level}) team interview has been automatically scheduled with ${interviewer.name} for ${scheduledAt.toUTCString()}.`,
+      message: `Your ${stack} (Level ${level}) team interview has been automatically scheduled with ${interviewer.name} for ${bdFormattedTime}.`,
       data: {
         teamInterviewId: interview._id,
         zoomJoinUrl: zoomData.joinUrl,
@@ -289,7 +308,7 @@ const requestInterview = async (req, res, next) => {
     await createNotification(interviewer._id, {
       type: 'interview_scheduled',
       title: '📋 New Interview Assigned',
-      message: `You have been assigned to interview ${req.user.name} for ${stack} (Level ${level}) at ${scheduledAt.toUTCString()}.`,
+      message: `You have been assigned to interview ${req.user.name} for ${stack} (Level ${level}) at ${bdFormattedTime}.`,
       data: {
         teamInterviewId: interview._id,
         zoomStartUrl: zoomData.startUrl,
@@ -306,7 +325,7 @@ const requestInterview = async (req, res, next) => {
 
     res.status(201).json({
       success: true,
-      message: `Interview automatically scheduled for ${scheduledAt.toLocaleString()} with ${interviewer.name}!`,
+      message: `Interview automatically scheduled for ${bdFormattedTime} with ${interviewer.name}!`,
       interview: populated,
     });
   } catch (err) {
@@ -435,11 +454,13 @@ const declineInterview = async (req, res, next) => {
         // Delete old meeting
         if (interview.zoomMeetingId) await deleteMeeting(interview.zoomMeetingId);
 
+        const hostEmail = replacement.interviewerProfile?.hostEmail || 'rajibmiah978@gmail.com';
         zoomData = await createMeeting({
           topic: `AI Platform Interview — ${interview.stack} Level ${interview.level}`,
           startTime: newScheduledAt,
           durationMinutes: 60,
           agenda: `Technical interview for ${interview.candidate?.name} — ${interview.stack} (Level ${interview.level})`,
+          hostEmail,
         });
       } catch (zoomErr) {
         logger.error(`Zoom re-creation failed: ${zoomErr.message}`);
@@ -455,11 +476,13 @@ const declineInterview = async (req, res, next) => {
       interview.zoomPassword = zoomData.password;
       await interview.save();
 
+      const bdReassignedTime = formatBangladeshDateTime(newScheduledAt);
+
       // Notify new interviewer
       await createNotification(replacement._id, {
         type: 'interview_scheduled',
         title: '📋 Interview Assigned to You',
-        message: `You have been assigned to interview ${interview.candidate?.name} for ${interview.stack} (Level ${interview.level}) at ${newScheduledAt.toUTCString()}.`,
+        message: `You have been assigned to interview ${interview.candidate?.name} for ${interview.stack} (Level ${interview.level}) at ${bdReassignedTime}.`,
         data: {
           teamInterviewId: interview._id,
           zoomStartUrl: zoomData.startUrl,
@@ -471,7 +494,7 @@ const declineInterview = async (req, res, next) => {
       await createNotification(interview.candidate._id, {
         type: 'interview_reassigned',
         title: '🔄 Interviewer Reassigned',
-        message: `Your interviewer changed. Your ${interview.stack} interview is scheduled with ${replacement.name} for ${newScheduledAt.toUTCString()}.`,
+        message: `Your interviewer changed. Your ${interview.stack} interview is scheduled with ${replacement.name} for ${bdReassignedTime}.`,
         data: {
           teamInterviewId: interview._id,
           zoomJoinUrl: zoomData.joinUrl,

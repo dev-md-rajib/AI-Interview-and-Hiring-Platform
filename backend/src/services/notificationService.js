@@ -38,7 +38,7 @@ function startNotificationScheduler() {
       for (const interview of upcoming) {
         const meetingLink = interview.zoomJoinUrl;
         const timeStr = interview.scheduledAt.toLocaleTimeString('en-US', {
-          hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'UTC'
+          hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Dhaka'
         });
 
         // Notify candidate
@@ -46,7 +46,7 @@ function startNotificationScheduler() {
           await createNotification(interview.candidate._id, {
             type: 'interview_2min',
             title: '⏰ Your Interview Starts in 2 Minutes!',
-            message: `Your ${interview.stack} (Level ${interview.level}) team interview starts at ${timeStr} UTC. Join now!`,
+            message: `Your ${interview.stack} (Level ${interview.level}) team interview starts at ${timeStr} (BST, Bangladesh Time). Join now!`,
             data: {
               teamInterviewId: interview._id,
               zoomJoinUrl: meetingLink,
@@ -62,7 +62,7 @@ function startNotificationScheduler() {
           await createNotification(interview.interviewer._id, {
             type: 'interview_2min',
             title: '⏰ Interview Starts in 2 Minutes!',
-            message: `Your interview session for ${interview.stack} (Level ${interview.level}) starts at ${timeStr} UTC. Start the meeting now!`,
+            message: `Your interview session for ${interview.stack} (Level ${interview.level}) starts at ${timeStr} (BST, Bangladesh Time). Start the meeting now!`,
             data: {
               teamInterviewId: interview._id,
               zoomStartUrl: interview.zoomStartUrl,
