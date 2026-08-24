@@ -103,92 +103,77 @@ export function setAllowedWindowTitle(titleSubstring: string) {
   allowedTitleSubstring = titleSubstring;
 }
 
-const TAB_CLOSER_CS = `
-using System;
-using System.Runtime.InteropServices;
-
-public class TabCloserHelper {
-    public delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
-
-    [DllImport("user32.dll")] public static extern bool EnumWindows(EnumWindowsProc lpfn, IntPtr lParam);
-    [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
-    [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
-    [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hWnd);
-    [DllImport("user32.dll")] public static extern bool BringWindowToTop(IntPtr hWnd);
-    [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
-    [DllImport("user32.dll")] public static extern bool AttachThreadInput(uint idAttach, uint idAttachTo, bool fAttach);
-    [DllImport("kernel32.dll")] public static extern uint GetCurrentThreadId();
-    [DllImport("user32.dll")] public static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);
-    [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr hWnd);
-
-    public const byte VK_CONTROL = 0x11;
-    public const byte VK_W = 0x57;
-    public const uint KEYEVENTF_KEYUP = 0x0002;
-
-    public static bool ForceForeground(IntPtr hWnd) {
-        IntPtr foreHwnd = GetForegroundWindow();
-        if (foreHwnd == hWnd) return true;
-
-        uint discardPid;
-        uint foreThread = 0;
-        if (foreHwnd != IntPtr.Zero) {
-            foreThread = GetWindowThreadProcessId(foreHwnd, out discardPid);
-        }
-        uint targetThread = GetWindowThreadProcessId(hWnd, out discardPid);
-        uint curThread = GetCurrentThreadId();
-
-        if (foreThread != 0 && foreThread != curThread) {
-            AttachThreadInput(curThread, foreThread, true);
-        }
-        if (targetThread != 0 && targetThread != curThread) {
-            AttachThreadInput(curThread, targetThread, true);
-        }
-
-        ShowWindow(hWnd, 5); // SW_SHOW
-        BringWindowToTop(hWnd);
-        bool res = SetForegroundWindow(hWnd);
-
-        if (foreThread != 0 && foreThread != curThread) {
-            AttachThreadInput(curThread, foreThread, false);
-        }
-        if (targetThread != 0 && targetThread != curThread) {
-            AttachThreadInput(curThread, targetThread, false);
-        }
-        return res;
-    }
-
-    public static void SendCtrlW(IntPtr hWnd) {
-        ForceForeground(hWnd);
-        System.Threading.Thread.Sleep(50);
-        keybd_event(VK_CONTROL, 0, 0, UIntPtr.Zero);
-        keybd_event(VK_W, 0, 0, UIntPtr.Zero);
-        System.Threading.Thread.Sleep(25);
-        keybd_event(VK_W, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
-        keybd_event(VK_CONTROL, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
-    }
-
-    public static bool CloseActiveTabForPid(uint targetPid) {
-        bool closed = false;
-        EnumWindows((hWnd, lParam) => {
-            if (IsWindowVisible(hWnd)) {
-                uint pid;
-                GetWindowThreadProcessId(hWnd, out pid);
-                if (pid == targetPid) {
-                    SendCtrlW(hWnd);
-                    closed = true;
-                    return false;
-                }
-            }
-            return true;
-        }, IntPtr.Zero);
-        return closed;
-    }
-}
-`;
-
 let isEnforcingActive = false;
 
+function dispatchCloseTab(pid: number, title: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    const cleanTitle = (title || '').replace(/[\r\n]/g, ' ').replace(/"/g, '""').trim();
+    const tempFile = path.join(os.tmpdir(), `close_tab_${Date.now()}_${Math.random().toString(36).slice(2, 7)}.vbs`);
+
+    const vbs = `
+Set ws = CreateObject("WScript.Shell")
+act = False
+If "${cleanTitle}" <> "" Then
+  act = ws.AppActivate("${cleanTitle}")
+End If
+If Not act And ${pid || 0} > 0 Then
+  act = ws.AppActivate(${pid || 0})
+End If
+If act Then
+  WScript.Sleep 40
+  ws.SendKeys "^w"
+End If
+WScript.Quit(0)
+`;
+
+    try {
+      fs.writeFileSync(tempFile, vbs, 'utf8');
+      const child = spawn('cscript.exe', ['//nologo', tempFile], { windowsHide: true });
+      child.on('close', () => {
+        try { fs.unlinkSync(tempFile); } catch {}
+        resolve(true);
+      });
+      child.on('error', () => {
+        try { fs.unlinkSync(tempFile); } catch {}
+        resolve(false);
+      });
+    } catch (err) {
+      resolve(false);
+    }
+  });
+}
+
 async function closeActiveTab(win: DetectedWindow) {
+  if (!isEnforcingActive) return;
+
+  const now = Date.now();
+  const lastAttempt = recentlyClosedPids.get(win.pid) || 0;
+  if (now - lastAttempt < 600) {
+    return;
+  }
+  recentlyClosedPids.set(win.pid, now);
+
+  // 1. Capture evidence screenshot asynchronously in background (do NOT block tab close)
+  screenshotCaptureManager
+    .captureClosedWindowScreenshot('unauthorized_tab', `${win.processName}: ${win.title}`)
+    .catch((err) => console.error('[lockdown] Screenshot before tab close failed:', err));
+
+  // 2. Dispatch event and logger
+  console.log(`[lockdown] Closing unauthorized tab in chosen app pid=${win.pid} (${win.processName}): "${win.title}"`);
+  onEvent('blocked_attempt', `Closed tab: ${win.title}`);
+  try {
+    activityLoggerManager.logEvent({
+      type: 'blocked_attempt',
+      detail: `Closed unauthorized tab in chosen app: ${win.title}`,
+      timestamp: new Date().toISOString()
+    });
+  } catch {}
+
+  // 3. Immediately dispatch Ctrl+W keystroke to close the unauthorized tab
+  await dispatchCloseTab(win.pid, win.title);
+}
+
+async function closeWindow(win: DetectedWindow) {
   if (!isEnforcingActive) return;
 
   const now = Date.now();
@@ -198,65 +183,10 @@ async function closeActiveTab(win: DetectedWindow) {
   }
   recentlyClosedPids.set(win.pid, now);
 
-  // 1. Capture evidence screenshot BEFORE closing the tab
-  try {
-    await screenshotCaptureManager.captureClosedWindowScreenshot('unauthorized_tab', `${win.processName}: ${win.title}`);
-  } catch (err) {
-    console.error('[lockdown] Screenshot before tab close failed:', err);
-  }
-
-  if (!isEnforcingActive) return;
-
-  // 2. Dispatch Ctrl+W to close only that tab
-  const ps = `
-$WarningPreference = 'SilentlyContinue'
-Add-Type -TypeDefinition @'
-${TAB_CLOSER_CS}
-'@ -ErrorAction SilentlyContinue
-[TabCloserHelper]::CloseActiveTabForPid(${win.pid})
-`;
-
-  const tempFile = path.join(os.tmpdir(), `close_tab_${Date.now()}_${Math.random().toString(36).slice(2)}.ps1`);
-  try {
-    fs.writeFileSync(tempFile, ps, 'utf8');
-    const child = spawn('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', tempFile], {
-      windowsHide: true
-    });
-    child.on('close', () => {
-      try { fs.unlinkSync(tempFile); } catch {}
-      console.log(`[lockdown] Closed unauthorized tab in chosen app pid=${win.pid} (${win.processName}): "${win.title}"`);
-      onEvent('blocked_attempt', `Closed tab: ${win.title}`);
-      try {
-        activityLoggerManager.logEvent({
-          type: 'blocked_attempt',
-          detail: `Closed unauthorized tab in chosen app: ${win.title}`,
-          timestamp: new Date().toISOString()
-        });
-      } catch {}
-    });
-  } catch (err) {
-    console.error('[lockdown] closeActiveTab error:', err);
-  }
-}
-
-async function closeWindow(win: DetectedWindow) {
-  if (!isEnforcingActive) return;
-
-  const now = Date.now();
-  const lastAttempt = recentlyClosedPids.get(win.pid) || 0;
-  if (now - lastAttempt < 5000) {
-    return;
-  }
-  recentlyClosedPids.set(win.pid, now);
-
-  // 1. Capture evidence screenshot BEFORE terminating the application
-  try {
-    await screenshotCaptureManager.captureClosedWindowScreenshot('unauthorized_app', `${win.processName}: ${win.title}`);
-  } catch (err) {
-    console.error('[lockdown] Screenshot before app termination failed:', err);
-  }
-
-  if (!isEnforcingActive) return;
+  // 1. Capture evidence screenshot asynchronously in background
+  screenshotCaptureManager
+    .captureClosedWindowScreenshot('unauthorized_app', `${win.processName}: ${win.title}`)
+    .catch((err) => console.error('[lockdown] Screenshot before app termination failed:', err));
 
   // 2. Terminate the unauthorized application
   exec(`taskkill /PID ${win.pid} /F`, (err, _stdout, stderr) => {
@@ -327,7 +257,7 @@ async function enforceOnce() {
   }
 }
 
-export function startEnforcement(intervalMs = 1500) {
+export function startEnforcement(intervalMs = 800) {
   if (pollTimer || isEnforcingActive) return;
   isEnforcingActive = true;
   console.log('[lockdown] Enforcement started.');
