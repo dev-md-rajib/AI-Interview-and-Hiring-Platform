@@ -61,10 +61,10 @@ export default function Login() {
         <div className="absolute top-20 left-20 w-64 h-64 bg-primary-600/10 rounded-full blur-3xl" />
         <div className="absolute bottom-20 right-20 w-64 h-64 bg-accent-500/10 rounded-full blur-3xl" />
         <div className="relative z-10 text-center max-w-md">
-          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-primary-500/30">
-            <HiAcademicCap className="w-10 h-10 text-white" />
+          <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-primary-500/20 to-accent-500/20 border border-primary-500/30 flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-primary-500/30 p-3">
+            <img src="/images/logo.png" alt="AIH Logo" className="w-full h-full object-contain drop-shadow-md" />
           </div>
-          <h1 className="text-4xl font-bold text-white mb-4">AI Interview Platform</h1>
+          <h1 className="text-4xl font-bold text-white mb-4">A<span className="text-cyan-400">I</span><span className="text-accent-400">H</span></h1>
           <p className="text-gray-400 text-lg leading-relaxed">
             The intelligent hiring platform connecting exceptional candidates with world-class companies through AI-powered interviews.
           </p>
@@ -83,10 +83,10 @@ export default function Login() {
       <div className="flex-1 flex items-center justify-center p-6">
         <div className="w-full max-w-md animate-slide-up">
           <div className="flex items-center gap-3 mb-8 lg:hidden">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center">
-              <HiAcademicCap className="w-6 h-6 text-white" />
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500/20 to-accent-500/20 border border-primary-500/30 flex items-center justify-center p-1.5 shadow-md shadow-primary-500/20">
+              <img src="/images/logo.png" alt="AIH Logo" className="w-full h-full object-contain" />
             </div>
-            <span className="font-bold text-xl text-white">AI<span className="text-gradient">Hire</span></span>
+            <span className="font-bold text-xl text-white">A<span className="text-cyan-400">I</span><span className="text-accent-400">H</span></span>
           </div>
 
           {bannedUser ? (

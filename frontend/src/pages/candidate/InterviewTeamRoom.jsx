@@ -265,8 +265,8 @@ export default function InterviewTeamRoom() {
               >
                 <HiBriefcase className={`w-6 h-6 flex-shrink-0 ${interviewType === 'business' ? 'text-amber-400' : 'text-gray-500'}`} />
                 <div>
-                  <div className={`font-bold text-sm ${interviewType === 'business' ? 'text-white' : 'text-gray-300'}`}>Business Sector</div>
-                  <div className="text-xs text-gray-400">Marketing, Sales, HR, Finance</div>
+                  <div className={`font-bold text-sm ${interviewType === 'business' ? 'text-white' : 'text-gray-300'}`}>General & Professional Fields</div>
+                  <div className="text-xs text-gray-400">Marketing, Sales, HR, Finance, Analysis & more</div>
                 </div>
               </button>
             </div>
@@ -299,25 +299,28 @@ export default function InterviewTeamRoom() {
               </div>
             )}
 
-            {/* Business Sector Options */}
+            {/* General & Professional Fields Options */}
             {interviewType === 'business' && (
               <div>
-                <label className="label text-xs text-gray-400 mb-2">Choose Business Sector</label>
+                <label className="label text-xs text-gray-400 mb-2">Choose Field / Domain</label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {SECTORS.map((sector) => {
                     const isSelected = stack === sector.id;
+                    const Icon = sector.Icon;
                     return (
                       <button
                         key={sector.id}
                         type="button"
                         onClick={() => setStack(sector.id)}
-                        className={`p-2.5 rounded-xl border-2 text-left transition-all flex items-center gap-2 ${
+                        className={`p-2.5 rounded-xl border-2 text-left transition-all flex items-center gap-2.5 ${
                           isSelected
                             ? `${sector.border} ${sector.bg}`
                             : 'border-dark-border hover:border-gray-500 bg-dark-800/50'
                         }`}
                       >
-                        <span className="text-xl">{sector.icon}</span>
+                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${isSelected ? `${sector.bg} ${sector.color} border ${sector.border}` : 'bg-dark-card text-gray-400 border border-dark-border'}`}>
+                          {Icon && <Icon className="w-3.5 h-3.5" />}
+                        </div>
                         <div className="min-w-0 flex-1">
                           <div className={`font-semibold text-xs truncate ${isSelected ? 'text-white' : 'text-gray-300'}`}>
                             {sector.label}
@@ -329,7 +332,9 @@ export default function InterviewTeamRoom() {
                 </div>
                 {stack && selectedSector && (
                   <p className="mt-2 text-xs flex items-center gap-1.5">
-                    <span>{selectedSector.icon}</span>
+                    <span className={`w-5 h-5 rounded flex items-center justify-center ${selectedSector.bg} ${selectedSector.color} border ${selectedSector.border}`}>
+                      {selectedSector.Icon && <selectedSector.Icon className="w-3 h-3" />}
+                    </span>
                     <span className={`font-semibold ${selectedSector.color}`}>{selectedSector.id}</span>
                     <span className="text-gray-500">selected</span>
                   </p>

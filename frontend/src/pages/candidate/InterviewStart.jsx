@@ -261,8 +261,8 @@ export default function InterviewStart() {
           >
             <HiBriefcase className={`w-6 h-6 flex-shrink-0 ${interviewType === 'business' ? 'text-amber-400' : 'text-gray-400'}`} />
             <div>
-              <div className={`font-bold text-sm ${interviewType === 'business' ? 'text-white' : 'text-gray-300'}`}>Business Sector</div>
-              <div className="text-xs text-gray-400">Marketing, Sales, HR, Finance, and more</div>
+              <div className={`font-bold text-sm ${interviewType === 'business' ? 'text-white' : 'text-gray-300'}`}>General & Professional Fields</div>
+              <div className="text-xs text-gray-400">Marketing, Sales, HR, Finance, Analysis & more</div>
             </div>
           </button>
         </div>
@@ -290,34 +290,41 @@ export default function InterviewStart() {
           </>
         )}
 
-        {/* Business Sector Picker */}
+        {/* General & Professional Fields Picker */}
         {interviewType === 'business' && (
           <>
-            <p className="text-sm text-gray-400 mb-3">Choose the business sector you want to be interviewed on</p>
+            <p className="text-sm text-gray-400 mb-3">Choose the field or domain you want to be interviewed on</p>
             {mode === 'ai_agent' && (
               <div className="mb-4 p-3 rounded-lg bg-amber-900/10 border border-amber-500/30 text-xs text-amber-300">
-                🎙️ Business sector AI interviews are <strong>entirely voice/scenario-based</strong> — no coding challenges. The AI adapts its persona based on the sector (e.g., acts as a customer for Sales).
+                🎙️ General & professional field AI interviews are <strong>entirely voice/scenario-based</strong> — no coding challenges. The AI adapts its persona based on the domain (e.g., acts as a customer for Sales).
               </div>
             )}
             {mode === 'interview_team' && (
               <div className="mb-4 p-3 rounded-lg bg-cyan-900/10 border border-cyan-500/30 text-xs text-cyan-300">
-                👥 In Business Sector team interviews, an expert human interviewer matching this business domain will conduct your live Zoom session.
+                👥 In domain & professional field team interviews, an expert human interviewer matching this domain will conduct your live Zoom session.
               </div>
             )}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {SECTORS.map((sector) => {
                 const isSelected = stack === sector.id;
+                const Icon = sector.Icon;
                 return (
                   <button
                     key={sector.id}
                     onClick={() => setStack(sector.id)}
-                    className={`p-3 rounded-xl border-2 text-left transition-all group ${
+                    className={`p-3.5 rounded-xl border-2 text-left transition-all group flex flex-col justify-between ${
                       isSelected
-                        ? `${sector.border} ${sector.bg}`
-                        : 'border-dark-border hover:border-gray-500 bg-dark-800/50'
+                        ? `${sector.border} ${sector.bg} shadow-lg shadow-black/20`
+                        : 'border-dark-border hover:border-gray-600 bg-dark-800/40 hover:bg-dark-800'
                     }`}
                   >
-                    <div className="text-2xl mb-2">{sector.icon}</div>
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 transition-colors ${
+                      isSelected
+                        ? `${sector.bg} ${sector.color} border ${sector.border}`
+                        : `bg-dark-card border border-dark-border text-gray-400 group-hover:${sector.color} group-hover:border-gray-600`
+                    }`}>
+                      {Icon && <Icon className="w-5 h-5" />}
+                    </div>
                     <div className={`font-semibold text-xs leading-tight ${isSelected ? 'text-white' : 'text-gray-300'}`}>
                       {sector.label}
                     </div>
@@ -327,7 +334,9 @@ export default function InterviewStart() {
             </div>
             {stack && selectedSector && (
               <p className="mt-3 text-sm flex items-center gap-2">
-                <span>{selectedSector.icon}</span>
+                <span className={`w-6 h-6 rounded-lg flex items-center justify-center ${selectedSector.bg} ${selectedSector.color} border ${selectedSector.border}`}>
+                  {selectedSector.Icon && <selectedSector.Icon className="w-3.5 h-3.5" />}
+                </span>
                 <span className={`font-semibold ${selectedSector.color}`}>{selectedSector.id}</span>
                 <span className="text-gray-500">selected</span>
               </p>

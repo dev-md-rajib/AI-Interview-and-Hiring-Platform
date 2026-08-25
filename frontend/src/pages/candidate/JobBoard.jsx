@@ -55,10 +55,10 @@ export default function JobBoard() {
         <div className="flex gap-3 flex-wrap">
           <div className="relative">
             <HiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input className="input pl-9 w-44" placeholder="Search stack..." value={search} onChange={(e) => setSearch(e.target.value)} />
+            <input className="input pl-9 w-44" placeholder="Search skill / domain..." value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
-          <select className="input w-40" value={sectorFilter} onChange={(e) => setSectorFilter(e.target.value)}>
-            <option value="">All Sectors</option>
+          <select className="input w-44" value={sectorFilter} onChange={(e) => setSectorFilter(e.target.value)}>
+            <option value="">All Fields & Domains</option>
             {SECTORS.map((s) => (
               <option key={s.id} value={s.id}>{s.icon} {s.label}</option>
             ))}
@@ -110,8 +110,9 @@ export default function JobBoard() {
                   <div className="flex-1 pr-8">
                     {/* Sector badge */}
                     {jobSector && (
-                      <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border mb-2 ${jobSector.badgeBg}`}>
-                        {jobSector.icon} {jobSector.label}
+                      <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-0.5 rounded-full border mb-2 font-medium ${jobSector.badgeBg}`}>
+                        {jobSector.Icon && <jobSector.Icon className="w-3.5 h-3.5" />}
+                        <span>{jobSector.label}</span>
                       </span>
                     )}
                     <h2 className="text-white font-bold text-lg group-hover:text-primary-400 transition-colors">{job.title}</h2>
@@ -136,7 +137,7 @@ export default function JobBoard() {
                         const reqSector = isSector(req.stack) ? getSectorById(req.stack) : null;
                         return (
                           <div key={i} className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded border ${reqSector ? reqSector.badgeBg : 'bg-dark-800 border-dark-border'}`}>
-                            {reqSector && <span className="text-sm">{reqSector.icon}</span>}
+                            {reqSector?.Icon && <reqSector.Icon className="w-3.5 h-3.5" />}
                             <span className="text-white text-sm font-medium">
                               {req.stack}
                               {req.method && req.method !== 'Both' && (

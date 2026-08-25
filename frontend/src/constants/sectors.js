@@ -1,12 +1,19 @@
-/**
- * Business / Non-Tech Sector Definitions — Frontend Constants
- * Mirrors backend/src/config/sectors.js for UI use.
- */
+import {
+  HiSpeakerphone,
+  HiBriefcase,
+  HiSupport,
+  HiUserGroup,
+  HiChartBar,
+  HiCurrencyDollar,
+  HiClipboardList,
+  HiFolder,
+} from 'react-icons/hi';
 
 export const SECTORS = [
   {
     id: 'Marketing',
     label: 'Marketing',
+    Icon: HiSpeakerphone,
     icon: '📣',
     color: 'text-pink-400',
     border: 'border-pink-500',
@@ -17,6 +24,7 @@ export const SECTORS = [
   {
     id: 'Sales & Business Development',
     label: 'Sales & BD',
+    Icon: HiBriefcase,
     icon: '💼',
     color: 'text-orange-400',
     border: 'border-orange-500',
@@ -27,6 +35,7 @@ export const SECTORS = [
   {
     id: 'Customer Service',
     label: 'Customer Service',
+    Icon: HiSupport,
     icon: '🎧',
     color: 'text-cyan-400',
     border: 'border-cyan-500',
@@ -37,6 +46,7 @@ export const SECTORS = [
   {
     id: 'Human Resources',
     label: 'Human Resources',
+    Icon: HiUserGroup,
     icon: '👥',
     color: 'text-purple-400',
     border: 'border-purple-500',
@@ -47,6 +57,7 @@ export const SECTORS = [
   {
     id: 'Business Analysis',
     label: 'Business Analysis',
+    Icon: HiChartBar,
     icon: '📊',
     color: 'text-blue-400',
     border: 'border-blue-500',
@@ -57,6 +68,7 @@ export const SECTORS = [
   {
     id: 'Finance & Accounting',
     label: 'Finance & Accounting',
+    Icon: HiCurrencyDollar,
     icon: '💰',
     color: 'text-emerald-400',
     border: 'border-emerald-500',
@@ -67,6 +79,7 @@ export const SECTORS = [
   {
     id: 'Project Management',
     label: 'Project Management',
+    Icon: HiClipboardList,
     icon: '📋',
     color: 'text-yellow-400',
     border: 'border-yellow-500',
@@ -77,6 +90,7 @@ export const SECTORS = [
   {
     id: 'Administration',
     label: 'Administration',
+    Icon: HiFolder,
     icon: '🗂️',
     color: 'text-slate-400',
     border: 'border-slate-500',

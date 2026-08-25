@@ -195,30 +195,33 @@ export default function InterviewerProfile() {
       <div className="card">
         <div className="flex items-center gap-2 mb-4">
           <HiBriefcase className="text-amber-400" />
-          <h2 className="section-title">Business Sector Expertise</h2>
+          <h2 className="section-title">General & Professional Fields</h2>
           <span className="text-xs text-gray-500">({sectors.length} selected)</span>
         </div>
         <p className="text-xs text-gray-400 mb-3">
-          Select business sectors you can conduct professional interviews for.
-          This allows you to be matched with candidates taking business sector team interviews.
+          Select fields & domains you can conduct interviews for.
+          This allows you to be matched with candidates taking domain and professional field team interviews.
         </p>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
           {SECTORS.map((sector) => {
             const selected = sectors.includes(sector.id);
+            const Icon = sector.Icon;
             return (
               <button
                 key={sector.id}
                 onClick={() => toggleSector(sector.id)}
-                className={`p-3 rounded-xl border-2 text-left transition-all flex items-center gap-2 ${
+                className={`p-3 rounded-xl border-2 text-left transition-all flex items-center gap-2.5 ${
                   selected
                     ? `${sector.border} ${sector.bg}`
                     : 'border-dark-border hover:border-gray-500 bg-dark-800/50'
                 }`}
               >
-                <span className="text-xl">{sector.icon}</span>
-                <div>
-                  <div className={`font-semibold text-xs ${selected ? 'text-white' : 'text-gray-300'}`}>{sector.label}</div>
-                  {selected && <div className={`text-[10px] ${sector.color}`}>✓ Selected</div>}
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${selected ? `${sector.bg} ${sector.color} border ${sector.border}` : 'bg-dark-card text-gray-400 border border-dark-border'}`}>
+                  {Icon && <Icon className="w-4 h-4" />}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className={`font-semibold text-xs truncate ${selected ? 'text-white' : 'text-gray-300'}`}>{sector.label}</div>
+                  {selected && <div className={`text-[10px] ${sector.color} font-medium`}>✓ Selected</div>}
                 </div>
               </button>
             );

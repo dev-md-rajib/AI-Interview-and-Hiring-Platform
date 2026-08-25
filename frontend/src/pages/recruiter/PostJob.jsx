@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
-import { HiSave, HiPlus, HiTrash } from 'react-icons/hi';
+import { HiSave, HiPlus, HiTrash, HiCode } from 'react-icons/hi';
 import { SECTORS, TECH_STACKS, getSectorById, isSector } from '../../constants/sectors';
 
 export default function PostJob() {
@@ -86,41 +86,45 @@ export default function PostJob() {
           </div>
         </div>
 
-        {/* Sector */}
+        {/* Field / Domain */}
         <div className="card space-y-4">
-          <h2 className="section-title">Job Sector <span className="text-gray-400 text-sm font-normal">(optional)</span></h2>
-          <p className="text-gray-400 text-sm">If this is a business/professional role, select the sector it falls under. Candidates will see a sector badge on the job card.</p>
+          <h2 className="section-title">Job Field / Domain <span className="text-gray-400 text-sm font-normal">(optional)</span></h2>
+          <p className="text-gray-400 text-sm">If this is a professional/general domain role (e.g. Marketing, Sales, HR, Finance), select the field it falls under. Candidates will see a domain badge on the job card.</p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             <button
               type="button"
               onClick={() => setSelectedSector('')}
-              className={`p-2.5 rounded-lg border text-xs font-medium transition-all ${
+              className={`p-2.5 rounded-lg border text-xs font-medium transition-all flex items-center gap-2 ${
                 !selectedSector ? 'border-gray-500 bg-gray-700/50 text-white' : 'border-dark-border text-gray-400 hover:border-gray-500'
               }`}
             >
-              🔧 Technical / Other
+              <HiCode className="w-4 h-4 text-cyan-400" />
+              <span>Technical / Other</span>
             </button>
             {SECTORS.map((sector) => {
               const isSelected = selectedSector === sector.id;
+              const Icon = sector.Icon;
               return (
                 <button
                   type="button"
                   key={sector.id}
                   onClick={() => setSelectedSector(sector.id)}
                   className={`p-2.5 rounded-lg border text-xs font-medium transition-all flex items-center gap-2 ${
-                    isSelected ? `${sector.border} ${sector.bg} text-white` : 'border-dark-border text-gray-400 hover:border-gray-500'
+                    isSelected ? `${sector.border} ${sector.bg} text-white` : 'border-dark-border text-gray-400 hover:border-gray-500 bg-dark-800/40'
                   }`}
                 >
-                  <span className="text-base">{sector.icon}</span>
+                  {Icon && <Icon className={`w-4 h-4 ${isSelected ? sector.color : 'text-gray-400'}`} />}
                   <span>{sector.label}</span>
                 </button>
               );
             })}
           </div>
           {selectedSector && (
-            <p className="text-xs text-gray-400">
-              Selected sector: <span className={`font-semibold ${getSectorById(selectedSector)?.color}`}>
-                {getSectorById(selectedSector)?.icon} {selectedSector}
+            <p className="text-xs text-gray-400 flex items-center gap-1.5 mt-2">
+              <span>Selected sector:</span>
+              <span className={`font-semibold inline-flex items-center gap-1 ${getSectorById(selectedSector)?.color}`}>
+                {getSectorById(selectedSector)?.Icon && React.createElement(getSectorById(selectedSector).Icon, { className: 'w-3.5 h-3.5' })}
+                {selectedSector}
               </span>
             </p>
           )}

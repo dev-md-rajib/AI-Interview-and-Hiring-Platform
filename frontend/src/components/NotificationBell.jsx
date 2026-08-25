@@ -1,19 +1,60 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { HiBell, HiX, HiCheck, HiExternalLink } from 'react-icons/hi';
+import {
+  HiBell, HiX, HiCheck, HiExternalLink,
+  HiCalendar, HiClock, HiRefresh, HiSwitchHorizontal,
+  HiBan, HiChartBar, HiCheckCircle, HiSpeakerphone,
+} from 'react-icons/hi';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
-const TYPE_ICONS = {
-  interview_scheduled: '🗓️',
-  interview_2min: '⏰',
-  interview_declined: '🔄',
-  interview_reassigned: '🔁',
-  interview_cancelled: '🚫',
-  interview_result: '📊',
-  interview_feedback_submitted: '✅',
-  system: '📢',
+const NOTIFICATION_CONFIG = {
+  interview_scheduled: {
+    icon: HiCalendar,
+    bg: 'bg-blue-500/15 border-blue-500/30 text-blue-400',
+  },
+  interview_2min: {
+    icon: HiClock,
+    bg: 'bg-amber-500/15 border-amber-500/30 text-amber-400',
+  },
+  interview_declined: {
+    icon: HiRefresh,
+    bg: 'bg-rose-500/15 border-rose-500/30 text-rose-400',
+  },
+  interview_reassigned: {
+    icon: HiSwitchHorizontal,
+    bg: 'bg-cyan-500/15 border-cyan-500/30 text-cyan-400',
+  },
+  interview_cancelled: {
+    icon: HiBan,
+    bg: 'bg-red-500/15 border-red-500/30 text-red-400',
+  },
+  interview_result: {
+    icon: HiChartBar,
+    bg: 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400',
+  },
+  interview_feedback_submitted: {
+    icon: HiCheckCircle,
+    bg: 'bg-teal-500/15 border-teal-500/30 text-teal-400',
+  },
+  system: {
+    icon: HiSpeakerphone,
+    bg: 'bg-purple-500/15 border-purple-500/30 text-purple-400',
+  },
 };
+
+function NotificationTypeIcon({ type }) {
+  const config = NOTIFICATION_CONFIG[type] || {
+    icon: HiBell,
+    bg: 'bg-primary-500/15 border-primary-500/30 text-primary-400',
+  };
+  const Icon = config.icon;
+  return (
+    <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 border shadow-sm mt-0.5 ${config.bg}`}>
+      <Icon className="w-4 h-4" />
+    </div>
+  );
+}
 
 export default function NotificationBell() {
   const { user } = useAuth();
@@ -41,7 +82,7 @@ export default function NotificationBell() {
             fresh.forEach((n) => {
               new Notification(n.title, {
                 body: n.message,
-                icon: '/favicon.ico',
+                icon: '/images/logo.png',
               });
             });
           } else if (Notification.permission !== 'denied') {
@@ -50,7 +91,7 @@ export default function NotificationBell() {
                 fresh.forEach((n) => {
                   new Notification(n.title, {
                     body: n.message,
-                    icon: '/favicon.ico',
+                    icon: '/images/logo.png',
                   });
                 });
               }
@@ -199,9 +240,7 @@ export default function NotificationBell() {
                     n.read ? 'opacity-60 hover:opacity-80' : 'bg-primary-900/10 hover:bg-dark-800'
                   }`}
                 >
-                  <span className="text-lg flex-shrink-0 mt-0.5">
-                    {TYPE_ICONS[n.type] || '🔔'}
-                  </span>
+                  <NotificationTypeIcon type={n.type} />
                   <div className="flex-1 min-w-0">
                     <p className={`text-xs font-semibold truncate ${n.read ? 'text-gray-400' : 'text-white'}`}>
                       {n.title}

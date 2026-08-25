@@ -665,10 +665,10 @@ export default function AIAgentInterviewRoom() {
             <span className="text-gray-400 text-sm">· Level {initData?.level}</span>
           </div>
           <h1 className="text-white font-bold">
-            {initData?.interviewMode === 'business' ? 'Business Sector AI Interview' : 'AI Agent Interview'}
+            {initData?.interviewMode === 'business' ? 'Professional Domain AI Interview' : 'AI Agent Interview'}
           </h1>
           {initData?.interviewMode === 'business' && (
-            <p className="text-amber-400/80 text-xs mt-0.5">🎙️ Scenario-based voice interview — no coding challenges</p>
+            <p className="text-amber-400/80 text-xs mt-0.5">🎙️ Scenario-based voice interview — domain-specific assessment</p>
           )}
         </div>
         <div className="flex items-center gap-3">

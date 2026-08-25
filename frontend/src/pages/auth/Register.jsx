@@ -42,10 +42,10 @@ export default function Register() {
       <div className="w-full max-w-lg animate-slide-up">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center mx-auto mb-4 shadow-2xl shadow-primary-500/30">
-            <HiAcademicCap className="w-8 h-8 text-white" />
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-500/20 to-accent-500/20 border border-primary-500/30 flex items-center justify-center mx-auto mb-4 shadow-2xl shadow-primary-500/30 p-2">
+            <img src="/images/logo.png" alt="AIH Logo" className="w-full h-full object-contain drop-shadow-md" />
           </div>
-          <h2 className="text-3xl font-bold text-white">Create Account</h2>
+          <h2 className="text-3xl font-bold text-white">Create Account on A<span className="text-cyan-400">I</span><span className="text-accent-400">H</span></h2>
           <p className="text-gray-400 mt-2">Join the AI-powered hiring platform</p>
         </div>
 
