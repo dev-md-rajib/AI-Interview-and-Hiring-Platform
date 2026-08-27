@@ -33,21 +33,29 @@ export default function JobApplications() {
   return (
     <div className="animate-fade-in">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-white">{job?.title}</h1>
-        <p className="text-gray-400">{apps.length} Applications</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{job?.title}</h1>
+        <p className="text-gray-500 dark:text-gray-400">{apps.length} Applications</p>
       </div>
 
       <div className="flex gap-3 mb-4 flex-wrap">
-        <span className="text-gray-400 text-sm self-center">Sort by:</span>
+        <span className="text-gray-500 dark:text-gray-400 text-sm self-center">Sort by:</span>
         {['matchScore', 'createdAt'].map((s) => (
-          <button key={s} onClick={() => setSortBy(s)} className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${sortBy === s ? 'bg-primary-600 text-white' : 'bg-dark-card text-gray-400'}`}>
+          <button
+            key={s}
+            onClick={() => setSortBy(s)}
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+              sortBy === s
+                ? 'bg-primary-600 text-white shadow-sm'
+                : 'bg-dark-card text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-white border border-dark-border'
+            }`}
+          >
             {s === 'matchScore' ? 'Match Score' : 'Date Applied'}
           </button>
         ))}
       </div>
 
       {apps.length === 0 ? (
-        <div className="card text-center py-16"><p className="text-gray-400">No applications yet</p></div>
+        <div className="card text-center py-16"><p className="text-gray-500 dark:text-gray-400">No applications yet</p></div>
       ) : (
         <div className="space-y-3">
           {apps.map((app) => (
@@ -57,14 +65,16 @@ export default function JobApplications() {
                   {app.candidate?.name?.[0]?.toUpperCase()}
                 </div>
                 <div>
-                  <Link to={`/recruiter/candidates/${app.candidate?._id}`} className="text-white font-semibold hover:text-primary-400">{app.candidate?.name}</Link>
-                  <p className="text-gray-400 text-sm">{app.candidate?.email}</p>
+                  <Link to={`/recruiter/candidates/${app.candidate?._id}`} className="text-gray-900 dark:text-white font-bold hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
+                    {app.candidate?.name}
+                  </Link>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm">{app.candidate?.email}</p>
                   {app.coverLetter && <p className="text-gray-500 text-xs mt-1 line-clamp-1">{app.coverLetter}</p>}
                 </div>
               </div>
               <div className="flex items-center gap-3">
                 <div className="text-center">
-                  <p className="text-primary-400 font-bold text-lg">{app.matchScore}%</p>
+                  <p className="text-primary-600 dark:text-primary-400 font-bold text-lg">{app.matchScore}%</p>
                   <p className="text-gray-500 text-xs">Match</p>
                 </div>
                 <select

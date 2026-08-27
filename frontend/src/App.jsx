@@ -1,6 +1,7 @@
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 
 // Auth pages
 import Login from './pages/auth/Login';
@@ -91,74 +92,76 @@ const PublicRoute = ({ children }) => {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Suspense fallback={<LoadingSpinner />}>
-          <Routes>
-            {/* Public routes */}
-            <Route path="/" element={<Navigate to="/login" replace />} />
-            <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
-            <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
+    <ThemeProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          <Suspense fallback={<LoadingSpinner />}>
+            <Routes>
+              {/* Public routes */}
+              <Route path="/" element={<Navigate to="/login" replace />} />
+              <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+              <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
 
-            {/* Candidate routes */}
-            <Route path="/candidate" element={<ProtectedRoute allowedRoles={['CANDIDATE']}><DashboardLayout /></ProtectedRoute>}>
-              <Route index element={<CandidateDashboard />} />
-              <Route path="profile" element={<CandidateProfile />} />
-              <Route path="profile/edit" element={<EditProfile />} />
-              <Route path="interview" element={<InterviewStart />} />
-              <Route path="interview/ai-agent/:id" element={<AIAgentInterviewRoom />} />
-              <Route path="interview/team" element={<InterviewTeamRoom />} />
-              <Route path="interview/:id" element={<InterviewRoom />} />
-              <Route path="interview/:id/result" element={<InterviewResult />} />
-              <Route path="jobs" element={<JobBoard />} />
-              <Route path="applications" element={<MyApplications />} />
-              <Route path="history" element={<MyInterviews />} />
-              <Route path="messages" element={<Messages />} />
-              <Route path="contests" element={<CandidateContests />} />
-              <Route path="contests/:id/attempt" element={<ContestRoom />} />
-              {/* Practice */}
-              <Route path="practice" element={<CandidatePractice />} />
-              <Route path="practice/:id" element={<CandidatePracticeRoom />} />
-              <Route path="multiplayer/:id" element={<CandidateMultiplayerRoom />} />
-            </Route>
+              {/* Candidate routes */}
+              <Route path="/candidate" element={<ProtectedRoute allowedRoles={['CANDIDATE']}><DashboardLayout /></ProtectedRoute>}>
+                <Route index element={<CandidateDashboard />} />
+                <Route path="profile" element={<CandidateProfile />} />
+                <Route path="profile/edit" element={<EditProfile />} />
+                <Route path="interview" element={<InterviewStart />} />
+                <Route path="interview/ai-agent/:id" element={<AIAgentInterviewRoom />} />
+                <Route path="interview/team" element={<InterviewTeamRoom />} />
+                <Route path="interview/:id" element={<InterviewRoom />} />
+                <Route path="interview/:id/result" element={<InterviewResult />} />
+                <Route path="jobs" element={<JobBoard />} />
+                <Route path="applications" element={<MyApplications />} />
+                <Route path="history" element={<MyInterviews />} />
+                <Route path="messages" element={<Messages />} />
+                <Route path="contests" element={<CandidateContests />} />
+                <Route path="contests/:id/attempt" element={<ContestRoom />} />
+                {/* Practice */}
+                <Route path="practice" element={<CandidatePractice />} />
+                <Route path="practice/:id" element={<CandidatePracticeRoom />} />
+                <Route path="multiplayer/:id" element={<CandidateMultiplayerRoom />} />
+              </Route>
 
-            {/* Recruiter routes */}
-            <Route path="/recruiter" element={<ProtectedRoute allowedRoles={['RECRUITER']}><DashboardLayout /></ProtectedRoute>}>
-              <Route index element={<RecruiterDashboard />} />
-              <Route path="jobs/new" element={<PostJob />} />
-              <Route path="jobs" element={<MyJobs />} />
-              <Route path="jobs/:id/edit" element={<PostJob />} />
-              <Route path="jobs/:id/applications" element={<JobApplications />} />
-              <Route path="candidates" element={<CandidateSearch />} />
-              <Route path="candidates/:id" element={<CandidateView />} />
-              <Route path="messages" element={<Messages />} />
-              <Route path="contests" element={<RecruiterContestList />} />
-              <Route path="contests/new" element={<CreateContest />} />
-              <Route path="contests/:id/edit" element={<CreateContest />} />
-              <Route path="contests/:id/results" element={<ContestResults />} />
-            </Route>
+              {/* Recruiter routes */}
+              <Route path="/recruiter" element={<ProtectedRoute allowedRoles={['RECRUITER']}><DashboardLayout /></ProtectedRoute>}>
+                <Route index element={<RecruiterDashboard />} />
+                <Route path="jobs/new" element={<PostJob />} />
+                <Route path="jobs" element={<MyJobs />} />
+                <Route path="jobs/:id/edit" element={<PostJob />} />
+                <Route path="jobs/:id/applications" element={<JobApplications />} />
+                <Route path="candidates" element={<CandidateSearch />} />
+                <Route path="candidates/:id" element={<CandidateView />} />
+                <Route path="messages" element={<Messages />} />
+                <Route path="contests" element={<RecruiterContestList />} />
+                <Route path="contests/new" element={<CreateContest />} />
+                <Route path="contests/:id/edit" element={<CreateContest />} />
+                <Route path="contests/:id/results" element={<ContestResults />} />
+              </Route>
 
-            {/* Admin routes */}
-            <Route path="/admin" element={<ProtectedRoute allowedRoles={['ADMIN']}><DashboardLayout /></ProtectedRoute>}>
-              <Route index element={<AdminDashboard />} />
-              <Route path="levels" element={<LevelManager />} />
-              <Route path="questions" element={<QuestionBank />} />
-              <Route path="users" element={<UserManager />} />
-              <Route path="candidates" element={<CandidateSearch />} />
-              <Route path="reports" element={<AdminReports />} />
-            </Route>
+              {/* Admin routes */}
+              <Route path="/admin" element={<ProtectedRoute allowedRoles={['ADMIN']}><DashboardLayout /></ProtectedRoute>}>
+                <Route index element={<AdminDashboard />} />
+                <Route path="levels" element={<LevelManager />} />
+                <Route path="questions" element={<QuestionBank />} />
+                <Route path="users" element={<UserManager />} />
+                <Route path="candidates" element={<CandidateSearch />} />
+                <Route path="reports" element={<AdminReports />} />
+              </Route>
 
-            {/* Interviewer routes */}
-            <Route path="/interviewer" element={<ProtectedRoute allowedRoles={['INTERVIEWER']}><DashboardLayout /></ProtectedRoute>}>
-              <Route index element={<InterviewerDashboard />} />
-              <Route path="assignments" element={<InterviewerAssignments />} />
-              <Route path="profile" element={<InterviewerProfile />} />
-            </Route>
+              {/* Interviewer routes */}
+              <Route path="/interviewer" element={<ProtectedRoute allowedRoles={['INTERVIEWER']}><DashboardLayout /></ProtectedRoute>}>
+                <Route index element={<InterviewerDashboard />} />
+                <Route path="assignments" element={<InterviewerAssignments />} />
+                <Route path="profile" element={<InterviewerProfile />} />
+              </Route>
 
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Suspense>
-      </BrowserRouter>
-    </AuthProvider>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
+        </BrowserRouter>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

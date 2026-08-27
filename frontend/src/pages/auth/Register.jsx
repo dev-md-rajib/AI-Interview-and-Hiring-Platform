@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'react-hot-toast';
 import { HiAcademicCap, HiEye, HiEyeOff, HiUser, HiBriefcase, HiLightBulb } from 'react-icons/hi';
 import { useAuth } from '../../context/AuthContext';
+import ThemeToggle from '../../components/ThemeToggle';
 import api from '../../services/api';
 
 const roles = [
@@ -38,15 +39,20 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen bg-dark-900 flex items-center justify-center p-6">
+    <div className="min-h-screen bg-dark-900 flex items-center justify-center p-6 relative">
+      {/* Theme switcher */}
+      <div className="absolute top-5 right-5 z-20">
+        <ThemeToggle />
+      </div>
+
       <div className="w-full max-w-lg animate-slide-up">
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-500/20 to-accent-500/20 border border-primary-500/30 flex items-center justify-center mx-auto mb-4 shadow-2xl shadow-primary-500/30 p-2">
             <img src="/images/logo.png" alt="AIH Logo" className="w-full h-full object-contain drop-shadow-md" />
           </div>
-          <h2 className="text-3xl font-bold text-white">Create Account on A<span className="text-cyan-400">I</span><span className="text-accent-400">H</span></h2>
-          <p className="text-gray-400 mt-2">Join the AI-powered hiring platform</p>
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Create Account on A<span className="text-cyan-600 dark:text-cyan-400">I</span><span className="text-accent-500 dark:text-accent-400">H</span></h2>
+          <p className="text-gray-500 dark:text-gray-400 mt-2">Join the AI-powered hiring platform</p>
         </div>
 
         {/* Role selector */}
@@ -56,11 +62,15 @@ export default function Register() {
               key={value}
               type="button"
               onClick={() => setSelectedRole(value)}
-              className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all duration-200 ${selectedRole === value ? 'border-primary-500 bg-primary-900/30 text-white' : 'border-dark-border bg-dark-card text-gray-400 hover:border-primary-700'}`}
+              className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all duration-200 ${
+                selectedRole === value
+                  ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/30 text-gray-900 dark:text-white shadow-sm'
+                  : 'border-dark-border bg-dark-card text-gray-700 dark:text-gray-400 hover:border-primary-500/50'
+              }`}
             >
-              <Icon className={`w-6 h-6 ${selectedRole === value ? 'text-primary-400' : ''}`} />
-              <span className="font-semibold text-sm">{label}</span>
-              <span className="text-xs text-gray-500">{desc}</span>
+              <Icon className={`w-6 h-6 ${selectedRole === value ? 'text-primary-600 dark:text-primary-400' : 'text-gray-500 dark:text-gray-400'}`} />
+              <span className="font-bold text-sm">{label}</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400 text-center">{desc}</span>
             </button>
           ))}
         </div>

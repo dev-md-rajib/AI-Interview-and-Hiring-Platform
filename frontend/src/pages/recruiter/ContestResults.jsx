@@ -5,10 +5,10 @@ import toast from 'react-hot-toast';
 import { HiCheckCircle, HiXCircle, HiClock, HiRefresh, HiDownload, HiUser, HiMail } from 'react-icons/hi';
 
 const VERDICT_STYLES = {
-  passed: 'bg-emerald-900 text-emerald-300',
-  failed_mcq: 'bg-red-900 text-red-300',
-  incomplete: 'bg-yellow-900 text-yellow-300',
-  not_attempted: 'bg-gray-800 text-gray-400',
+  passed: 'badge-success',
+  failed_mcq: 'badge-danger',
+  incomplete: 'badge-warning',
+  not_attempted: 'badge-gray',
 };
 
 function fmtTime(secs) {
@@ -133,7 +133,7 @@ export default function ContestResults() {
               <span className="text-gray-400">Sort by:</span>
               {['rank', 'codingScore', 'codingTimeTaken'].map(s => (
                 <button key={s} onClick={() => setSortBy(s)}
-                  className={`px-2.5 py-1 rounded text-xs font-medium transition-all ${sortBy === s ? 'bg-primary-600 text-white' : 'text-gray-400 hover:text-white'}`}>
+                  className={`px-2.5 py-1 rounded text-xs font-medium transition-all ${sortBy === s ? 'bg-primary-600 text-white' : 'text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-white'}`}>
                   {s === 'rank' ? 'Default' : s === 'codingScore' ? 'Points' : 'Time'}
                 </button>
               ))}
@@ -164,7 +164,7 @@ export default function ContestResults() {
                     <td className="px-3 py-3">
                       <Link
                         to={`/recruiter/candidates/${r.candidate?._id}`}
-                        className="text-white font-medium hover:text-primary-400 transition-colors underline-offset-2 hover:underline flex items-center gap-1 group"
+                        className="font-medium text-gray-900 dark:text-white hover:text-primary-600 dark:hover:text-primary-400 transition-colors underline-offset-2 hover:underline flex items-center gap-1 group"
                       >
                         {r.candidate?.name}
                       </Link>
@@ -198,23 +198,23 @@ export default function ContestResults() {
                         </td>
                       );
                     })}
-                    <td className="px-5 py-3 text-center text-white font-bold">{r.totalMarks || 0}</td>
+                    <td className="px-5 py-3 text-center text-gray-900 dark:text-white font-bold text-base">{r.totalMarks || 0}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-center gap-2">
                         <Link
                           to={`/recruiter/candidates/${r.candidate?._id}`}
-                          className="inline-flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg bg-dark-800 text-gray-300 hover:bg-primary-700 hover:text-white border border-dark-border hover:border-primary-500 transition-all"
+                          className="btn-secondary inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg"
                           title="View Profile"
                         >
-                          <HiUser className="w-3.5 h-3.5" /> Profile
+                          <HiUser className="w-3.5 h-3.5 text-primary-400" /> Profile
                         </Link>
                         <button
                           onClick={() => contactCandidate(r.candidate?._id)}
                           disabled={contactingId === r.candidate?._id}
                           title="Send Message"
-                          className="inline-flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg bg-dark-800 text-gray-300 hover:bg-emerald-700 hover:text-white border border-dark-border hover:border-emerald-500 transition-all disabled:opacity-50"
+                          className="btn-secondary inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg disabled:opacity-50"
                         >
-                          <HiMail className="w-3.5 h-3.5" />
+                          <HiMail className="w-3.5 h-3.5 text-emerald-500" />
                           {contactingId === r.candidate?._id ? '...' : 'Contact'}
                         </button>
                       </div>

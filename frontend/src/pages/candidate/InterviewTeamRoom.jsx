@@ -237,21 +237,21 @@ export default function InterviewTeamRoom() {
           {/* Select Interview Type */}
           <div>
             <label className="label">Select Interview Type</label>
-            <p className="text-xs text-gray-400 mb-3">Choose whether you want a technical engineering interview or a business domain interview to find the right interviewer.</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">Choose whether you want a technical engineering interview or a business domain interview to find the right interviewer.</p>
             <div className="grid grid-cols-2 gap-3 mb-4">
               <button
                 type="button"
                 onClick={() => handleTypeChange('tech')}
                 className={`p-3.5 rounded-xl border-2 text-left transition-all flex items-center gap-3 ${
                   interviewType === 'tech'
-                    ? 'border-cyan-500 bg-cyan-900/30 text-white'
-                    : 'border-dark-border hover:border-gray-600 bg-dark-800/50 text-gray-400'
+                    ? 'border-cyan-500 bg-cyan-50 dark:bg-cyan-900/30 text-gray-900 dark:text-white shadow-sm'
+                    : 'border-dark-border hover:border-cyan-500/50 bg-dark-card text-gray-600 dark:text-gray-400'
                 }`}
               >
-                <HiCode className={`w-6 h-6 flex-shrink-0 ${interviewType === 'tech' ? 'text-cyan-400' : 'text-gray-500'}`} />
+                <HiCode className={`w-6 h-6 flex-shrink-0 ${interviewType === 'tech' ? 'text-cyan-600 dark:text-cyan-400' : 'text-gray-500 dark:text-gray-400'}`} />
                 <div>
-                  <div className={`font-bold text-sm ${interviewType === 'tech' ? 'text-white' : 'text-gray-300'}`}>Tech Stack</div>
-                  <div className="text-xs text-gray-400">Software, coding, systems</div>
+                  <div className={`font-bold text-sm ${interviewType === 'tech' ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300'}`}>Tech Stack</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">Software, coding, systems</div>
                 </div>
               </button>
               <button
@@ -259,14 +259,14 @@ export default function InterviewTeamRoom() {
                 onClick={() => handleTypeChange('business')}
                 className={`p-3.5 rounded-xl border-2 text-left transition-all flex items-center gap-3 ${
                   interviewType === 'business'
-                    ? 'border-amber-500 bg-amber-900/20 text-white'
-                    : 'border-dark-border hover:border-gray-600 bg-dark-800/50 text-gray-400'
+                    ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/20 text-gray-900 dark:text-white shadow-sm'
+                    : 'border-dark-border hover:border-amber-500/50 bg-dark-card text-gray-600 dark:text-gray-400'
                 }`}
               >
-                <HiBriefcase className={`w-6 h-6 flex-shrink-0 ${interviewType === 'business' ? 'text-amber-400' : 'text-gray-500'}`} />
+                <HiBriefcase className={`w-6 h-6 flex-shrink-0 ${interviewType === 'business' ? 'text-amber-600 dark:text-amber-400' : 'text-gray-500 dark:text-gray-400'}`} />
                 <div>
-                  <div className={`font-bold text-sm ${interviewType === 'business' ? 'text-white' : 'text-gray-300'}`}>General & Professional Fields</div>
-                  <div className="text-xs text-gray-400">Marketing, Sales, HR, Finance, Analysis & more</div>
+                  <div className={`font-bold text-sm ${interviewType === 'business' ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300'}`}>General & Professional Fields</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">Marketing, Sales, HR, Finance, Analysis & more</div>
                 </div>
               </button>
             </div>
@@ -274,17 +274,17 @@ export default function InterviewTeamRoom() {
             {/* Tech Stack Options */}
             {interviewType === 'tech' && (
               <div>
-                <label className="label text-xs text-gray-400 mb-2">Choose Tech Stack</label>
+                <label className="label text-xs text-gray-500 dark:text-gray-400 mb-2">Choose Tech Stack</label>
                 <div className="flex flex-wrap gap-2">
                   {TECH_STACKS.map((s) => (
                     <button
                       key={s}
                       type="button"
                       onClick={() => setStack(s)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
                         stack === s
-                          ? 'border-cyan-500 bg-cyan-900/40 text-cyan-300 font-semibold'
-                          : 'border-dark-border text-gray-400 hover:border-gray-500 hover:text-white'
+                          ? 'border-cyan-500 bg-cyan-50 dark:bg-cyan-900/40 text-cyan-700 dark:text-cyan-300 shadow-sm'
+                          : 'border-dark-border text-gray-700 dark:text-gray-400 bg-dark-card hover:border-cyan-500 hover:text-cyan-600 dark:hover:text-white'
                       }`}
                     >
                       {s}
@@ -292,8 +292,8 @@ export default function InterviewTeamRoom() {
                   ))}
                 </div>
                 {stack && (
-                  <p className="mt-2 text-xs text-cyan-400">
-                    Selected: <span className="font-semibold text-white">{stack}</span>
+                  <p className="mt-2 text-xs text-cyan-600 dark:text-cyan-400">
+                    Selected: <span className="font-bold text-gray-900 dark:text-white">{stack}</span>
                   </p>
                 )}
               </div>
@@ -302,7 +302,7 @@ export default function InterviewTeamRoom() {
             {/* General & Professional Fields Options */}
             {interviewType === 'business' && (
               <div>
-                <label className="label text-xs text-gray-400 mb-2">Choose Field / Domain</label>
+                <label className="label text-xs text-gray-500 dark:text-gray-400 mb-2">Choose Field / Domain</label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {SECTORS.map((sector) => {
                     const isSelected = stack === sector.id;
@@ -315,14 +315,14 @@ export default function InterviewTeamRoom() {
                         className={`p-2.5 rounded-xl border-2 text-left transition-all flex items-center gap-2.5 ${
                           isSelected
                             ? `${sector.border} ${sector.bg}`
-                            : 'border-dark-border hover:border-gray-500 bg-dark-800/50'
+                            : 'border-dark-border hover:border-gray-400 bg-dark-card'
                         }`}
                       >
                         <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${isSelected ? `${sector.bg} ${sector.color} border ${sector.border}` : 'bg-dark-card text-gray-400 border border-dark-border'}`}>
                           {Icon && <Icon className="w-3.5 h-3.5" />}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <div className={`font-semibold text-xs truncate ${isSelected ? 'text-white' : 'text-gray-300'}`}>
+                          <div className={`font-semibold text-xs truncate ${isSelected ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300'}`}>
                             {sector.label}
                           </div>
                         </div>
@@ -336,7 +336,7 @@ export default function InterviewTeamRoom() {
                       {selectedSector.Icon && <selectedSector.Icon className="w-3 h-3" />}
                     </span>
                     <span className={`font-semibold ${selectedSector.color}`}>{selectedSector.id}</span>
-                    <span className="text-gray-500">selected</span>
+                    <span className="text-gray-500 dark:text-gray-400">selected</span>
                   </p>
                 )}
               </div>
@@ -347,7 +347,7 @@ export default function InterviewTeamRoom() {
           <div>
             <label className="label">Interview Level</label>
             {eligibility?.levelLocked && (
-              <p className="text-xs text-red-400 mb-2">🔒 {eligibility.reason}</p>
+              <p className="text-xs text-red-500 dark:text-red-400 mb-2 font-medium">🔒 {eligibility.reason}</p>
             )}
             <div className="grid grid-cols-3 gap-3">
               {[1, 2, 3].map((lvl) => (
@@ -356,36 +356,38 @@ export default function InterviewTeamRoom() {
                   type="button"
                   onClick={() => setLevel(lvl)}
                   className={`py-3 rounded-xl border-2 text-center transition-all ${
-                    level === lvl ? 'border-cyan-500 bg-cyan-900/20 text-white' : 'border-dark-border text-gray-400 hover:border-gray-600'
+                    level === lvl
+                      ? 'border-cyan-500 bg-cyan-50 dark:bg-cyan-900/20 text-gray-900 dark:text-white shadow-sm'
+                      : 'border-dark-border bg-dark-card text-gray-700 dark:text-gray-400 hover:border-cyan-500/50'
                   }`}
                 >
-                  <p className="font-bold text-sm">Level {lvl}</p>
-                  <p className="text-xs text-gray-400">{LEVEL_LABELS[lvl]}</p>
+                  <p className={`font-bold text-sm ${level === lvl ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300'}`}>Level {lvl}</p>
+                  <p className={`text-xs ${level === lvl ? 'text-cyan-700 dark:text-cyan-300 font-semibold' : 'text-gray-500 dark:text-gray-400'}`}>{LEVEL_LABELS[lvl]}</p>
                 </button>
               ))}
             </div>
           </div>
 
           {/* Automated Slot Matching Info Card */}
-          <div className="p-4 bg-gradient-to-r from-cyan-950/40 via-dark-800 to-dark-800 rounded-xl border border-cyan-500/30 text-xs text-gray-300 space-y-2">
-            <div className="flex items-center gap-2 text-cyan-400 font-semibold text-sm">
+          <div className="p-4 bg-cyan-50/70 dark:bg-gradient-to-r dark:from-cyan-950/40 dark:via-dark-800 dark:to-dark-800 rounded-xl border border-cyan-200 dark:border-cyan-500/30 text-xs space-y-2">
+            <div className="flex items-center gap-2 text-cyan-800 dark:text-cyan-400 font-bold text-sm">
               <HiClock className="w-5 h-5" />
               <span>Automated First-Available Slot Matching</span>
             </div>
-            <p className="text-gray-400 leading-relaxed">
-              You don't need to guess or enter a time slot. We will automatically locate the best available interviewer qualified in <strong className="text-white">{stack || (interviewType === 'business' ? 'your sector' : 'your tech stack')}</strong> and assign you their <strong>first available opening</strong> (enforcing a guaranteed 30-minute rest buffer between interviews).
+            <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
+              You don't need to guess or enter a time slot. We will automatically locate the best available interviewer qualified in <strong className="text-gray-900 dark:text-white font-bold">{stack || (interviewType === 'business' ? 'your sector' : 'your tech stack')}</strong> and assign you their <strong className="text-gray-900 dark:text-white font-bold">first available opening</strong> (enforcing a guaranteed 30-minute rest buffer between interviews).
             </p>
-            <div className="flex flex-wrap gap-4 pt-1 text-[11px] text-gray-400">
-              <span className="flex items-center gap-1 text-cyan-300">✓ Instant Zoom Link</span>
-              <span className="flex items-center gap-1 text-cyan-300">✓ 30-min Rest Gap</span>
-              <span className="flex items-center gap-1 text-cyan-300">✓ 2-Minute Reminder</span>
+            <div className="flex flex-wrap gap-4 pt-1 text-[11px] text-gray-600 dark:text-gray-400 font-medium">
+              <span className="flex items-center gap-1 text-cyan-700 dark:text-cyan-300 font-semibold">✓ Instant Zoom Link</span>
+              <span className="flex items-center gap-1 text-cyan-700 dark:text-cyan-300 font-semibold">✓ 30-min Rest Gap</span>
+              <span className="flex items-center gap-1 text-cyan-700 dark:text-cyan-300 font-semibold">✓ 2-Minute Reminder</span>
             </div>
           </div>
 
           <button
             onClick={handleRequest}
             disabled={submitting || !stack || (eligibility?.levelLocked)}
-            className="w-full py-3 bg-gradient-to-r from-cyan-600 to-primary-600 hover:from-cyan-700 hover:to-primary-700 text-white rounded-xl font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full py-3.5 bg-gradient-to-r from-cyan-600 via-primary-600 to-indigo-600 hover:from-cyan-500 hover:via-primary-500 hover:to-indigo-500 text-white rounded-xl font-bold transition-all shadow-md shadow-primary-500/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-base"
           >
             {submitting ? (
               <>
@@ -539,13 +541,13 @@ function EmbeddedInterviewMeeting({ interview, user, onLeave }) {
           {interview.zoomPassword && (
             <button
               onClick={copyPassword}
-              className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg bg-dark-800 hover:bg-dark-700 border border-dark-border text-gray-300 hover:text-white transition-all"
+              className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg bg-dark-800 hover:bg-dark-700 border border-dark-border text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-all"
               title="Copy Meeting Password"
             >
-              <HiClipboardCopy className="w-4 h-4 text-cyan-400" />
+              <HiClipboardCopy className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
               <span className="hidden sm:inline">Password:</span>
-              <strong className="font-mono text-white">{interview.zoomPassword}</strong>
-              {copied && <span className="text-emerald-400 ml-1">✓</span>}
+              <strong className="font-mono text-gray-900 dark:text-white font-bold">{interview.zoomPassword}</strong>
+              {copied && <span className="text-emerald-500 dark:text-emerald-400 ml-1">✓</span>}
             </button>
           )}
 
@@ -600,19 +602,19 @@ function ActiveInterviewCard({ interview, onCancel, onRefresh, onJoinMeeting }) 
           <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${statusCfg.bg} ${statusCfg.color}`}>
             ● {statusCfg.label}
           </span>
-          <h2 className="text-white font-semibold">Your Upcoming Interview</h2>
+          <h2 className="text-gray-900 dark:text-white font-bold">Your Upcoming Interview</h2>
         </div>
-        <button onClick={onRefresh} className="text-gray-400 hover:text-white p-1 rounded transition-colors" title="Refresh">
+        <button onClick={onRefresh} className="text-gray-400 hover:text-gray-900 dark:hover:text-white p-1 rounded transition-colors" title="Refresh">
           <HiRefresh className="w-4 h-4" />
         </button>
       </div>
 
       <div className="grid grid-cols-2 gap-4 text-sm">
         <div>
-          <p className="text-gray-400 text-xs mb-1">
+          <p className="text-gray-500 dark:text-gray-400 text-xs mb-1">
             {sectorInfo ? 'Business Sector' : 'Tech Stack'}
           </p>
-          <p className="text-white font-semibold flex items-center gap-1.5">
+          <p className="text-gray-900 dark:text-white font-bold flex items-center gap-1.5">
             {sectorInfo ? (
               <>
                 <span>{sectorInfo.icon}</span>
@@ -624,20 +626,20 @@ function ActiveInterviewCard({ interview, onCancel, onRefresh, onJoinMeeting }) 
           </p>
         </div>
         <div>
-          <p className="text-gray-400 text-xs mb-1">Level</p>
-          <p className="text-white font-semibold">{LEVEL_LABELS[interview.level] || `Level ${interview.level}`}</p>
+          <p className="text-gray-500 dark:text-gray-400 text-xs mb-1">Level</p>
+          <p className="text-gray-900 dark:text-white font-bold">{LEVEL_LABELS[interview.level] || `Level ${interview.level}`}</p>
         </div>
         {scheduledDate && (
           <>
             <div>
-              <p className="text-gray-400 text-xs mb-1">Date (BST, Bangladesh Time)</p>
-              <p className="text-white font-semibold">
+              <p className="text-gray-500 dark:text-gray-400 text-xs mb-1">Date (BST, Bangladesh Time)</p>
+              <p className="text-gray-900 dark:text-white font-bold">
                 {scheduledDate.toLocaleDateString('en-US', { timeZone: 'Asia/Dhaka', month: 'short', day: 'numeric', year: 'numeric' })}
               </p>
             </div>
             <div>
-              <p className="text-gray-400 text-xs mb-1">Time (BST, Bangladesh Time)</p>
-              <p className="text-cyan-300 font-semibold font-mono">
+              <p className="text-gray-500 dark:text-gray-400 text-xs mb-1">Time (BST, Bangladesh Time)</p>
+              <p className="text-cyan-700 dark:text-cyan-300 font-bold font-mono">
                 {scheduledDate.toLocaleTimeString('en-US', { timeZone: 'Asia/Dhaka', hour: '2-digit', minute: '2-digit', hour12: true })}
               </p>
             </div>
@@ -645,14 +647,14 @@ function ActiveInterviewCard({ interview, onCancel, onRefresh, onJoinMeeting }) 
         )}
         {interview.interviewer && (
           <div className="col-span-2">
-            <p className="text-gray-400 text-xs mb-1">Your Interviewer</p>
+            <p className="text-gray-500 dark:text-gray-400 text-xs mb-1">Your Interviewer</p>
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-full bg-primary-700 flex items-center justify-center text-white text-xs font-bold flex-shrink-0 overflow-hidden">
                 {interview.interviewer.profileImage
                   ? <img src={interview.interviewer.profileImage} alt="" className="w-full h-full object-cover" />
                   : interview.interviewer.name?.[0]?.toUpperCase()}
               </div>
-              <p className="text-white font-semibold text-sm">{interview.interviewer.name}</p>
+              <p className="text-gray-900 dark:text-white font-bold text-sm">{interview.interviewer.name}</p>
             </div>
           </div>
         )}
@@ -661,9 +663,9 @@ function ActiveInterviewCard({ interview, onCancel, onRefresh, onJoinMeeting }) 
       {/* Countdown */}
       {scheduledDate && scheduledDate > new Date() && (
         <div className="p-3 bg-dark-800 rounded-lg border border-dark-border flex items-center gap-3">
-          <HiClock className="w-5 h-5 text-cyan-400 flex-shrink-0" />
+          <HiClock className="w-5 h-5 text-cyan-500 dark:text-cyan-400 flex-shrink-0" />
           <div>
-            <p className="text-xs text-gray-400">Starts in</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Starts in</p>
             <CountdownTimer scheduledAt={scheduledDate} />
           </div>
         </div>
@@ -682,8 +684,8 @@ function ActiveInterviewCard({ interview, onCancel, onRefresh, onJoinMeeting }) 
       )}
 
       {interview.zoomPassword && (
-        <p className="text-xs text-gray-500 text-center">
-          Meeting Password: <span className="text-gray-300 font-mono">{interview.zoomPassword}</span>
+        <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
+          Meeting Password: <span className="text-gray-900 dark:text-gray-200 font-mono font-semibold">{interview.zoomPassword}</span>
         </p>
       )}
 
@@ -691,7 +693,7 @@ function ActiveInterviewCard({ interview, onCancel, onRefresh, onJoinMeeting }) 
       {canCancel && (
         <button
           onClick={() => onCancel(interview._id)}
-          className="w-full py-2 bg-dark-800 border border-red-500/20 hover:bg-red-900/20 text-red-400 hover:text-red-300 rounded-xl text-sm font-medium transition-all"
+          className="w-full py-2 bg-dark-800 border border-red-500/20 hover:bg-red-900/20 text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 rounded-xl text-sm font-medium transition-all"
         >
           <HiX className="inline w-4 h-4 mr-1" />
           Cancel Interview
@@ -715,17 +717,17 @@ function PastInterviewCard({ interview }) {
         <div className="flex-1">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div>
-              <p className="text-white text-sm font-semibold flex items-center gap-1.5">
+              <p className="text-gray-900 dark:text-white text-sm font-bold flex items-center gap-1.5">
                 {sectorInfo && <span>{sectorInfo.icon}</span>}
                 <span>{interview.stack} · {LEVEL_LABELS[interview.level] || `Level ${interview.level}`}</span>
                 {sectorInfo && (
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-900/30 text-amber-300 border border-amber-500/30">
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30">
                     Business
                   </span>
                 )}
               </p>
               {scheduledDate && (
-                <p className="text-gray-500 text-xs mt-0.5">{scheduledDate.toLocaleDateString()}</p>
+                <p className="text-gray-500 dark:text-gray-400 text-xs mt-0.5">{scheduledDate.toLocaleDateString()}</p>
               )}
             </div>
             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${statusCfg.bg} ${statusCfg.color}`}>

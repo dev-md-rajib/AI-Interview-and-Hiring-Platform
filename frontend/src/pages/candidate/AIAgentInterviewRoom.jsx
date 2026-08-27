@@ -159,36 +159,36 @@ function useSpeechRecognition({ onResult, onEnd }) {
 function VerdictCard({ result, onRetry }) {
   return (
     <div className="max-w-2xl mx-auto animate-slide-up space-y-6">
-      <div className={`card text-center border-2 ${result.passed ? 'border-accent-500/40 bg-emerald-900/10' : 'border-danger-500/40 bg-red-900/10'}`}>
-        {result.passed ? <HiCheckCircle className="w-16 h-16 text-accent-400 mx-auto mb-3" /> : <HiXCircle className="w-16 h-16 text-danger-400 mx-auto mb-3" />}
-        <h1 className="text-3xl font-bold text-white">{result.passed ? '🎉 Interview Passed!' : '❌ Interview Failed'}</h1>
-        <p className="text-gray-400 mt-1">{result.stack} • Level {result.level} • AI Agent Interview</p>
+      <div className={`card text-center border-2 ${result.passed ? 'border-accent-500/40 bg-emerald-50/60 dark:bg-emerald-900/10' : 'border-danger-500/40 bg-red-50/60 dark:bg-red-900/10'}`}>
+        {result.passed ? <HiCheckCircle className="w-16 h-16 text-emerald-500 dark:text-accent-400 mx-auto mb-3" /> : <HiXCircle className="w-16 h-16 text-red-500 dark:text-danger-400 mx-auto mb-3" />}
+        <h1 className={`text-3xl font-bold ${result.passed ? 'text-emerald-600 dark:text-white' : 'text-red-600 dark:text-white'}`}>{result.passed ? '🎉 Interview Passed!' : '❌ Interview Failed'}</h1>
+        <p className="text-gray-500 dark:text-gray-400 mt-1 font-medium">{result.stack} • Level {result.level} • AI Agent Interview</p>
         <div className="mt-6">
           <div className="text-6xl font-black text-gradient">{result.totalScore}%</div>
-          <p className="text-gray-400 text-sm mt-1">Overall Score (Pass mark: {result.passMark}%)</p>
+          <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Overall Score (Pass mark: {result.passMark}%)</p>
         </div>
         {/* Coding vs Concept score breakdown */}
         {(result.codingScore != null || result.conceptScore != null || result.trustScore != null) && (
           <div className="mt-5 grid grid-cols-3 gap-3 max-w-lg mx-auto">
-            <div className="p-3 rounded-lg bg-violet-900/30 border border-violet-500/30">
-              <p className="text-xs text-violet-300 mb-1">💻 Coding</p>
-              <p className="text-2xl font-bold text-white">{result.codingScore ?? '—'}%</p>
+            <div className="p-3 rounded-lg bg-violet-50 dark:bg-violet-900/30 border border-violet-200 dark:border-violet-500/30">
+              <p className="text-xs text-violet-700 dark:text-violet-300 mb-1 font-semibold">💻 Coding</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{result.codingScore ?? '—'}%</p>
             </div>
-            <div className="p-3 rounded-lg bg-primary-900/30 border border-primary-500/30">
-              <p className="text-xs text-primary-300 mb-1">🧠 Concepts</p>
-              <p className="text-2xl font-bold text-white">{result.conceptScore ?? '—'}%</p>
+            <div className="p-3 rounded-lg bg-primary-50 dark:bg-primary-900/30 border border-primary-200 dark:border-primary-500/30">
+              <p className="text-xs text-primary-700 dark:text-primary-300 mb-1 font-semibold">🧠 Concepts</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{result.conceptScore ?? '—'}%</p>
             </div>
             <div className={`p-3 rounded-lg border flex flex-col items-center justify-center ${
-              result.trustScore < 80 ? 'bg-danger-900/30 border-danger-500/30' : 'bg-success-900/30 border-success-500/30'
+              result.trustScore < 80 ? 'bg-red-50 dark:bg-danger-900/30 border-red-200 dark:border-danger-500/30' : 'bg-emerald-50 dark:bg-success-900/30 border-emerald-200 dark:border-success-500/30'
             }`}>
               <div className="flex items-center gap-1">
-                <p className={`text-xs mb-1 ${result.trustScore < 80 ? 'text-danger-300' : 'text-success-300'}`}>
+                <p className={`text-xs mb-1 font-semibold ${result.trustScore < 80 ? 'text-red-700 dark:text-danger-300' : 'text-emerald-700 dark:text-success-300'}`}>
                   🛡️ Trust Score
                 </p>
               </div>
-              <p className="text-2xl font-bold text-white">{result.trustScore ?? 100}%</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{result.trustScore ?? 100}%</p>
               {(result.cheatCount > 0) && (
-                <p className="text-[10px] text-danger-400 font-bold uppercase mt-1">
+                <p className="text-[10px] text-red-600 dark:text-danger-400 font-bold uppercase mt-1">
                   {result.cheatCount} Violations
                 </p>
               )}
@@ -200,10 +200,10 @@ function VerdictCard({ result, onRetry }) {
       {result.feedback && (
         <div className="card">
           <h2 className="section-title">AI Feedback</h2>
-          <p className="text-gray-300 leading-relaxed">{result.feedback}</p>
+          <p className="text-gray-700 dark:text-gray-300 leading-relaxed">{result.feedback}</p>
           {result.recommendations && (
             <div className="mt-3 p-3 bg-dark-800 rounded-lg border border-dark-border">
-              <p className="text-primary-300 text-sm"><span className="font-semibold">Recommendations: </span>{result.recommendations}</p>
+              <p className="text-primary-700 dark:text-primary-300 text-sm"><span className="font-semibold text-gray-900 dark:text-white">Recommendations: </span>{result.recommendations}</p>
             </div>
           )}
         </div>
@@ -212,17 +212,17 @@ function VerdictCard({ result, onRetry }) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {result.strengths?.length > 0 && (
           <div className="card">
-            <h3 className="text-accent-400 font-semibold mb-3">✅ Strengths</h3>
+            <h3 className="text-emerald-600 dark:text-accent-400 font-bold mb-3">✅ Strengths</h3>
             <ul className="space-y-2">
-              {result.strengths.map((s, i) => <li key={i} className="text-gray-300 text-sm flex items-start gap-2"><span className="text-accent-400">•</span>{s}</li>)}
+              {result.strengths.map((s, i) => <li key={i} className="text-gray-700 dark:text-gray-300 text-sm flex items-start gap-2"><span className="text-emerald-500 dark:text-accent-400">•</span>{s}</li>)}
             </ul>
           </div>
         )}
         {result.weaknesses?.length > 0 && (
           <div className="card">
-            <h3 className="text-danger-400 font-semibold mb-3">⚠️ Areas to Improve</h3>
+            <h3 className="text-red-600 dark:text-danger-400 font-bold mb-3">⚠️ Areas to Improve</h3>
             <ul className="space-y-2">
-              {result.weaknesses.map((w, i) => <li key={i} className="text-gray-300 text-sm flex items-start gap-2"><span className="text-danger-400">•</span>{w}</li>)}
+              {result.weaknesses.map((w, i) => <li key={i} className="text-gray-700 dark:text-gray-300 text-sm flex items-start gap-2"><span className="text-red-500 dark:text-danger-400">•</span>{w}</li>)}
             </ul>
           </div>
         )}

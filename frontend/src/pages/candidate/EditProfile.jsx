@@ -90,14 +90,22 @@ export default function EditProfile() {
   return (
     <div className="max-w-2xl mx-auto animate-fade-in">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-white">Edit Profile</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Edit Profile</h1>
         <button onClick={() => navigate('/candidate/profile')} className="btn-secondary text-sm">Cancel</button>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+      <div className="flex gap-2.5 mb-6 overflow-x-auto pb-1">
         {tabs.map((t) => (
-          <button key={t} onClick={() => setActiveTab(t)} className={`px-4 py-2 rounded-lg text-sm font-medium capitalize whitespace-nowrap transition-colors ${activeTab === t ? 'bg-primary-600 text-white' : 'bg-dark-card text-gray-400 hover:text-white'}`}>
+          <button
+            key={t}
+            onClick={() => setActiveTab(t)}
+            className={`px-4 py-2 rounded-lg text-sm font-semibold capitalize whitespace-nowrap transition-colors ${
+              activeTab === t
+                ? 'bg-primary-600 text-white shadow-sm'
+                : 'bg-dark-card text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-white border border-dark-border'
+            }`}
+          >
             {t === 'basic' ? 'Basic Info' : t.charAt(0).toUpperCase() + t.slice(1)}
           </button>
         ))}
@@ -152,7 +160,7 @@ export default function EditProfile() {
         {activeTab === 'education' && (
           <div className="space-y-4">
             <div className="card">
-              <h3 className="text-white font-semibold mb-4">Education</h3>
+              <h3 className="text-gray-900 dark:text-white font-bold mb-4">Education</h3>
               {eduFields.map((field, i) => (
                 <div key={field.id} className="border border-dark-border rounded-lg p-4 mb-3 space-y-3">
                   <div className="grid grid-cols-2 gap-3">
@@ -167,7 +175,7 @@ export default function EditProfile() {
             </div>
 
             <div className="card">
-              <h3 className="text-white font-semibold mb-4">Certifications</h3>
+              <h3 className="text-gray-900 dark:text-white font-bold mb-4">Certifications</h3>
               {certFields.map((field, i) => (
                 <div key={field.id} className="border border-dark-border rounded-lg p-4 mb-3 space-y-3">
                   <div className="grid grid-cols-2 gap-3">
@@ -190,7 +198,7 @@ export default function EditProfile() {
         {/* Skills */}
         {activeTab === 'skills' && (
           <div className="card">
-            <h3 className="text-white font-semibold mb-4">Skills Matrix</h3>
+            <h3 className="text-gray-900 dark:text-white font-bold mb-4">Skills Matrix</h3>
             {skillFields.map((field, i) => (
               <div key={field.id} className="grid grid-cols-3 gap-3 items-end mb-3">
                 <div><label className="label">Skill Name</label><input className="input" {...register(`skills.${i}.name`)} placeholder="React" /></div>
@@ -215,7 +223,7 @@ export default function EditProfile() {
         {/* Portfolio */}
         {activeTab === 'portfolio' && (
           <div className="card space-y-4">
-            <h3 className="text-white font-semibold">Add Portfolio Item</h3>
+            <h3 className="text-gray-900 dark:text-white font-bold">Add Portfolio Item</h3>
             <div><label className="label">Title *</label><input className="input" value={portfolioTitle} onChange={(e) => setPortfolioTitle(e.target.value)} placeholder="My Project" /></div>
             <div><label className="label">Description</label><textarea className="input h-20 resize-none" value={portfolioDesc} onChange={(e) => setPortfolioDesc(e.target.value)} placeholder="Project description..." /></div>
             <div><label className="label">URL</label><input className="input" value={portfolioUrl} onChange={(e) => setPortfolioUrl(e.target.value)} placeholder="https://github.com/..." /></div>

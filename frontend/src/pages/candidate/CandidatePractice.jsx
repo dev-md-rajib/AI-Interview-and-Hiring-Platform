@@ -70,11 +70,11 @@ export default function CandidatePractice() {
     <div className="p-6 max-w-7xl mx-auto animate-fade-in">
       <div className="mb-8 flex justify-between items-end">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
-            <HiCode className="text-primary-500" />
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-3">
+            <HiCode className="text-primary-600 dark:text-primary-500" />
             Coding Practice
           </h1>
-          <p className="text-gray-400">Sharpen your coding skills with these selected problems. Your progress is saved automatically.</p>
+          <p className="text-gray-500 dark:text-gray-400">Sharpen your coding skills with these selected problems. Your progress is saved automatically.</p>
         </div>
         <button 
           onClick={() => setShowCreateModal(true)}
@@ -86,8 +86,8 @@ export default function CandidatePractice() {
 
       {rooms.length > 0 && (
         <div className="mb-8">
-          <h2 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
-            <HiUsers className="text-primary-400" /> Active & Invited Rooms
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <HiUsers className="text-primary-600 dark:text-primary-400" /> Active & Invited Rooms
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {rooms.map(room => {
@@ -97,19 +97,23 @@ export default function CandidatePractice() {
                 <div key={room._id} className="card p-5 border border-dark-border opacity-95 hover:opacity-100 transition-opacity">
                   <div className="flex justify-between items-start mb-3">
                     <span className="badge badge-primary">{room.problems?.length} Problems</span>
-                    <span className={`text-xs px-2 py-1 rounded-full border ${isEnded ? 'bg-gray-500/10 text-gray-400 border-gray-500/20' : room.status === 'Active' ? 'bg-success-500/10 text-success-400 border-success-500/20' : 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'}`}>
+                    <span className={`text-xs px-2 py-1 rounded-full border ${isEnded ? 'bg-gray-500/10 text-gray-500 dark:text-gray-400 border-gray-500/20' : room.status === 'Active' ? 'bg-success-500/10 text-success-600 dark:text-success-400 border-success-500/20' : 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/20'}`}>
                       {room.status}
                     </span>
                   </div>
-                  <h3 className="font-medium text-white mb-1">Room by {creator}</h3>
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Room by {creator}</h3>
                   <p className="text-sm text-gray-400 flex items-center gap-1 mb-4">
                     <HiClock /> {room.timeLimit} mins
                   </p>
                   <button 
                     onClick={() => isEnded ? window.location.href=`/candidate/multiplayer/${room._id}` : handleJoinRoom(room._id)}
-                    className={`nav-btn w-full flex items-center justify-center gap-2 mt-auto py-2.5 ${isEnded ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' : 'bg-primary-500/10 text-primary-400 hover:bg-primary-500/20'}`}
+                    className={`w-full flex items-center justify-center gap-2 mt-auto py-2.5 rounded-lg font-semibold text-sm transition-all ${
+                      isEnded 
+                        ? 'btn-secondary' 
+                        : 'btn-primary'
+                    }`}
                   >
-                    {isEnded ? 'View Results' : 'Join Room'} <HiArrowRight className="w-5 h-5" />
+                    {isEnded ? 'View Results' : 'Join Room'} <HiArrowRight className="w-4 h-4" />
                   </button>
                 </div>
               )
@@ -119,7 +123,7 @@ export default function CandidatePractice() {
       )}
 
       {/* Solo Practice */}
-      <h2 className="text-xl font-semibold text-white mb-4">Solo Practice</h2>
+      <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Solo Practice</h2>
 
       {loading ? (
         <div className="flex justify-center py-20">
@@ -128,8 +132,8 @@ export default function CandidatePractice() {
       ) : problems.length === 0 ? (
         <div className="card text-center py-16 border border-dashed border-dark-border shadow-none">
           <HiCode className="w-12 h-12 text-gray-600 mx-auto mb-4" />
-          <h3 className="text-xl font-medium text-white mb-2">No problems available yet</h3>
-          <p className="text-gray-400">Check back later for new coding challenges.</p>
+          <h3 className="text-xl font-medium text-gray-900 dark:text-white mb-2">No problems available yet</h3>
+          <p className="text-gray-500 dark:text-gray-400">Check back later for new coding challenges.</p>
         </div>
       ) : (
         <div className="card p-0 overflow-hidden">
@@ -137,10 +141,10 @@ export default function CandidatePractice() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-dark-border bg-dark-800/50">
-                  <th className="py-4 px-6 font-semibold text-gray-300 text-sm w-16 text-center">Status</th>
-                  <th className="py-4 px-6 font-semibold text-gray-300 text-sm">Title</th>
-                  <th className="py-4 px-6 font-semibold text-gray-300 text-sm">Difficulty</th>
-                  <th className="py-4 px-6 font-semibold text-gray-300 text-sm text-right">Action</th>
+                  <th className="py-4 px-6 font-semibold text-gray-600 dark:text-gray-300 text-sm w-16 text-center">Status</th>
+                  <th className="py-4 px-6 font-semibold text-gray-600 dark:text-gray-300 text-sm">Title</th>
+                  <th className="py-4 px-6 font-semibold text-gray-600 dark:text-gray-300 text-sm">Difficulty</th>
+                  <th className="py-4 px-6 font-semibold text-gray-600 dark:text-gray-300 text-sm text-right">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-dark-border">
@@ -149,7 +153,7 @@ export default function CandidatePractice() {
                   const isAttempted = problem.userStatus?.status === 'Attempted';
                   
                   return (
-                    <tr key={problem._id} className="hover:bg-dark-800/30 transition-colors group">
+                    <tr key={problem._id} className="hover:bg-gray-50 dark:hover:bg-dark-800/30 transition-colors group">
                       <td className="py-4 px-6 text-center">
                         {isSolved ? (
                           <HiCheckCircle className="w-6 h-6 text-success-500 mx-auto" title="Solved" />
@@ -160,7 +164,7 @@ export default function CandidatePractice() {
                         )}
                       </td>
                       <td className="py-4 px-6">
-                        <span className="font-medium text-white group-hover:text-primary-400 transition-colors">
+                        <span className="font-medium text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
                           {problem.question}
                         </span>
                       </td>
@@ -189,38 +193,42 @@ export default function CandidatePractice() {
 
       {/* Create Room Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-dark-900/80 backdrop-blur-sm animate-fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-dark-900/80 backdrop-blur-sm animate-fade-in">
           <div className="card w-full max-w-md bg-dark-card border border-dark-border p-6 shadow-2xl">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold text-white flex items-center gap-2"><HiUsers className="text-primary-500" /> Create Multiplayer Room</h2>
-              <button onClick={() => setShowCreateModal(false)} className="text-gray-400 hover:text-white p-1"><HiX /></button>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <HiUsers className="text-primary-600 dark:text-primary-400" /> Create Multiplayer Room
+              </h2>
+              <button onClick={() => setShowCreateModal(false)} className="text-gray-400 hover:text-gray-900 dark:hover:text-white p-1 rounded-lg">
+                <HiX className="w-5 h-5" />
+              </button>
             </div>
             
             <form onSubmit={handleCreateRoom} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Number of Problems</label>
+                <label className="label">Number of Problems</label>
                 <input 
                   type="number" min="1" max="5" required
-                  className="input-field w-full p-3 text-white bg-dark-900 border-dark-border"
+                  className="input"
                   value={roomConfig.numProblems}
                   onChange={e => setRoomConfig(c => ({...c, numProblems: Number(e.target.value)}))}
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Time Limit (Minutes)</label>
+                <label className="label">Time Limit (Minutes)</label>
                 <input 
                   type="number" min="5" max="120" required
-                  className="input-field w-full p-3 text-white bg-dark-900 border-dark-border"
+                  className="input"
                   value={roomConfig.timeLimit}
                   onChange={e => setRoomConfig(c => ({...c, timeLimit: Number(e.target.value)}))}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Invite Emails (Comma Separated)</label>
+                <label className="label">Invite Emails (Comma Separated)</label>
                 <textarea 
-                  className="input-field w-full p-3 h-24 resize-none text-white bg-dark-900 border-dark-border"
+                  className="input h-24 resize-none"
                   placeholder="friend@example.com, peer@example.com"
                   value={roomConfig.invitedEmails}
                   onChange={e => setRoomConfig(c => ({...c, invitedEmails: e.target.value}))}
@@ -228,7 +236,7 @@ export default function CandidatePractice() {
               </div>
 
               <div className="pt-2 flex justify-end gap-3">
-                <button type="button" onClick={() => setShowCreateModal(false)} className="nav-btn bg-dark-800">Cancel</button>
+                <button type="button" onClick={() => setShowCreateModal(false)} className="btn-secondary">Cancel</button>
                 <button type="submit" disabled={creating} className="btn-primary">{creating ? 'Creating...' : 'Create Room'}</button>
               </div>
             </form>

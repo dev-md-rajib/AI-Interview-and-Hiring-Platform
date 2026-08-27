@@ -83,12 +83,16 @@ export default function InterviewRoom() {
       {/* Header */}
       <div className="card mb-6 flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-white font-bold">{interview.stack} — Level {interview.level} Interview</h1>
-          <p className="text-gray-400 text-sm">{answeredCount}/{totalQ} answered</p>
+          <h1 className="text-gray-900 dark:text-white font-bold text-lg">{interview.stack} — Level {interview.level} Interview</h1>
+          <p className="text-gray-500 dark:text-gray-400 text-sm mt-0.5">{answeredCount}/{totalQ} answered</p>
         </div>
-        <div className={`flex items-center gap-2 px-4 py-2 rounded-lg font-mono font-bold ${timeLeft < 300 ? 'bg-danger-900/50 text-danger-400 animate-pulse' : 'bg-dark-800 text-white'}`}>
-          <HiClock />
-          {formatTime(timeLeft)}
+        <div className={`flex items-center gap-2 px-4 py-2 rounded-xl font-mono font-bold text-sm border transition-colors ${
+          timeLeft < 300 
+            ? 'bg-danger-50 dark:bg-danger-950/40 text-danger-600 dark:text-danger-400 border-danger-200 dark:border-danger-500/30 animate-pulse' 
+            : 'bg-primary-50 dark:bg-dark-800 text-primary-700 dark:text-primary-300 border-primary-200 dark:border-dark-border'
+        }`}>
+          <HiClock className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+          <span>{formatTime(timeLeft)}</span>
         </div>
       </div>
 
@@ -99,7 +103,13 @@ export default function InterviewRoom() {
             <button
               key={idx}
               onClick={() => setCurrentQ(idx)}
-              className={`w-8 h-8 rounded-lg text-xs font-bold transition-all ${idx === currentQ ? 'bg-primary-600 text-white scale-110' : answers[idx]?.trim() ? 'bg-accent-600/30 text-accent-400 border border-accent-500/40' : 'bg-dark-800 text-gray-400 hover:bg-dark-700'}`}
+              className={`w-8 h-8 rounded-lg text-xs font-bold transition-all ${
+                idx === currentQ 
+                  ? 'bg-primary-600 text-white scale-110 shadow-sm' 
+                  : answers[idx]?.trim() 
+                  ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-500/30' 
+                  : 'bg-dark-card text-gray-600 dark:text-gray-400 hover:bg-dark-800 border border-dark-border'
+              }`}
             >
               {idx + 1}
             </button>
@@ -109,14 +119,14 @@ export default function InterviewRoom() {
 
       {/* Question */}
       <div className="card mb-6">
-        <div className="flex items-center gap-2 mb-4">
+        <div className="flex items-center gap-2 mb-4 flex-wrap">
           <span className="badge-primary">Q{currentQ + 1} / {totalQ}</span>
-          <span className="badge-gray">{q?.questionType?.toUpperCase()}</span>
+          <span className="badge bg-slate-100 dark:bg-dark-800 text-gray-700 dark:text-gray-300 border border-dark-border">{q?.questionType?.toUpperCase()}</span>
           <span className={`badge ${q?.difficulty === 'hard' ? 'badge-danger' : q?.difficulty === 'medium' ? 'badge-warning' : 'badge-success'}`}>{q?.difficulty}</span>
-          <span className="badge bg-blue-900 text-blue-300">{q?.skill}</span>
+          <span className="badge bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-500/30">{q?.skill}</span>
         </div>
 
-        <h2 className="text-white text-lg font-medium mb-6 leading-relaxed">{q?.questionText}</h2>
+        <h2 className="text-gray-900 dark:text-white text-lg font-semibold mb-6 leading-relaxed">{q?.questionText}</h2>
 
         {/* MCQ */}
         {q?.questionType === 'mcq' && (
@@ -125,9 +135,13 @@ export default function InterviewRoom() {
               <button
                 key={i}
                 onClick={() => setAnswers((a) => ({ ...a, [currentQ]: opt }))}
-                className={`w-full text-left px-4 py-3 rounded-lg border-2 transition-all ${answers[currentQ] === opt ? 'border-primary-500 bg-primary-900/30 text-white' : 'border-dark-border text-gray-300 hover:border-primary-700 hover:bg-dark-800'}`}
+                className={`w-full text-left px-4 py-3 rounded-xl border-2 transition-all ${
+                  answers[currentQ] === opt 
+                    ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/30 text-gray-900 dark:text-white font-medium' 
+                    : 'border-dark-border text-gray-700 dark:text-gray-300 hover:border-primary-500/50 hover:bg-dark-800/40'
+                }`}
               >
-                <span className={`font-bold mr-3 ${answers[currentQ] === opt ? 'text-primary-400' : 'text-gray-500'}`}>{String.fromCharCode(65 + i)}.</span>
+                <span className={`font-bold mr-3 ${answers[currentQ] === opt ? 'text-primary-600 dark:text-primary-400' : 'text-gray-500'}`}>{String.fromCharCode(65 + i)}.</span>
                 {opt}
               </button>
             ))}
@@ -138,14 +152,14 @@ export default function InterviewRoom() {
         {q?.questionType !== 'mcq' && (
           <div>
             <textarea
-              className={`w-full h-40 bg-dark-800 border border-dark-border rounded-lg p-4 text-gray-100 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 resize-none transition-colors ${q?.questionType === 'coding' ? 'font-mono text-sm' : 'font-sans'}`}
+              className={`input w-full h-40 resize-none ${q?.questionType === 'coding' ? 'font-mono text-sm' : 'font-sans'}`}
               placeholder={q?.questionType === 'coding' ? '// Write your code here...' : 'Type your answer here...'}
               value={answers[currentQ] || ''}
               onChange={(e) => setAnswers((a) => ({ ...a, [currentQ]: e.target.value }))}
               onPaste={(e) => handlePasteViolation(e, id, `Standard Interview Q${currentQ + 1} Editor`, socketRef.current)}
             />
             {answers[currentQ]?.trim() && (
-              <p className="text-xs text-accent-400 mt-1 flex items-center gap-1"><HiCheckCircle /> Answer saved</p>
+              <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1.5 flex items-center gap-1 font-medium"><HiCheckCircle /> Answer saved</p>
             )}
           </div>
         )}

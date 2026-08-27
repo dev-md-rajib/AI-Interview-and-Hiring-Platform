@@ -29,16 +29,16 @@ export default function LevelManager() {
 
   return (
     <div className="animate-fade-in">
-      <h1 className="text-2xl font-bold text-white mb-6">Interview Level Manager</h1>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Interview Level Manager</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         {[1, 2, 3].map((lvl) => {
           const level = levels.find((l) => l.level === lvl) || { level: lvl };
           return (
             <div key={lvl} onClick={() => setEditing({ ...level, requiredSkillsStr: level.requiredSkills?.join(', ') || '', allowedStacksStr: level.allowedStacks?.join(', ') || '' })} className={`card cursor-pointer hover:border-primary-500/40 transition-all ${editing?.level === lvl ? 'border-primary-500 bg-primary-900/20' : ''}`}>
-              <h3 className="text-white font-bold mb-1">Level {lvl}</h3>
-              <p className="text-gray-400 text-sm">{level.name || 'Not configured'}</p>
-              <div className="mt-3 space-y-1 text-xs text-gray-500">
+              <h3 className="text-gray-900 dark:text-white font-bold mb-1">Level {lvl}</h3>
+              <p className="text-gray-500 dark:text-gray-400 text-sm">{level.name || 'Not configured'}</p>
+              <div className="mt-3 space-y-1 text-xs text-gray-500 dark:text-gray-400">
                 <p>Pass score: {level.minimumPassScore || '-'}%</p>
                 <p>Duration: {level.durationMinutes || '-'} min</p>
                 <p>Questions: {level.questionCount || '-'}</p>

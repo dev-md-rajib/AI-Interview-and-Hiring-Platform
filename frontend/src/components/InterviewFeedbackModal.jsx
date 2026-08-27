@@ -8,30 +8,30 @@ const EVALUATOR_CONFIG = {
   'Human Team': {
     label: 'Human Team Interviewer',
     icon: HiUser,
-    color: 'text-cyan-400',
-    bg: 'bg-cyan-900/20 border-cyan-500/30',
-    badge: 'bg-cyan-500/10 text-cyan-300 border-cyan-500/30',
+    color: 'text-cyan-600 dark:text-cyan-400',
+    bg: 'bg-cyan-50 dark:bg-cyan-900/20 border-cyan-300 dark:border-cyan-500/30',
+    badge: 'bg-cyan-50 dark:bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border-cyan-300 dark:border-cyan-500/30',
   },
   'AI Agent': {
     label: 'AI Agent Interviewer',
     icon: HiChip,
-    color: 'text-violet-400',
-    bg: 'bg-violet-900/20 border-violet-500/30',
-    badge: 'bg-violet-500/10 text-violet-300 border-violet-500/30',
+    color: 'text-violet-600 dark:text-violet-400',
+    bg: 'bg-violet-50 dark:bg-violet-900/20 border-violet-300 dark:border-violet-500/30',
+    badge: 'bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-300 border-violet-300 dark:border-violet-500/30',
   },
   'Normal Query': {
     label: 'Standard Evaluation',
     icon: HiAcademicCap,
-    color: 'text-emerald-400',
-    bg: 'bg-emerald-900/20 border-emerald-500/30',
-    badge: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30',
+    color: 'text-emerald-600 dark:text-emerald-400',
+    bg: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-300 dark:border-emerald-500/30',
+    badge: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-500/30',
   },
   'Standard': {
     label: 'Standard Evaluation',
     icon: HiAcademicCap,
-    color: 'text-emerald-400',
-    bg: 'bg-emerald-900/20 border-emerald-500/30',
-    badge: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30',
+    color: 'text-emerald-600 dark:text-emerald-400',
+    bg: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-300 dark:border-emerald-500/30',
+    badge: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-500/30',
   },
 };
 
@@ -69,10 +69,10 @@ export default function InterviewFeedbackModal({ interview, onClose }) {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-lg font-bold text-white">Interview Feedback & Evaluation</h2>
+                <h2 className="text-lg font-bold text-gray-900 dark:text-white">Interview Feedback & Evaluation</h2>
               </div>
-              <p className="text-xs text-gray-400 flex items-center gap-2 mt-0.5">
-                <span className="font-semibold text-white">{interview.stack}</span>
+              <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-2 mt-0.5">
+                <span className="font-semibold text-gray-900 dark:text-white">{interview.stack}</span>
                 <span>•</span>
                 <span className="badge-primary text-[10px] px-2 py-0.2">Level {interview.level}</span>
                 <span>•</span>
@@ -85,7 +85,7 @@ export default function InterviewFeedbackModal({ interview, onClose }) {
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-dark-700 transition-colors"
+            className="text-gray-400 hover:text-gray-900 dark:hover:text-white p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors"
           >
             <HiX className="w-5 h-5" />
           </button>
@@ -97,39 +97,39 @@ export default function InterviewFeedbackModal({ interview, onClose }) {
           <div className="grid grid-cols-2 gap-3">
             <div className="card border border-dark-border bg-dark-800/60 p-4 flex items-center justify-between">
               <div>
-                <p className="text-xs text-gray-400 font-medium">Final Score</p>
-                <p className="text-2xl font-bold text-white mt-1">
+                <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Final Score</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
                   {score != null ? `${score}` : '—'}
-                  <span className="text-sm font-normal text-gray-400"> / 100</span>
+                  <span className="text-sm font-normal text-gray-500 dark:text-gray-400"> / 100</span>
                 </p>
               </div>
               <div className="w-10 h-10 rounded-xl bg-primary-900/30 border border-primary-500/20 flex items-center justify-center">
-                <HiStar className="w-6 h-6 text-primary-400" />
+                <HiStar className="w-6 h-6 text-primary-500 dark:text-primary-400" />
               </div>
             </div>
 
             <div className={`card border p-4 flex items-center justify-between ${isPassed ? 'bg-emerald-950/20 border-emerald-500/30' : 'bg-red-950/20 border-red-500/30'}`}>
               <div>
-                <p className="text-xs text-gray-400 font-medium">Result</p>
-                <p className={`text-lg font-bold mt-1 ${isPassed ? 'text-emerald-400' : 'text-red-400'}`}>
+                <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Result</p>
+                <p className={`text-lg font-bold mt-1 ${isPassed ? 'text-emerald-600 dark:text-emerald-400' : 'text-danger-600 dark:text-red-400'}`}>
                   {isPassed ? 'PASSED' : 'FAILED'}
                 </p>
               </div>
               {isPassed ? (
-                <HiCheckCircle className="w-8 h-8 text-emerald-400" />
+                <HiCheckCircle className="w-8 h-8 text-emerald-500 dark:text-emerald-400" />
               ) : (
-                <HiXCircle className="w-8 h-8 text-red-400" />
+                <HiXCircle className="w-8 h-8 text-danger-500 dark:text-red-400" />
               )}
             </div>
           </div>
 
           {/* Feedback Text Section */}
           <div className="space-y-2">
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-300">
-              <HiStar className="w-4 h-4 text-cyan-400" />
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 dark:text-gray-300">
+              <HiStar className="w-4 h-4 text-cyan-500 dark:text-cyan-400" />
               <span>Overall Evaluator Feedback</span>
             </div>
-            <div className="p-4 rounded-xl bg-dark-800/80 border border-dark-border/80 text-sm text-gray-200 leading-relaxed whitespace-pre-line font-normal">
+            <div className="p-4 rounded-xl bg-dark-800/80 border border-dark-border/80 text-sm text-gray-800 dark:text-gray-200 leading-relaxed whitespace-pre-line font-normal">
               {feedbackText ? (
                 feedbackText
               ) : (
@@ -141,7 +141,7 @@ export default function InterviewFeedbackModal({ interview, onClose }) {
           {/* Key Strengths */}
           {strengths && strengths.length > 0 && (
             <div className="space-y-2">
-              <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-400">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
                 <HiThumbUp className="w-4 h-4" />
                 <span>Demonstrated Strengths</span>
               </div>
@@ -149,9 +149,9 @@ export default function InterviewFeedbackModal({ interview, onClose }) {
                 {strengths.map((str, idx) => (
                   <span
                     key={idx}
-                    className="inline-flex items-center gap-1 text-xs px-3 py-1 rounded-lg bg-emerald-900/20 border border-emerald-500/30 text-emerald-300"
+                    className="inline-flex items-center gap-1 text-xs px-3 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-300 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-300 font-medium"
                   >
-                    <HiCheckCircle className="w-3 h-3 text-emerald-400 flex-shrink-0" />
+                    <HiCheckCircle className="w-3 h-3 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
                     {str}
                   </span>
                 ))}
@@ -162,7 +162,7 @@ export default function InterviewFeedbackModal({ interview, onClose }) {
           {/* Areas for Improvement / Weaknesses */}
           {weaknesses && weaknesses.length > 0 && (
             <div className="space-y-2">
-              <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-400">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-600 dark:text-amber-400">
                 <HiLightBulb className="w-4 h-4" />
                 <span>Areas for Improvement</span>
               </div>
@@ -170,9 +170,9 @@ export default function InterviewFeedbackModal({ interview, onClose }) {
                 {weaknesses.map((w, idx) => (
                   <span
                     key={idx}
-                    className="inline-flex items-center gap-1 text-xs px-3 py-1 rounded-lg bg-amber-900/20 border border-amber-500/30 text-amber-300"
+                    className="inline-flex items-center gap-1 text-xs px-3 py-1 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-500/30 text-amber-900 dark:text-amber-300 font-medium"
                   >
-                    <HiLightningBolt className="w-3 h-3 text-amber-400 flex-shrink-0" />
+                    <HiLightningBolt className="w-3 h-3 text-amber-600 dark:text-amber-400 flex-shrink-0" />
                     {w}
                   </span>
                 ))}
@@ -183,11 +183,11 @@ export default function InterviewFeedbackModal({ interview, onClose }) {
           {/* AI Recommendations */}
           {recommendations && (
             <div className="space-y-2">
-              <div className="flex items-center gap-1.5 text-xs font-semibold text-violet-400">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-violet-600 dark:text-violet-400">
                 <HiLightBulb className="w-4 h-4" />
                 <span>Study & Career Recommendations</span>
               </div>
-              <div className="p-3.5 rounded-xl bg-violet-950/20 border border-violet-500/20 text-xs text-violet-200/90 leading-relaxed">
+              <div className="p-3.5 rounded-xl bg-violet-50 dark:bg-violet-950/20 border border-violet-300 dark:border-violet-500/20 text-xs text-violet-950 dark:text-violet-200 leading-relaxed font-medium">
                 {recommendations}
               </div>
             </div>

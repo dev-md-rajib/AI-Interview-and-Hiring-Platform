@@ -56,7 +56,7 @@ export default function Messages() {
       {/* Conversation list */}
       <div className="w-72 flex-shrink-0 border-r border-dark-border flex flex-col">
         <div className="p-3 border-b border-dark-border">
-          <h2 className="text-white font-semibold">Messages</h2>
+          <h2 className="text-gray-900 dark:text-white font-bold text-base">Messages</h2>
         </div>
         <div className="flex-1 overflow-y-auto">
           {loading ? <div className="flex justify-center p-8"><div className="w-6 h-6 border-2 border-primary-500/30 border-t-primary-500 rounded-full animate-spin" /></div>
@@ -64,18 +64,18 @@ export default function Messages() {
             : conversations.map((conv) => {
               const other = getOtherParticipant(conv);
               return (
-                <div key={conv._id} onClick={() => { setActiveConv(conv); setConversations(c => c.map(x => x._id === conv._id ? { ...x, unreadCount: 0 } : x)); }} className={`flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-dark-800 transition-colors ${activeConv?._id === conv._id ? 'bg-dark-800 border-l-2 border-primary-500' : ''}`}>
+                <div key={conv._id} onClick={() => { setActiveConv(conv); setConversations(c => c.map(x => x._id === conv._id ? { ...x, unreadCount: 0 } : x)); }} className={`flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-dark-800 transition-colors ${activeConv?._id === conv._id ? 'bg-primary-50 dark:bg-dark-800 border-l-4 border-primary-600' : ''}`}>
                   <div className="w-9 h-9 rounded-full bg-primary-700 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">{other?.name?.[0]?.toUpperCase()}</div>
                   <div className="min-w-0 flex-1">
                     <div className="flex justify-between items-center mb-0.5">
-                      <p className="text-white text-sm font-medium truncate">{other?.name}</p>
+                      <p className="text-gray-900 dark:text-white text-sm font-semibold truncate">{other?.name}</p>
                       {conv.unreadCount > 0 && activeConv?._id !== conv._id && (
                         <span className="bg-danger-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0">
                           {conv.unreadCount > 99 ? '99+' : conv.unreadCount}
                         </span>
                       )}
                     </div>
-                    <p className={`text-xs truncate ${conv.unreadCount > 0 && activeConv?._id !== conv._id ? 'text-white font-medium' : 'text-gray-500'}`}>
+                    <p className={`text-xs truncate ${conv.unreadCount > 0 && activeConv?._id !== conv._id ? 'text-primary-700 dark:text-white font-semibold' : 'text-gray-500'}`}>
                       {conv.lastMessage || 'Start conversation'}
                     </p>
                   </div>
@@ -88,11 +88,11 @@ export default function Messages() {
       {/* Chat area */}
       {activeConv ? (
         <div className="flex-1 flex flex-col">
-          <div className="px-4 py-3 border-b border-dark-border flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-primary-700 flex items-center justify-center text-white font-bold text-sm">{getOtherParticipant(activeConv)?.name?.[0]?.toUpperCase()}</div>
+          <div className="px-4 py-3 border-b border-dark-border flex items-center gap-3 bg-dark-card">
+            <div className="w-9 h-9 rounded-full bg-primary-700 flex items-center justify-center text-white font-bold text-sm">{getOtherParticipant(activeConv)?.name?.[0]?.toUpperCase()}</div>
             <div>
-              <p className="text-white font-semibold text-sm">{getOtherParticipant(activeConv)?.name}</p>
-              <p className="text-gray-500 text-xs">{getOtherParticipant(activeConv)?.role}</p>
+              <p className="text-gray-900 dark:text-white font-bold text-sm">{getOtherParticipant(activeConv)?.name}</p>
+              <p className="text-gray-500 text-xs font-medium uppercase tracking-wider">{getOtherParticipant(activeConv)?.role}</p>
             </div>
           </div>
 
@@ -101,7 +101,7 @@ export default function Messages() {
               const isOwn = msg.sender?._id === user?._id || msg.sender === user?._id;
               return (
                 <div key={msg._id} className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-xs md:max-w-md px-4 py-2 rounded-2xl text-sm ${isOwn ? 'bg-primary-600 text-white rounded-br-none' : 'bg-dark-800 text-gray-100 rounded-bl-none border border-dark-border'}`}>
+                  <div className={`max-w-xs md:max-w-md px-4 py-2.5 rounded-2xl text-sm ${isOwn ? 'bg-primary-600 text-white rounded-br-none shadow-sm' : 'bg-dark-800 text-gray-900 dark:text-gray-100 rounded-bl-none border border-dark-border shadow-sm'}`}>
                     <p>{msg.content}</p>
                     <p className={`text-xs mt-1 ${isOwn ? 'text-primary-200' : 'text-gray-500'}`}>{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                   </div>

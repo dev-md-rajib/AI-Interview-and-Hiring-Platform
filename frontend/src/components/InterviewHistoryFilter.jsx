@@ -42,9 +42,9 @@ export default function InterviewHistoryFilter({
         </div>
 
         {/* Count & Reset */}
-        <div className="flex items-center justify-between md:justify-end gap-2.5 text-xs text-gray-400">
+        <div className="flex items-center justify-between md:justify-end gap-2.5 text-xs text-gray-500 dark:text-gray-400">
           <span>
-            Showing <b className="text-white">{filteredCount}</b> of {totalCount}
+            Showing <b className="text-gray-900 dark:text-white font-bold">{filteredCount}</b> of {totalCount}
           </span>
           {isFiltered && (
             <button

@@ -103,17 +103,17 @@ export default function InterviewerProfile() {
   return (
     <div className="max-w-3xl mx-auto animate-fade-in space-y-6">
       <div className="mb-2">
-        <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-          <HiLightBulb className="text-cyan-400" /> My Profile & Availability
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+          <HiLightBulb className="text-cyan-500 dark:text-cyan-400" /> My Profile & Availability
         </h1>
-        <p className="text-gray-400 mt-1 text-sm">Configure your expertise, Zoom host details, and weekly availability for interviews.</p>
+        <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">Configure your expertise, Zoom host details, and weekly availability for interviews.</p>
       </div>
 
       {/* Status toggle */}
       <div className="card flex items-center justify-between">
         <div>
-          <p className="text-white font-semibold">Interviewer Status</p>
-          <p className="text-gray-400 text-xs mt-1">
+          <p className="text-gray-900 dark:text-white font-bold text-base">Interviewer Status</p>
+          <p className="text-gray-500 dark:text-gray-400 text-xs mt-1">
             {isActive ? 'You are currently active and eligible to receive interview assignments.' : 'You are marked as inactive and will not receive new assignments.'}
           </p>
         </div>
@@ -128,10 +128,10 @@ export default function InterviewerProfile() {
       {/* Host Email */}
       <div className="card">
         <div className="flex items-center gap-2 mb-3">
-          <HiVideoCamera className="text-cyan-400 w-5 h-5" />
+          <HiVideoCamera className="text-cyan-500 dark:text-cyan-400 w-5 h-5" />
           <h2 className="section-title">Zoom Interview Host Email</h2>
         </div>
-        <p className="text-xs text-gray-400 mb-3">
+        <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
           Enter your Zoom account email address to be designated as the host when Zoom interview sessions are scheduled with you.
         </p>
         <div className="space-y-1.5">
@@ -143,7 +143,7 @@ export default function InterviewerProfile() {
             className="input text-sm"
           />
           <p className="text-[11px] text-gray-500">
-            If no email is provided, <span className="text-cyan-400 font-mono">rajibmiah978@gmail.com</span> will be assigned as the meeting host by default.
+            If no email is provided, <span className="text-cyan-600 dark:text-cyan-400 font-mono font-medium">rajibmiah978@gmail.com</span> will be assigned as the meeting host by default.
           </p>
         </div>
       </div>
@@ -151,7 +151,7 @@ export default function InterviewerProfile() {
       {/* Bio */}
       <div className="card">
         <div className="flex items-center gap-2 mb-3">
-          <HiUser className="text-primary-400" />
+          <HiUser className="text-primary-500 dark:text-primary-400" />
           <h2 className="section-title">About Me</h2>
         </div>
         <textarea
@@ -165,11 +165,11 @@ export default function InterviewerProfile() {
       {/* Expertise multi-select */}
       <div className="card">
         <div className="flex items-center gap-2 mb-4">
-          <HiLightBulb className="text-cyan-400" />
+          <HiLightBulb className="text-cyan-500 dark:text-cyan-400" />
           <h2 className="section-title">Tech Stack Expertise</h2>
           <span className="text-xs text-gray-500">({expertise.length} selected)</span>
         </div>
-        <p className="text-xs text-gray-400 mb-3">Select all technologies you're qualified to interview candidates on.</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">Select all technologies you're qualified to interview candidates on.</p>
         <div className="flex flex-wrap gap-2">
           {STACKS.map((stack) => {
             const selected = expertise.includes(stack);
@@ -179,11 +179,11 @@ export default function InterviewerProfile() {
                 onClick={() => toggleExpertise(stack)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
                   selected
-                    ? 'border-cyan-500 bg-cyan-900/30 text-cyan-300'
-                    : 'border-dark-border text-gray-400 hover:border-gray-500 hover:text-white'
+                    ? 'border-cyan-500 bg-cyan-50 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300 font-semibold shadow-sm'
+                    : 'border-dark-border text-gray-600 dark:text-gray-400 bg-dark-card hover:border-cyan-500 hover:text-cyan-600 dark:hover:text-white'
                 }`}
               >
-                {selected && <HiCheck className="w-3 h-3" />}
+                {selected && <HiCheck className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400 stroke-2" />}
                 {stack}
               </button>
             );
@@ -194,11 +194,11 @@ export default function InterviewerProfile() {
       {/* Business Sectors multi-select */}
       <div className="card">
         <div className="flex items-center gap-2 mb-4">
-          <HiBriefcase className="text-amber-400" />
+          <HiBriefcase className="text-amber-500 dark:text-amber-400" />
           <h2 className="section-title">General & Professional Fields</h2>
           <span className="text-xs text-gray-500">({sectors.length} selected)</span>
         </div>
-        <p className="text-xs text-gray-400 mb-3">
+        <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
           Select fields & domains you can conduct interviews for.
           This allows you to be matched with candidates taking domain and professional field team interviews.
         </p>
@@ -213,15 +213,15 @@ export default function InterviewerProfile() {
                 className={`p-3 rounded-xl border-2 text-left transition-all flex items-center gap-2.5 ${
                   selected
                     ? `${sector.border} ${sector.bg}`
-                    : 'border-dark-border hover:border-gray-500 bg-dark-800/50'
+                    : 'border-dark-border hover:border-gray-400 bg-dark-card'
                 }`}
               >
                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${selected ? `${sector.bg} ${sector.color} border ${sector.border}` : 'bg-dark-card text-gray-400 border border-dark-border'}`}>
                   {Icon && <Icon className="w-4 h-4" />}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className={`font-semibold text-xs truncate ${selected ? 'text-white' : 'text-gray-300'}`}>{sector.label}</div>
-                  {selected && <div className={`text-[10px] ${sector.color} font-medium`}>✓ Selected</div>}
+                  <div className={`font-semibold text-xs truncate ${selected ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300'}`}>{sector.label}</div>
+                  {selected && <div className={`text-[10px] ${sector.color} font-bold`}>✓ Selected</div>}
                 </div>
               </button>
             );

@@ -5,10 +5,11 @@
 @layer base {
   body {
     font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
 }
 
-/* Glassmorphic card styling */
+/* Glassmorphic card styling — Dark Mode (Default) */
 .glass-panel {
   background: rgba(24, 24, 27, 0.85);
   backdrop-filter: blur(16px);
@@ -19,7 +20,24 @@
 .glass-card {
   background: rgba(39, 39, 42, 0.6);
   backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Glassmorphic card styling — Light Mode */
+html.light .glass-panel {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.06), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+}
+
+html.light .glass-card {
+  background: rgba(248, 250, 252, 0.9);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(226, 232, 240, 0.85);
 }
 
 /* Custom scrollbar */
@@ -36,6 +54,13 @@
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #52525b;
+}
+
+html.light ::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+}
+html.light ::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
 /* Glowing dot animation */

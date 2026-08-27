@@ -65,7 +65,7 @@ export default function QuestionBank() {
   return (
     <div className="animate-fade-in">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-white">Question Bank ({questions.length})</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Question Bank ({questions.length})</h1>
         <button onClick={() => setShowForm(!showForm)} className="btn-primary flex items-center gap-2"><HiPlus /> Add Question</button>
       </div>
 
@@ -109,7 +109,7 @@ export default function QuestionBank() {
           
           {form.type === 'coding' && (
             <div className="space-y-4 border-t border-dark-border pt-4">
-              <h3 className="text-white font-medium">Coding Settings</h3>
+              <h3 className="text-gray-900 dark:text-white font-medium">Coding Settings</h3>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="label">Allowed Languages (comma separated)</label>
@@ -175,11 +175,11 @@ export default function QuestionBank() {
               <div key={q._id} className="card group">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1">
-                    <p className="text-white">{q.question}</p>
+                    <p className="text-gray-900 dark:text-white font-medium text-sm leading-relaxed">{q.question}</p>
                     <div className="flex gap-2 mt-2 flex-wrap">
                       <span className="badge-primary">{q.stack}</span>
                       <span className="badge-gray">L{q.level}</span>
-                      <span className="badge bg-blue-900 text-blue-300">{q.type}</span>
+                      <span className="badge bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-300 border border-blue-200 dark:border-blue-500/30">{q.type}</span>
                       <span className={`badge ${q.difficulty === 'hard' ? 'badge-danger' : q.difficulty === 'medium' ? 'badge-warning' : 'badge-success'}`}>{q.difficulty}</span>
                       {q.skill && <span className="badge-gray">{q.skill}</span>}
                     </div>

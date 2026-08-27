@@ -91,26 +91,26 @@ export const ConsentReady: React.FC<ConsentReadyProps> = ({
   };
 
   return (
-    <div className="h-screen w-full flex bg-zinc-950 text-white overflow-x-hidden relative">
+    <div className="h-screen w-full flex bg-slate-50 dark:bg-zinc-950 text-zinc-900 dark:text-white overflow-x-hidden relative transition-colors">
       {/* Top drag bar for frameless window */}
       <div className="absolute top-0 left-0 right-24 h-8 drag-region z-40" />
 
       {/* Left Sidebar */}
-      <aside className="w-80 flex-shrink-0 border-r border-zinc-800 bg-zinc-900/60 flex flex-col justify-between p-6">
+      <aside className="w-80 flex-shrink-0 border-r border-slate-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/60 flex flex-col justify-between p-6 transition-colors">
         <div>
           {/* App Branding */}
-          <div className="flex items-center gap-2.5 pb-5 mb-5 border-b border-zinc-800/80">
-            <div className="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-800 p-1.5 flex items-center justify-center shadow-sm">
+          <div className="flex items-center gap-2.5 pb-5 mb-5 border-b border-slate-200 dark:border-zinc-800/80">
+            <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 p-1.5 flex items-center justify-center shadow-sm">
               <img src="/app-icon.svg" alt="App Logo" className="w-full h-full object-contain" />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-white tracking-tight leading-tight">Interview Tracker</h2>
-              <span className="text-[10px] text-zinc-500 font-medium uppercase tracking-wider">Candidate Client</span>
+              <h2 className="text-sm font-bold text-zinc-900 dark:text-white tracking-tight leading-tight">Interview Tracker</h2>
+              <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">Candidate Client</span>
             </div>
           </div>
 
           {/* User Profile Card */}
-          <div className="flex items-center gap-3.5 pb-6 border-b border-zinc-800">
+          <div className="flex items-center gap-3.5 pb-6 border-b border-slate-200 dark:border-zinc-800">
             {user.avatar ? (
               <img
                 src={user.avatar}
@@ -118,39 +118,39 @@ export const ConsentReady: React.FC<ConsentReadyProps> = ({
                 className="w-12 h-12 rounded-full object-cover border-2 border-blue-500/50 shadow-md"
               />
             ) : (
-              <div className="w-12 h-12 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-300">
+              <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 flex items-center justify-center text-zinc-600 dark:text-zinc-300">
                 <UserIcon className="w-6 h-6" />
               </div>
             )}
             <div className="overflow-hidden">
-              <h3 className="font-semibold text-white truncate text-base">{user.name}</h3>
-              <p className="text-xs text-zinc-400 truncate">{user.email}</p>
+              <h3 className="font-bold text-zinc-900 dark:text-white truncate text-base">{user.name}</h3>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate">{user.email}</p>
             </div>
           </div>
 
           {/* Current Interview Card */}
           <div className="mt-6">
-            <span className="text-xs font-semibold uppercase text-zinc-400 tracking-wider">
+            <span className="text-xs font-bold uppercase text-zinc-500 dark:text-zinc-400 tracking-wider">
               Upcoming Interview
             </span>
             {interview ? (
-              <div className="mt-3 p-4 glass-card rounded-xl border border-zinc-800/80 space-y-3">
+              <div className="mt-3 p-4 glass-card rounded-xl border border-slate-200 dark:border-zinc-800/80 space-y-3">
                 <div className="flex items-start gap-2.5">
-                  <Briefcase className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+                  <Briefcase className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
                   <div>
-                    <h4 className="font-semibold text-white text-sm leading-tight">{interview.jobTitle}</h4>
-                    <span className="inline-block mt-1 px-2 py-0.5 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded text-[11px] font-medium">
+                    <h4 className="font-bold text-zinc-900 dark:text-white text-sm leading-tight">{interview.jobTitle}</h4>
+                    <span className="inline-block mt-1 px-2 py-0.5 bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 text-blue-700 dark:text-blue-400 rounded text-[11px] font-bold">
                       {interview.level}
                     </span>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-zinc-400 pt-2 border-t border-zinc-800">
-                  <Layers className="w-4 h-4 text-zinc-500" />
-                  <span className="truncate">{interview.stack}</span>
+                <div className="flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400 pt-2 border-t border-slate-200 dark:border-zinc-800">
+                  <Layers className="w-4 h-4 text-zinc-400 dark:text-zinc-500" />
+                  <span className="truncate font-medium">{interview.stack}</span>
                 </div>
               </div>
             ) : (
-              <div className="mt-3 p-4 bg-zinc-900/40 rounded-xl border border-zinc-800 text-xs text-zinc-400 flex items-center justify-center">
+              <div className="mt-3 p-4 bg-slate-100 dark:bg-zinc-900/40 rounded-xl border border-slate-200 dark:border-zinc-800 text-xs text-zinc-500 dark:text-zinc-400 flex items-center justify-center">
                 Loading interview details...
               </div>
             )}
@@ -158,10 +158,10 @@ export const ConsentReady: React.FC<ConsentReadyProps> = ({
         </div>
 
         {/* Bottom Sidebar Action Buttons */}
-        <div className="pt-6 border-t border-zinc-800 flex items-center justify-between">
+        <div className="pt-6 border-t border-slate-200 dark:border-zinc-800 flex items-center justify-between">
           <button
             onClick={onOpenSettings}
-            className="p-2.5 text-zinc-400 hover:text-white hover:bg-zinc-800/80 rounded-xl transition-colors flex items-center gap-2 text-xs font-medium"
+            className="p-2.5 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800/80 rounded-xl transition-colors flex items-center gap-2 text-xs font-semibold"
             title="Settings"
           >
             <SettingsIcon className="w-5 h-5" />
@@ -169,7 +169,7 @@ export const ConsentReady: React.FC<ConsentReadyProps> = ({
           </button>
           <button
             onClick={onLogout}
-            className="p-2.5 text-zinc-400 hover:text-red-400 hover:bg-red-950/30 rounded-xl transition-colors flex items-center gap-2 text-xs font-medium"
+            className="p-2.5 text-zinc-600 dark:text-zinc-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-xl transition-colors flex items-center gap-2 text-xs font-semibold"
             title="Sign Out"
           >
             <LogOut className="w-5 h-5" />
@@ -179,12 +179,12 @@ export const ConsentReady: React.FC<ConsentReadyProps> = ({
       </aside>
 
       {/* Main Panel — Data Collection Disclosure */}
-      <main className="flex-1 flex flex-col p-8 overflow-y-auto bg-zinc-950 min-h-0">
+      <main className="flex-1 flex flex-col p-8 overflow-y-auto bg-slate-50/50 dark:bg-zinc-950 min-h-0 transition-colors">
         <div>
           {/* Header */}
           <div className="mb-6">
-            <h2 className="text-2xl font-bold text-white tracking-tight">Proctoring & Monitoring Consent</h2>
-            <p className="text-sm text-zinc-400 mt-1">
+            <h2 className="text-2xl font-bold text-zinc-900 dark:text-white tracking-tight">Proctoring & Monitoring Consent</h2>
+            <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
               Please review the required monitoring policies below before starting your interview session.
             </p>
           </div>
@@ -192,82 +192,82 @@ export const ConsentReady: React.FC<ConsentReadyProps> = ({
           {/* Itemized Disclosures */}
           <div className="space-y-3.5">
             {/* 1. Screen monitoring */}
-            <div className="p-4 glass-panel rounded-xl border border-zinc-800/80 flex items-start gap-4">
-              <div className="p-2.5 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-lg flex-shrink-0">
+            <div className="p-4 glass-panel rounded-xl border border-slate-200 dark:border-zinc-800/80 flex items-start gap-4">
+              <div className="p-2.5 bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 text-blue-600 dark:text-blue-400 rounded-lg flex-shrink-0">
                 <Monitor className="w-5 h-5" />
               </div>
               <div>
-                <h4 className="font-semibold text-white text-sm">Screen Monitoring</h4>
-                <p className="text-xs text-zinc-400 mt-0.5 leading-relaxed">
+                <h4 className="font-bold text-zinc-900 dark:text-white text-sm">Screen Monitoring</h4>
+                <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5 leading-relaxed">
                   Screenshots of your screen are captured periodically (approx. every 30 seconds, at randomized times) and stored with this interview record.
                 </p>
               </div>
             </div>
 
             {/* 2. Application lockdown */}
-            <div className="p-4 glass-panel rounded-xl border border-zinc-800/80 flex items-start gap-4">
-              <div className="p-2.5 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 rounded-lg flex-shrink-0">
+            <div className="p-4 glass-panel rounded-xl border border-slate-200 dark:border-zinc-800/80 flex items-start gap-4">
+              <div className="p-2.5 bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 text-indigo-600 dark:text-indigo-400 rounded-lg flex-shrink-0">
                 <Shield className="w-5 h-5" />
               </div>
               <div>
-                <h4 className="font-semibold text-white text-sm">Application Lockdown</h4>
-                <p className="text-xs text-zinc-400 mt-0.5 leading-relaxed">
+                <h4 className="font-bold text-zinc-900 dark:text-white text-sm">Application Lockdown</h4>
+                <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5 leading-relaxed">
                   Other applications on your computer will be closed and blocked from opening while the interview is active.
                 </p>
               </div>
             </div>
 
             {/* 3. Browser lockdown */}
-            <div className="p-4 glass-panel rounded-xl border border-zinc-800/80 flex items-start gap-4">
-              <div className="p-2.5 bg-purple-500/10 border border-purple-500/20 text-purple-400 rounded-lg flex-shrink-0">
+            <div className="p-4 glass-panel rounded-xl border border-slate-200 dark:border-zinc-800/80 flex items-start gap-4">
+              <div className="p-2.5 bg-purple-50 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/20 text-purple-600 dark:text-purple-400 rounded-lg flex-shrink-0">
                 <Globe className="w-5 h-5" />
               </div>
               <div>
-                <h4 className="font-semibold text-white text-sm">Browser Lockdown</h4>
-                <p className="text-xs text-zinc-400 mt-0.5 leading-relaxed">
+                <h4 className="font-bold text-zinc-900 dark:text-white text-sm">Browser Lockdown</h4>
+                <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5 leading-relaxed">
                   Only the interview window will be usable. Other browser tabs and windows will be closed.
                 </p>
               </div>
             </div>
 
             {/* 4. Website activity */}
-            <div className="p-4 glass-panel rounded-xl border border-zinc-800/80 flex items-start gap-4">
-              <div className="p-2.5 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-lg flex-shrink-0">
+            <div className="p-4 glass-panel rounded-xl border border-slate-200 dark:border-zinc-800/80 flex items-start gap-4">
+              <div className="p-2.5 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 text-amber-600 dark:text-amber-400 rounded-lg flex-shrink-0">
                 <Activity className="w-5 h-5" />
               </div>
               <div>
-                <h4 className="font-semibold text-white text-sm">Website & Activity Logging</h4>
-                <p className="text-xs text-zinc-400 mt-0.5 leading-relaxed">
+                <h4 className="font-bold text-zinc-900 dark:text-white text-sm">Website & Activity Logging</h4>
+                <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5 leading-relaxed">
                   Any site or app you attempt to open during the interview is logged and sent to the interview platform.
                 </p>
               </div>
             </div>
 
             {/* 5. Manual end / auto-flag */}
-            <div className="p-4 glass-panel rounded-xl border border-zinc-800/80 flex items-start gap-4">
-              <div className="p-2.5 bg-red-500/10 border border-red-500/20 text-red-400 rounded-lg flex-shrink-0">
+            <div className="p-4 glass-panel rounded-xl border border-slate-200 dark:border-zinc-800/80 flex items-start gap-4">
+              <div className="p-2.5 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-600 dark:text-red-400 rounded-lg flex-shrink-0">
                 <Power className="w-5 h-5" />
               </div>
               <div>
-                <h4 className="font-semibold text-white text-sm">Manual End & Scoring</h4>
-                <p className="text-xs text-zinc-400 mt-0.5 leading-relaxed">
+                <h4 className="font-bold text-zinc-900 dark:text-white text-sm">Manual End & Scoring</h4>
+                <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5 leading-relaxed">
                   You may end the interview at any time using the on-screen End button. Doing so immediately submits and scores your interview based on progress so far.
                 </p>
               </div>
             </div>
 
             {/* 6. Data retention note */}
-            <div className="p-4 glass-panel rounded-xl border border-zinc-800/80 flex items-start gap-4">
-              <div className="p-2.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-lg flex-shrink-0">
+            <div className="p-4 glass-panel rounded-xl border border-slate-200 dark:border-zinc-800/80 flex items-start gap-4">
+              <div className="p-2.5 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-lg flex-shrink-0">
                 <Database className="w-5 h-5" />
               </div>
               <div>
-                <h4 className="font-semibold text-white text-sm">Data Retention Policy</h4>
-                <p className="text-xs text-zinc-400 mt-0.5 leading-relaxed">
+                <h4 className="font-bold text-zinc-900 dark:text-white text-sm">Data Retention Policy</h4>
+                <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5 leading-relaxed">
                   Collected data is tied to this interview record and retained per the platform's data policy.{' '}
                   <button
                     onClick={handleOpenPrivacyPolicy}
-                    className="text-blue-400 hover:text-blue-300 underline inline-flex items-center gap-0.5 ml-1"
+                    className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 underline font-semibold inline-flex items-center gap-0.5 ml-1"
                   >
                     Read Privacy Policy <ExternalLink className="w-3 h-3" />
                   </button>
@@ -278,20 +278,20 @@ export const ConsentReady: React.FC<ConsentReadyProps> = ({
         </div>
 
         {/* Consent Checkbox & Primary Button — sticky at bottom */}
-        <div className="sticky bottom-0 mt-6 pt-6 pb-2 border-t border-zinc-800 space-y-4 bg-zinc-950">
+        <div className="sticky bottom-0 mt-6 pt-6 pb-2 border-t border-slate-200 dark:border-zinc-800 space-y-4 bg-slate-50/95 dark:bg-zinc-950/95 backdrop-blur-sm">
           <label className="flex items-center gap-3 cursor-pointer select-none">
             <button
               type="button"
               onClick={() => setConsented(!consented)}
-              className="text-blue-500 focus:outline-none flex-shrink-0"
+              className="text-blue-600 dark:text-blue-500 focus:outline-none flex-shrink-0"
             >
               {consented ? (
-                <CheckSquare className="w-6 h-6 text-blue-500 fill-blue-500/20" />
+                <CheckSquare className="w-6 h-6 text-blue-600 dark:text-blue-500 fill-blue-500/20" />
               ) : (
-                <Square className="w-6 h-6 text-zinc-600 hover:text-zinc-500" />
+                <Square className="w-6 h-6 text-slate-400 dark:text-zinc-600 hover:text-slate-600 dark:hover:text-zinc-500" />
               )}
             </button>
-            <span className="text-xs text-zinc-300 font-medium leading-tight">
+            <span className="text-xs text-zinc-800 dark:text-zinc-300 font-bold leading-tight">
               I understand and consent to the monitoring described above
             </span>
           </label>
@@ -299,7 +299,7 @@ export const ConsentReady: React.FC<ConsentReadyProps> = ({
           <button
             onClick={handleProceedReady}
             disabled={!consented || isSubmitting}
-            className="w-full py-4 px-6 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:from-zinc-800 disabled:to-zinc-800 disabled:text-zinc-500 text-white font-semibold rounded-xl shadow-lg shadow-blue-600/20 disabled:shadow-none focus:outline-none transition-all duration-200 text-sm flex items-center justify-center gap-2"
+            className="w-full py-4 px-6 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:from-slate-200 disabled:to-slate-200 dark:disabled:from-zinc-800 dark:disabled:to-zinc-800 disabled:text-zinc-400 dark:disabled:text-zinc-500 text-white font-bold rounded-xl shadow-lg shadow-blue-600/20 disabled:shadow-none focus:outline-none transition-all duration-200 text-sm flex items-center justify-center gap-2"
           >
             {isSubmitting ? (
               <span>Preparing Lockdown Session...</span>

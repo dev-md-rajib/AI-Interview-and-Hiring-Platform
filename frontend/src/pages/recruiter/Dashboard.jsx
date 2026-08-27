@@ -21,7 +21,7 @@ export default function RecruiterDashboard() {
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-white">Recruiter Dashboard</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Recruiter Dashboard</h1>
         <Link to="/recruiter/jobs/new" className="btn-primary flex items-center gap-2"><HiPlus /> Post a Job</Link>
       </div>
 
@@ -33,7 +33,7 @@ export default function RecruiterDashboard() {
         ].map(({ icon: Icon, label, value, color }) => (
           <div key={label} className="card flex items-center gap-4">
             <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${color}`}><Icon className="w-6 h-6 text-white" /></div>
-            <div><p className="text-gray-400 text-sm">{label}</p><p className="text-2xl font-bold text-white">{value}</p></div>
+            <div><p className="text-gray-500 dark:text-gray-400 text-sm font-medium">{label}</p><p className="text-2xl font-bold text-gray-900 dark:text-white">{value}</p></div>
           </div>
         ))}
       </div>
@@ -41,16 +41,16 @@ export default function RecruiterDashboard() {
       <div>
         <div className="flex justify-between items-center mb-4">
           <h2 className="section-title mb-0">Recent Jobs</h2>
-          <Link to="/recruiter/jobs" className="text-sm text-primary-400 hover:text-primary-300">View all →</Link>
+          <Link to="/recruiter/jobs" className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium">View all →</Link>
         </div>
         {jobs.length === 0 ? (
-          <div className="card text-center py-12"><p className="text-gray-400">No jobs posted yet</p><Link to="/recruiter/jobs/new" className="btn-primary mt-4 inline-flex items-center gap-2"><HiPlus />Post First Job</Link></div>
+          <div className="card text-center py-12"><p className="text-gray-500 dark:text-gray-400">No jobs posted yet</p><Link to="/recruiter/jobs/new" className="btn-primary mt-4 inline-flex items-center gap-2"><HiPlus />Post First Job</Link></div>
         ) : (
           <div className="space-y-3">
             {jobs.map((job) => (
               <div key={job._id} className="card hover:border-primary-500/30 transition-all flex items-center justify-between flex-wrap gap-3">
                 <div>
-                  <h3 className="text-white font-semibold">{job.title}</h3>
+                  <h3 className="text-gray-900 dark:text-white font-bold">{job.title}</h3>
                   <div className="flex gap-2 mt-1 flex-wrap">
                     {job.requiredStack?.slice(0, 3).map((s) => <span key={s} className="badge-gray">{s}</span>)}
                     <span className="badge-primary">L{job.requiredLevel}</span>

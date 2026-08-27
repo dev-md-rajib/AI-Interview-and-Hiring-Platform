@@ -37,20 +37,20 @@ export default function InterviewResult() {
   return (
     <div className="max-w-2xl mx-auto animate-slide-up space-y-6">
       {/* Verdict */}
-      <div className={`card text-center border-2 ${result.passed ? 'border-accent-500/40 bg-emerald-900/10' : 'border-danger-500/40 bg-red-900/10'}`}>
+      <div className={`card text-center border-2 ${result.passed ? 'border-accent-500/40 bg-emerald-50/60 dark:bg-emerald-900/10' : 'border-danger-500/40 bg-red-50/60 dark:bg-red-900/10'}`}>
         {result.passed
-          ? <HiCheckCircle className="w-16 h-16 text-accent-400 mx-auto mb-3" />
-          : <HiXCircle className="w-16 h-16 text-danger-400 mx-auto mb-3" />}
-        <h1 className="text-3xl font-bold text-white">{result.passed ? '🎉 Passed!' : '❌ Failed'}</h1>
-        <p className="text-gray-400 mt-1">{result.stack} • Level {result.level}</p>
+          ? <HiCheckCircle className="w-16 h-16 text-emerald-500 dark:text-accent-400 mx-auto mb-3" />
+          : <HiXCircle className="w-16 h-16 text-red-500 dark:text-danger-400 mx-auto mb-3" />}
+        <h1 className={`text-3xl font-bold ${result.passed ? 'text-emerald-600 dark:text-white' : 'text-red-600 dark:text-white'}`}>{result.passed ? '🎉 Passed!' : '❌ Failed'}</h1>
+        <p className="text-gray-500 dark:text-gray-400 mt-1 font-medium">{result.stack} • Level {result.level}</p>
         <div className="mt-6">
           <div className="text-6xl font-black text-gradient">{result.totalScore}%</div>
-          <p className="text-gray-400 text-sm mt-1">Overall Score</p>
+          <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Overall Score</p>
         </div>
 
         {result.nextLevelEligible && (
-          <div className="mt-4 p-3 bg-emerald-900/20 border border-accent-500/30 rounded-lg">
-            <p className="text-accent-300 font-medium">🚀 You're now eligible for Level {result.level + 1}!</p>
+          <div className="mt-4 p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-300 dark:border-accent-500/30 rounded-lg">
+            <p className="text-emerald-700 dark:text-accent-300 font-bold">🚀 You're now eligible for Level {result.level + 1}!</p>
           </div>
         )}
       </div>
@@ -59,7 +59,7 @@ export default function InterviewResult() {
       {result.feedback && (
         <div className="card">
           <h2 className="section-title">AI Feedback</h2>
-          <p className="text-gray-300 leading-relaxed">{result.feedback}</p>
+          <p className="text-gray-700 dark:text-gray-300 leading-relaxed">{result.feedback}</p>
         </div>
       )}
 
@@ -67,17 +67,17 @@ export default function InterviewResult() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {result.strengths?.length > 0 && (
           <div className="card">
-            <h3 className="text-white font-semibold mb-3 text-accent-400">✅ Strengths</h3>
+            <h3 className="font-bold mb-3 text-emerald-600 dark:text-accent-400">✅ Strengths</h3>
             <ul className="space-y-2">
-              {result.strengths.map((s, i) => <li key={i} className="text-gray-300 text-sm flex items-start gap-2"><span className="text-accent-400 mt-0.5">•</span>{s}</li>)}
+              {result.strengths.map((s, i) => <li key={i} className="text-gray-700 dark:text-gray-300 text-sm flex items-start gap-2"><span className="text-emerald-500 dark:text-accent-400 mt-0.5">•</span>{s}</li>)}
             </ul>
           </div>
         )}
         {result.weaknesses?.length > 0 && (
           <div className="card">
-            <h3 className="text-white font-semibold mb-3 text-danger-400">⚠️ Areas to Improve</h3>
+            <h3 className="font-bold mb-3 text-red-600 dark:text-danger-400">⚠️ Areas to Improve</h3>
             <ul className="space-y-2">
-              {result.weaknesses.map((w, i) => <li key={i} className="text-gray-300 text-sm flex items-start gap-2"><span className="text-danger-400 mt-0.5">•</span>{w}</li>)}
+              {result.weaknesses.map((w, i) => <li key={i} className="text-gray-700 dark:text-gray-300 text-sm flex items-start gap-2"><span className="text-red-500 dark:text-danger-400 mt-0.5">•</span>{w}</li>)}
             </ul>
           </div>
         )}
@@ -91,8 +91,8 @@ export default function InterviewResult() {
             {skillData.map(({ name, value }) => (
               <div key={name} className="space-y-1">
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-300">{name}</span>
-                  <span className={`font-bold ${value >= 70 ? 'text-accent-400' : value >= 50 ? 'text-yellow-400' : 'text-danger-400'}`}>{value}%</span>
+                  <span className="text-gray-700 dark:text-gray-300 font-medium">{name}</span>
+                  <span className={`font-bold ${value >= 70 ? 'text-emerald-600 dark:text-accent-400' : value >= 50 ? 'text-amber-600 dark:text-yellow-400' : 'text-red-600 dark:text-danger-400'}`}>{value}%</span>
                 </div>
                 <div className="h-2 bg-dark-800 rounded-full overflow-hidden">
                   <div

@@ -188,7 +188,7 @@ export default function NotificationBell() {
       <button
         id="notification-bell"
         onClick={() => { setOpen((v) => !v); if (!open) fetchNotifications(); }}
-        className="relative p-2 rounded-lg text-gray-400 hover:text-white hover:bg-dark-800 transition-all"
+        className="relative p-2 rounded-lg text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-dark-800 transition-all"
       >
         <HiBell className="w-5 h-5" />
         {unreadCount > 0 && (
@@ -204,8 +204,8 @@ export default function NotificationBell() {
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-dark-border">
             <div className="flex items-center gap-2">
-              <HiBell className="w-4 h-4 text-primary-400" />
-              <span className="text-sm font-semibold text-white">Notifications</span>
+              <HiBell className="w-4 h-4 text-primary-500 dark:text-primary-400" />
+              <span className="text-sm font-semibold text-gray-900 dark:text-white">Notifications</span>
               {unreadCount > 0 && (
                 <span className="bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">
                   {unreadCount}
@@ -216,7 +216,7 @@ export default function NotificationBell() {
               <button
                 onClick={markAllRead}
                 disabled={loading}
-                className="text-xs text-primary-400 hover:text-primary-300 flex items-center gap-1"
+                className="text-xs text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 flex items-center gap-1 font-medium"
               >
                 <HiCheck className="w-3 h-3" />
                 Mark all read
@@ -237,19 +237,19 @@ export default function NotificationBell() {
                   key={n._id}
                   onClick={() => handleNotificationClick(n)}
                   className={`group flex items-start gap-3 px-4 py-3 cursor-pointer border-b border-dark-border/50 transition-all ${
-                    n.read ? 'opacity-60 hover:opacity-80' : 'bg-primary-900/10 hover:bg-dark-800'
+                    n.read ? 'opacity-60 hover:opacity-80' : 'bg-primary-500/5 hover:bg-gray-100 dark:hover:bg-dark-800'
                   }`}
                 >
                   <NotificationTypeIcon type={n.type} />
                   <div className="flex-1 min-w-0">
-                    <p className={`text-xs font-semibold truncate ${n.read ? 'text-gray-400' : 'text-white'}`}>
+                    <p className={`text-xs font-semibold truncate ${n.read ? 'text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white'}`}>
                       {n.title}
                     </p>
                     <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{n.message}</p>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="text-[10px] text-gray-600">{timeAgo(n.createdAt)}</span>
+                      <span className="text-[10px] text-gray-500 dark:text-gray-600">{timeAgo(n.createdAt)}</span>
                       {!n.read && (
-                        <span className="w-1.5 h-1.5 rounded-full bg-primary-400" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-primary-500 dark:bg-primary-400" />
                       )}
                       {n.data?.zoomJoinUrl && n.type === 'interview_2min' && (
                         <span className="text-[10px] text-cyan-400 flex items-center gap-0.5">

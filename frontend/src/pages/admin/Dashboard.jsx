@@ -20,7 +20,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <h1 className="text-2xl font-bold text-white">Admin Dashboard</h1>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Admin Dashboard</h1>
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {[
@@ -33,8 +33,8 @@ export default function AdminDashboard() {
         ].map(({ icon: Icon, label, value, color }) => (
           <div key={label} className="card flex flex-col items-center text-center gap-2 p-4">
             <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${color}`}><Icon className="w-5 h-5 text-white" /></div>
-            <p className="text-2xl font-bold text-white">{value}</p>
-            <p className="text-xs text-gray-400">{label}</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{value}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">{label}</p>
           </div>
         ))}
       </div>

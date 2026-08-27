@@ -3,11 +3,13 @@ import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import NotificationBell from '../NotificationBell';
+import ThemeToggle from '../ThemeToggle';
+import { TRACKER_DOWNLOAD_URL } from '../../constants/tracker';
 import {
   HiHome, HiUser, HiBriefcase, HiChatAlt2, HiClipboardList,
   HiChartBar, HiCog, HiLogout, HiMenuAlt3, HiX, HiAcademicCap,
   HiSearch, HiDocumentText, HiQuestionMarkCircle, HiStar, HiExclamation, HiCode,
-  HiCalendar, HiLightBulb
+  HiCalendar, HiLightBulb, HiDownload, HiExternalLink, HiDesktopComputer
 } from 'react-icons/hi';
 
 const getNavItems = (role, basePath) => {
@@ -109,7 +111,7 @@ export default function DashboardLayout() {
           <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary-500/20 to-accent-500/20 border border-primary-500/30 flex items-center justify-center p-1.5 flex-shrink-0 shadow-md shadow-primary-500/20">
             <img src="/images/logo.png" alt="AIH Logo" className="w-full h-full object-contain" />
           </div>
-          <span className="font-bold text-white text-lg tracking-wide">A<span className="text-cyan-400">I</span><span className="text-accent-400">H</span></span>
+          <span className="font-bold text-gray-900 dark:text-white text-lg tracking-wide">A<span className="text-cyan-500 dark:text-cyan-400">I</span><span className="text-accent-500 dark:text-accent-400">H</span></span>
         </div>
 
         {/* User info */}
@@ -119,12 +121,12 @@ export default function DashboardLayout() {
               {user?.profileImage ? <img src={user.profileImage} alt={user.name} className="w-full h-full object-cover" /> : <span className="text-white font-semibold text-sm">{user?.name?.[0]?.toUpperCase()}</span>}
             </div>
             <div className="min-w-0">
-              <p className="text-white text-sm font-semibold truncate">{user?.name}</p>
+              <p className="text-gray-900 dark:text-white text-sm font-semibold truncate">{user?.name}</p>
               <span className={`badge text-xs ${
-                user?.role === 'ADMIN' ? 'bg-yellow-900 text-yellow-300' 
-                : user?.role === 'RECRUITER' ? 'bg-blue-900 text-blue-300' 
-                : user?.role === 'INTERVIEWER' ? 'bg-cyan-900 text-cyan-300'
-                : 'bg-primary-900 text-primary-300'
+                user?.role === 'ADMIN' ? 'badge-warning' 
+                : user?.role === 'RECRUITER' ? 'badge-primary' 
+                : user?.role === 'INTERVIEWER' ? 'badge-success' 
+                : 'badge-primary'
               }`}>
                 {user?.role}
               </span>
@@ -143,7 +145,7 @@ export default function DashboardLayout() {
                 if (label === 'Messages') setSeenCount(totalUnread);
                 if (label === 'Job Board') setSeenMatched(totalMatched);
               }}
-              className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${isActive(to, exact) ? 'bg-primary-600 text-white shadow-lg shadow-primary-500/20' : 'text-gray-400 hover:bg-dark-800 hover:text-white'}`}
+              className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${isActive(to, exact) ? 'bg-primary-600 text-white shadow-lg shadow-primary-500/20' : 'text-gray-400 hover:bg-dark-800'}`}
             >
               <div className="flex items-center gap-3">
                 <Icon className="w-5 h-5 flex-shrink-0" />
@@ -162,6 +164,31 @@ export default function DashboardLayout() {
             </Link>
           ))}
         </nav>
+
+        {/* Sidebar Download Tracker Card for Candidate */}
+        {user?.role === 'CANDIDATE' && (
+          <div className="p-3 mx-3 mb-2 rounded-xl bg-gradient-to-br from-primary-500/10 via-primary-500/5 to-transparent border border-primary-500/20">
+            <div className="flex items-center gap-2 mb-1.5">
+              <div className="w-6 h-6 rounded-lg bg-primary-600/20 border border-primary-500/30 flex items-center justify-center text-primary-500 dark:text-primary-400">
+                <HiDesktopComputer className="w-3.5 h-3.5" />
+              </div>
+              <span className="text-xs font-bold text-gray-900 dark:text-white">Interview Tracker</span>
+            </div>
+            <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-snug mb-2.5">
+              Required desktop proctoring app for candidate interviews.
+            </p>
+            <a
+              href={TRACKER_DOWNLOAD_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full py-1.5 px-2.5 rounded-lg bg-primary-600 hover:bg-primary-500 text-white text-xs font-bold transition-all shadow-md shadow-primary-600/20 flex items-center justify-center gap-1.5"
+            >
+              <HiDownload className="w-3.5 h-3.5" />
+              <span>Download Tracker</span>
+              <HiExternalLink className="w-3 h-3 opacity-70" />
+            </a>
+          </div>
+        )}
 
         {/* Logout */}
         <div className="p-3 border-t border-dark-border">
@@ -187,15 +214,18 @@ export default function DashboardLayout() {
           </button>
 
           <div className="flex-1">
-            <h1 className="text-sm font-semibold text-gray-300 capitalize">
+            <h1 className="text-sm font-semibold text-gray-900 dark:text-gray-300 capitalize">
               {location.pathname.split('/').slice(-1)[0]?.replace(/-/g, ' ') || 'Dashboard'}
             </h1>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
             <NotificationBell />
-            <div className="w-2 h-2 rounded-full bg-accent-400 animate-pulse" />
-            <span className="text-xs text-gray-400 hidden sm:inline">Live</span>
+            <div className="flex items-center gap-1.5 pl-1 border-l border-dark-border">
+              <div className="w-2 h-2 rounded-full bg-accent-400 animate-pulse" />
+              <span className="text-xs text-gray-400 hidden sm:inline font-medium">Live</span>
+            </div>
           </div>
         </header>
 

@@ -21,17 +21,17 @@ export default function MyJobs() {
   return (
     <div className="animate-fade-in">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-white">My Jobs ({jobs.length})</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">My Jobs ({jobs.length})</h1>
         <Link to="/recruiter/jobs/new" className="btn-primary text-sm">+ Post Job</Link>
       </div>
       {jobs.length === 0 ? (
-        <div className="card text-center py-16"><p className="text-gray-400">No jobs yet</p></div>
+        <div className="card text-center py-16"><p className="text-gray-500 dark:text-gray-400">No jobs yet</p></div>
       ) : (
         <div className="space-y-3">
           {jobs.map((job) => (
             <div key={job._id} className="card flex items-center justify-between flex-wrap gap-3">
               <div>
-                <h3 className="text-white font-semibold">{job.title}</h3>
+                <h3 className="text-gray-900 dark:text-white font-bold">{job.title}</h3>
                 <div className="flex gap-2 mt-1 flex-wrap">
                   {job.requiredStack?.slice(0, 4).map((s) => <span key={s} className="badge-gray">{s}</span>)}
                   <span className="badge-primary">L{job.requiredLevel}</span>

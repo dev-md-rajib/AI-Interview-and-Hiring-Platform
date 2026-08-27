@@ -257,7 +257,11 @@ export default function InterviewerAssignments() {
           <button
             key={val}
             onClick={() => setFilter(val)}
-            className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${filter === val ? 'bg-cyan-600 text-white' : 'bg-dark-800 text-gray-400 hover:text-white border border-dark-border'}`}
+            className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
+              filter === val
+                ? 'bg-cyan-600 text-white shadow-sm'
+                : 'bg-dark-800 text-gray-600 dark:text-gray-400 hover:text-cyan-600 dark:hover:text-white border border-dark-border'
+            }`}
           >
             {label}
           </button>
@@ -267,7 +271,7 @@ export default function InterviewerAssignments() {
       {filtered.length === 0 ? (
         <div className="card text-center py-12">
           <HiCalendar className="w-12 h-12 text-gray-600 mx-auto mb-3" />
-          <p className="text-gray-400">No interviews found for this filter.</p>
+          <p className="text-gray-500 dark:text-gray-400">No interviews found for this filter.</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -288,29 +292,29 @@ export default function InterviewerAssignments() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-white font-semibold">{interview.candidate?.name}</p>
+                      <p className="text-gray-900 dark:text-white font-bold">{interview.candidate?.name}</p>
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${statusCfg.bg} ${statusCfg.color}`}>
                         {statusCfg.label}
                       </span>
                       {interview.feedbackSubmittedAt && (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-900/20 border border-emerald-500/20 text-emerald-400 flex items-center gap-1">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-900/20 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
                           <HiBadgeCheck className="w-3 h-3" /> Feedback Done
                         </span>
                       )}
                     </div>
-                    <p className="text-gray-400 text-xs mt-0.5">
+                    <p className="text-gray-600 dark:text-gray-400 text-xs mt-0.5">
                       {interview.stack} · {LEVEL_LABELS[interview.level] || `Level ${interview.level}`}
                     </p>
                     {scheduledDate && (
-                      <p className="text-cyan-300 text-xs mt-1 flex items-center gap-1 font-mono">
-                        <HiClock className="w-3.5 h-3.5 text-cyan-400" />
+                      <p className="text-cyan-700 dark:text-cyan-300 text-xs mt-1 flex items-center gap-1 font-mono font-medium">
+                        <HiClock className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
                         {scheduledDate.toLocaleDateString('en-US', { timeZone: 'Asia/Dhaka', month: 'short', day: 'numeric', year: 'numeric' })} at {scheduledDate.toLocaleTimeString('en-US', { timeZone: 'Asia/Dhaka', hour: '2-digit', minute: '2-digit', hour12: true })} (BST, Bangladesh Time)
                       </p>
                     )}
                   </div>
                   <button
                     onClick={() => setExpandedId(isExpanded ? null : interview._id)}
-                    className="text-gray-400 hover:text-white p-1"
+                    className="text-gray-400 hover:text-gray-900 dark:hover:text-white p-1"
                   >
                     {isExpanded ? <HiChevronUp /> : <HiChevronDown />}
                   </button>
@@ -363,8 +367,8 @@ export default function InterviewerAssignments() {
                   <div className="mt-4 pt-4 border-t border-dark-border/50 space-y-3">
                     {interview.zoomPassword && (
                       <div className="text-xs">
-                        <span className="text-gray-500">Meeting Password: </span>
-                        <span className="text-white font-mono">{interview.zoomPassword}</span>
+                        <span className="text-gray-600 dark:text-gray-400 font-medium">Meeting Password: </span>
+                        <span className="text-gray-900 dark:text-white font-mono font-bold">{interview.zoomPassword}</span>
                       </div>
                     )}
                     {interview.interviewerScore != null && (

@@ -10,8 +10,8 @@ const StatCard = ({ icon: Icon, label, value, color }) => (
       <Icon className="w-6 h-6 text-white" />
     </div>
     <div>
-      <p className="text-gray-400 text-sm">{label}</p>
-      <p className="text-2xl font-bold text-white">{value ?? '-'}</p>
+      <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">{label}</p>
+      <p className="text-2xl font-bold text-gray-900 dark:text-white">{value ?? '-'}</p>
     </div>
   </div>
 );
@@ -52,9 +52,9 @@ export default function CandidateDashboard() {
       <div className="card bg-gradient-to-r from-primary-900/50 to-dark-card border-primary-500/20">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-white">Welcome, {user?.name}! 👋</h1>
-            <p className="text-gray-400 mt-1">
-              Current Level: <span className="text-primary-400 font-semibold">Level {profile?.currentLevel || 0}</span>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Welcome, {user?.name}! 👋</h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-1">
+              Current Level: <span className="text-primary-600 dark:text-primary-400 font-semibold">Level {profile?.currentLevel || 0}</span>
               {profile?.currentLevel === 0 && ' — Take your first interview to get started'}
             </p>
           </div>
@@ -82,7 +82,7 @@ export default function CandidateDashboard() {
             return (
               <div key={lvl} className={`card border-2 transition-all ${passed ? 'border-accent-500/40' : current ? 'border-primary-500/40 glow-border' : 'border-dark-border'}`}>
                 <div className="flex items-center justify-between mb-3">
-                  <span className="font-bold text-lg text-white">Level {lvl}</span>
+                  <span className="font-bold text-lg text-gray-900 dark:text-white">Level {lvl}</span>
                   {passed ? (
                     <span className="badge-success">Passed ✓</span>
                   ) : current ? (
@@ -151,9 +151,9 @@ export default function CandidateDashboard() {
           { to: '/candidate/messages', icon: HiClipboardList, label: 'Messages', desc: 'Connect with recruiters' },
         ].map(({ to, icon: Icon, label, desc }) => (
           <Link key={to} to={to} className="card hover:border-primary-500/40 group transition-all cursor-pointer">
-            <Icon className="w-8 h-8 text-primary-400 mb-3 group-hover:scale-110 transition-transform" />
-            <h3 className="font-semibold text-white">{label}</h3>
-            <p className="text-sm text-gray-400 mt-1">{desc}</p>
+            <Icon className="w-8 h-8 text-primary-500 dark:text-primary-400 mb-3 group-hover:scale-110 transition-transform" />
+            <h3 className="font-semibold text-gray-900 dark:text-white">{label}</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{desc}</p>
           </Link>
         ))}
       </div>

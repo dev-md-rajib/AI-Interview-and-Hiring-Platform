@@ -115,19 +115,19 @@ export default function JobBoard() {
                         <span>{jobSector.label}</span>
                       </span>
                     )}
-                    <h2 className="text-white font-bold text-lg group-hover:text-primary-400 transition-colors">{job.title}</h2>
-                    <p className="text-gray-400 text-sm">{job.recruiter?.name}</p>
+                    <h2 className="text-gray-900 dark:text-white font-bold text-lg group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">{job.title}</h2>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm">{job.recruiter?.name}</p>
                   </div>
                   <button
                     onClick={(e) => { e.stopPropagation(); setReportJobId(job._id); }}
-                    className="text-gray-500 hover:text-danger-400 transition-colors p-1"
+                    className="text-gray-400 hover:text-danger-500 transition-colors p-1"
                     title="Report Job"
                   >
                     <HiFlag className="w-5 h-5" />
                   </button>
                 </div>
 
-                <p className="text-gray-400 text-sm mb-4 line-clamp-2">{job.description}</p>
+                <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 line-clamp-2">{job.description}</p>
 
                 {job.requirements && job.requirements.length > 0 && (
                   <div className="mb-4">
@@ -136,18 +136,18 @@ export default function JobBoard() {
                       {job.requirements.map((req, i) => {
                         const reqSector = isSector(req.stack) ? getSectorById(req.stack) : null;
                         return (
-                          <div key={i} className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded border ${reqSector ? reqSector.badgeBg : 'bg-dark-800 border-dark-border'}`}>
+                          <div key={i} className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border ${reqSector ? reqSector.badgeBg : 'bg-dark-800/80 border-dark-border'}`}>
                             {reqSector?.Icon && <reqSector.Icon className="w-3.5 h-3.5" />}
-                            <span className="text-white text-sm font-medium">
+                            <span className="text-gray-900 dark:text-white text-sm font-semibold">
                               {req.stack}
                               {req.method && req.method !== 'Both' && (
-                                <span className="ml-1 text-[10px] text-gray-400 font-normal">
+                                <span className="ml-1 text-[10px] text-gray-500 dark:text-gray-400 font-normal">
                                   ({req.method === 'Standard' ? 'Human' : 'AI'})
                                 </span>
                               )}
                             </span>
-                            <span className="text-primary-400 text-xs font-bold px-1.5 py-0.5 rounded bg-primary-500/10">L{req.level}</span>
-                            <span className="text-gray-400 text-xs">{req.minScore}%+</span>
+                            <span className="text-primary-600 dark:text-primary-400 text-xs font-bold px-1.5 py-0.5 rounded bg-primary-500/10">L{req.level}</span>
+                            <span className="text-gray-600 dark:text-gray-400 text-xs">{req.minScore}%+</span>
                           </div>
                         );
                       })}

@@ -85,28 +85,28 @@ export default function Reports() {
     <div className="animate-fade-in space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-            <HiExclamation className="text-primary-500" /> Reports & Appeals
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <HiExclamation className="text-primary-600 dark:text-primary-400" /> Reports & Appeals
           </h1>
-          <p className="text-gray-400 text-sm mt-1">Manage platform safety, reports, and suspended accounts.</p>
+          <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Manage platform safety, reports, and suspended accounts.</p>
         </div>
       </div>
 
       <div className="flex gap-4 border-b border-dark-border">
         <button
-          className={`pb-3 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === 'reports' ? 'border-primary-500 text-primary-400' : 'border-transparent text-gray-400 hover:text-gray-300'}`}
+          className={`pb-3 px-1 border-b-2 font-semibold text-sm transition-colors ${activeTab === 'reports' ? 'border-primary-500 text-primary-600 dark:text-primary-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'}`}
           onClick={() => setActiveTab('reports')}
         >
           Pending Reports ({reports.length})
         </button>
         <button
-          className={`pb-3 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === 'appeals' ? 'border-primary-500 text-primary-400' : 'border-transparent text-gray-400 hover:text-gray-300'}`}
+          className={`pb-3 px-1 border-b-2 font-semibold text-sm transition-colors ${activeTab === 'appeals' ? 'border-primary-500 text-primary-600 dark:text-primary-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'}`}
           onClick={() => setActiveTab('appeals')}
         >
           Pending Appeals ({appeals.length})
         </button>
         <button
-          className={`pb-3 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === 'banned' ? 'border-primary-500 text-primary-400' : 'border-transparent text-gray-400 hover:text-gray-300'}`}
+          className={`pb-3 px-1 border-b-2 font-semibold text-sm transition-colors ${activeTab === 'banned' ? 'border-primary-500 text-primary-600 dark:text-primary-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'}`}
           onClick={() => setActiveTab('banned')}
         >
           Banned Users ({bannedUsers.length})
@@ -123,49 +123,49 @@ export default function Reports() {
             <div className="card text-center py-12 text-gray-400 shadow-none border border-dashed border-dark-border">No pending reports.</div>
           ) : (
             reports.map((report) => (
-              <div key={report._id} className="card bg-dark-800/50 border border-dark-border flex flex-col md:flex-row gap-4 justify-between items-start">
+              <div key={report._id} className="card border border-dark-border flex flex-col md:flex-row gap-4 justify-between items-start">
                 <div className="flex-1 space-y-2">
                   <div className="flex items-center gap-2">
-                    <span className={`badge ${report.type === 'Job' ? 'badge-primary' : 'bg-purple-900/40 text-purple-300 border border-purple-500/20'}`}>
+                    <span className={`badge ${report.type === 'Job' ? 'badge-primary' : 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 border border-purple-300 dark:border-purple-500/20'}`}>
                       {report.type} Report
                     </span>
-                    <span className="text-xs text-gray-500">
-                      Reported by <span className="text-gray-300">{report.reporter?.name}</span> ({report.reporter?.role})
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      Reported by <span className="text-gray-900 dark:text-gray-200 font-medium">{report.reporter?.name}</span> ({report.reporter?.role})
                     </span>
                   </div>
                   
                   {report.type === 'Job' && report.reportedJob && (
                     <div className="text-sm">
-                      <span className="text-gray-400">Target Job: </span>
-                      <span className="text-white font-medium">{report.reportedJob.title}</span>
+                      <span className="text-gray-500 dark:text-gray-400 font-medium">Target Job: </span>
+                      <span className="text-gray-900 dark:text-white font-bold">{report.reportedJob.title}</span>
                       <span className="ml-2 text-xs text-gray-500">({report.reportedJob.status})</span>
                     </div>
                   )}
 
                   {report.type === 'Candidate' && report.reportedUser && (
                     <div className="text-sm">
-                      <span className="text-gray-400">Target Candidate: </span>
-                      <span className="text-white font-medium">{report.reportedUser.name}</span>
+                      <span className="text-gray-500 dark:text-gray-400 font-medium">Target Candidate: </span>
+                      <span className="text-gray-900 dark:text-white font-bold">{report.reportedUser.name}</span>
                     </div>
                   )}
 
-                  <div className="bg-dark-900 rounded p-3 text-sm text-gray-300 border border-dark-border mt-2">
-                    <span className="block text-xs font-bold text-danger-400 uppercase mb-1">Reason:</span>
+                  <div className="bg-slate-100 dark:bg-dark-900 rounded-xl p-3 text-sm text-gray-800 dark:text-gray-300 border border-dark-border mt-2">
+                    <span className="block text-xs font-bold text-danger-600 dark:text-danger-400 uppercase mb-1">Reason:</span>
                     {report.reason}
                   </div>
                 </div>
 
                 <div className="flex flex-row md:flex-col gap-2 w-full md:w-auto mt-2 md:mt-0">
-                  <button onClick={() => resolveReport(report._id, 'dismiss')} className="btn-secondary py-1.5 px-3 text-xs flex-1 flex items-center justify-center gap-1 hover:text-white">
+                  <button onClick={() => resolveReport(report._id, 'dismiss')} className="btn-secondary py-1.5 px-3 text-xs flex-1 flex items-center justify-center gap-1 hover:text-gray-900 dark:hover:text-white">
                     <HiCheck /> Dismiss
                   </button>
                   {report.type === 'Job' && (
-                    <button onClick={() => resolveReport(report._id, 'delete_job')} className="btn-secondary py-1.5 px-3 text-xs flex-1 flex items-center justify-center gap-1 text-danger-400 hover:text-danger-300 hover:border-danger-500/50">
+                    <button onClick={() => resolveReport(report._id, 'delete_job')} className="btn-secondary py-1.5 px-3 text-xs flex-1 flex items-center justify-center gap-1 text-danger-600 dark:text-danger-400 hover:text-danger-700 dark:hover:text-danger-300 hover:border-danger-500/50">
                       <HiTrash /> Delete Post
                     </button>
                   )}
                   {((report.type === 'Job' && report.reportedJob) || report.reportedUser) && (
-                    <button onClick={() => openBanModal(report)} className="py-1.5 px-3 rounded-lg text-xs font-medium bg-danger-500/10 text-danger-400 border border-danger-500/20 hover:bg-danger-500 hover:text-white transition-colors flex-1 flex items-center justify-center gap-1">
+                    <button onClick={() => openBanModal(report)} className="py-1.5 px-3 rounded-lg text-xs font-medium bg-danger-50 dark:bg-danger-500/10 text-danger-600 dark:text-danger-400 border border-danger-200 dark:border-danger-500/20 hover:bg-danger-500 hover:text-white transition-colors flex-1 flex items-center justify-center gap-1">
                       <HiBan /> Ban User
                     </button>
                   )}
@@ -180,30 +180,30 @@ export default function Reports() {
             <div className="card text-center py-12 text-gray-400 shadow-none border border-dashed border-dark-border">No pending appeals.</div>
           ) : (
             appeals.map((user) => (
-              <div key={user._id} className="card bg-dark-800/50 border border-red-900/20 flex flex-col md:flex-row gap-4 justify-between items-start">
+              <div key={user._id} className="card border border-dark-border flex flex-col md:flex-row gap-4 justify-between items-start">
                 <div className="flex-1 space-y-2">
                    <div className="flex items-center gap-2 mb-1">
-                    <span className="font-bold text-white text-lg">{user.name}</span>
+                    <span className="font-bold text-gray-900 dark:text-white text-lg">{user.name}</span>
                     <span className="badge-primary">{user.role}</span>
-                    <span className="text-sm text-gray-400">{user.email}</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">{user.email}</span>
                   </div>
 
-                  <div className="bg-danger-900/20 rounded p-3 text-sm text-danger-200 border border-danger-500/20 mt-2">
-                    <span className="block text-xs font-bold text-danger-400 uppercase mb-1">Original Ban Reason:</span>
+                  <div className="bg-danger-50 dark:bg-danger-900/20 rounded-xl p-3 text-sm text-danger-800 dark:text-danger-200 border border-danger-200 dark:border-danger-500/20 mt-2">
+                    <span className="block text-xs font-bold text-danger-600 dark:text-danger-400 uppercase mb-1">Original Ban Reason:</span>
                     {user.banReason}
                   </div>
 
-                  <div className="bg-dark-900 rounded p-3 text-sm text-gray-200 border border-dark-border mt-2">
-                    <span className="block text-xs font-bold text-primary-400 uppercase mb-1">Appeal Message:</span>
+                  <div className="bg-slate-100 dark:bg-dark-900 rounded-xl p-3 text-sm text-gray-800 dark:text-gray-200 border border-dark-border mt-2">
+                    <span className="block text-xs font-bold text-primary-600 dark:text-primary-400 uppercase mb-1">Appeal Message:</span>
                     {user.appealText}
                   </div>
                 </div>
 
                 <div className="flex flex-row md:flex-col gap-2 w-full md:w-auto mt-2 md:mt-0">
-                  <button onClick={() => resolveAppeal(user._id, 'unban')} className="bg-success-600/20 text-success-400 hover:bg-success-600 hover:text-white border border-success-600/30 py-1.5 px-3 rounded-lg text-xs font-medium transition-colors flex-1 flex items-center justify-center gap-1">
+                  <button onClick={() => resolveAppeal(user._id, 'unban')} className="bg-success-50 dark:bg-success-600/20 text-success-600 dark:text-success-400 hover:bg-success-600 hover:text-white border border-success-200 dark:border-success-600/30 py-1.5 px-3 rounded-lg text-xs font-medium transition-colors flex-1 flex items-center justify-center gap-1">
                     <HiCheck /> Unban User
                   </button>
-                  <button onClick={() => resolveAppeal(user._id, 'reject')} className="btn-secondary py-1.5 px-3 text-xs flex-1 flex items-center justify-center gap-1 hover:text-white">
+                  <button onClick={() => resolveAppeal(user._id, 'reject')} className="btn-secondary py-1.5 px-3 text-xs flex-1 flex items-center justify-center gap-1 hover:text-gray-900 dark:hover:text-white">
                     <HiX /> Reject Appeal
                   </button>
                 </div>
@@ -217,22 +217,22 @@ export default function Reports() {
             <div className="card text-center py-12 text-gray-400 shadow-none border border-dashed border-dark-border">No banned users.</div>
           ) : (
             bannedUsers.map((user) => (
-              <div key={user._id} className="card bg-dark-800/50 border border-dark-border flex flex-col md:flex-row gap-4 justify-between items-start">
+              <div key={user._id} className="card border border-dark-border flex flex-col md:flex-row gap-4 justify-between items-start">
                 <div className="flex-1 space-y-2">
                    <div className="flex items-center gap-2 mb-1">
-                    <span className="font-bold text-white text-lg">{user.name}</span>
+                    <span className="font-bold text-gray-900 dark:text-white text-lg">{user.name}</span>
                     <span className="badge-primary">{user.role}</span>
-                    <span className="text-sm text-gray-400">{user.email}</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">{user.email}</span>
                   </div>
 
-                  <div className="bg-dark-900 rounded p-3 text-sm text-gray-300 border border-dark-border mt-2">
-                    <span className="block text-xs font-bold text-danger-400 uppercase mb-1">Ban Reason:</span>
+                  <div className="bg-slate-100 dark:bg-dark-900 rounded-xl p-3 text-sm text-gray-800 dark:text-gray-300 border border-dark-border mt-2">
+                    <span className="block text-xs font-bold text-danger-600 dark:text-danger-400 uppercase mb-1">Ban Reason:</span>
                     {user.banReason || 'No reason provided'}
                   </div>
                 </div>
 
                 <div className="flex flex-row md:flex-col gap-2 w-full md:w-auto mt-2 md:mt-0">
-                  <button onClick={() => unbanDirect(user._id)} className="bg-success-600/20 text-success-400 hover:bg-success-600 hover:text-white border border-success-600/30 py-1.5 px-3 rounded-lg text-xs font-medium transition-colors flex-1 flex items-center justify-center gap-1">
+                  <button onClick={() => unbanDirect(user._id)} className="bg-success-50 dark:bg-success-600/20 text-success-600 dark:text-success-400 hover:bg-success-600 hover:text-white border border-success-200 dark:border-success-600/30 py-1.5 px-3 rounded-lg text-xs font-medium transition-colors flex-1 flex items-center justify-center gap-1">
                     <HiCheck /> Unban
                   </button>
                 </div>
@@ -244,12 +244,12 @@ export default function Reports() {
 
       {/* Ban Modal */}
       {banModalOpen && reportToBan && (
-        <div className="fixed inset-0 bg-dark-900/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
-          <div className="bg-dark-800 rounded-2xl border border-danger-500/20 max-w-md w-full p-6 space-y-4 shadow-xl shadow-danger-500/10">
-            <h3 className="text-xl font-bold text-white flex items-center gap-2">
-              <HiBan className="text-danger-500" /> Ban User
+        <div className="fixed inset-0 bg-black/60 dark:bg-dark-900/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="bg-dark-card rounded-2xl border border-danger-500/30 max-w-md w-full p-6 space-y-4 shadow-xl shadow-danger-500/10">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+              <HiBan className="text-danger-600 dark:text-danger-500" /> Ban User
             </h3>
-            <p className="text-gray-400 text-sm">
+            <p className="text-gray-600 dark:text-gray-400 text-sm">
               You are about to ban a user as a result of a {reportToBan.type} report. Please provide the reason for the ban. 
               The user will see this reason when attempting to log in.
             </p>

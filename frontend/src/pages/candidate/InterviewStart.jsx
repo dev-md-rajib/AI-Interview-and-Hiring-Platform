@@ -5,8 +5,10 @@ import api from '../../services/api';
 import {
   HiAcademicCap, HiClock, HiCheckCircle, HiChip,
   HiUserGroup, HiLightningBolt, HiInformationCircle, HiCode, HiBriefcase,
+  HiDownload, HiExternalLink
 } from 'react-icons/hi';
 import { SECTORS, TECH_STACKS, getSectorById, isSector, SECTOR_LEVEL_DESCRIPTIONS } from '../../constants/sectors';
+import { TRACKER_DOWNLOAD_URL } from '../../constants/tracker';
 import TrackerRequiredModal from '../../components/TrackerRequiredModal';
 
 // ─── Tech Level Descriptions ────────────────────────────────
@@ -212,7 +214,7 @@ export default function InterviewStart() {
                 className={`relative p-4 rounded-xl border-2 text-left transition-all ${
                   isSelected
                     ? `${m.border} bg-gradient-to-br ${m.color}`
-                    : 'border-dark-border hover:border-gray-600 bg-dark-800/50'
+                    : 'border-dark-border hover:border-gray-400 dark:hover:border-gray-600 bg-dark-800/50'
                 }`}
               >
                 {m.badge && (
@@ -225,8 +227,8 @@ export default function InterviewStart() {
                   </span>
                 )}
                 <Icon className={`w-7 h-7 mb-2 ${isSelected ? m.iconColor : 'text-gray-400'}`} />
-                <div className={`font-bold text-sm mb-1 ${isSelected ? 'text-white' : 'text-gray-300'}`}>{m.label}</div>
-                <div className="text-xs text-gray-400 leading-snug">{m.description}</div>
+                <div className={`font-bold text-sm mb-1 ${isSelected ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300'}`}>{m.label}</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 leading-snug">{m.description}</div>
               </button>
             );
           })}
@@ -241,28 +243,28 @@ export default function InterviewStart() {
             onClick={() => setInterviewType('tech')}
             className={`p-4 rounded-xl border-2 text-left transition-all flex items-center gap-3 ${
               interviewType === 'tech'
-                ? 'border-primary-500 bg-primary-900/30'
-                : 'border-dark-border hover:border-gray-600 bg-dark-800/50'
+                ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/30'
+                : 'border-dark-border hover:border-gray-400 dark:hover:border-gray-600 bg-dark-800/50'
             }`}
           >
-            <HiCode className={`w-6 h-6 flex-shrink-0 ${interviewType === 'tech' ? 'text-primary-400' : 'text-gray-400'}`} />
+            <HiCode className={`w-6 h-6 flex-shrink-0 ${interviewType === 'tech' ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400'}`} />
             <div>
-              <div className={`font-bold text-sm ${interviewType === 'tech' ? 'text-white' : 'text-gray-300'}`}>Tech Stack</div>
-              <div className="text-xs text-gray-400">Software, programming, engineering</div>
+              <div className={`font-bold text-sm ${interviewType === 'tech' ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300'}`}>Tech Stack</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">Software, programming, engineering</div>
             </div>
           </button>
           <button
             onClick={() => setInterviewType('business')}
             className={`p-4 rounded-xl border-2 text-left transition-all flex items-center gap-3 ${
               interviewType === 'business'
-                ? 'border-amber-500 bg-amber-900/20'
-                : 'border-dark-border hover:border-gray-600 bg-dark-800/50'
+                ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/20'
+                : 'border-dark-border hover:border-gray-400 dark:hover:border-gray-600 bg-dark-800/50'
             }`}
           >
-            <HiBriefcase className={`w-6 h-6 flex-shrink-0 ${interviewType === 'business' ? 'text-amber-400' : 'text-gray-400'}`} />
+            <HiBriefcase className={`w-6 h-6 flex-shrink-0 ${interviewType === 'business' ? 'text-amber-600 dark:text-amber-400' : 'text-gray-400'}`} />
             <div>
-              <div className={`font-bold text-sm ${interviewType === 'business' ? 'text-white' : 'text-gray-300'}`}>General & Professional Fields</div>
-              <div className="text-xs text-gray-400">Marketing, Sales, HR, Finance, Analysis & more</div>
+              <div className={`font-bold text-sm ${interviewType === 'business' ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300'}`}>General & Professional Fields</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">Marketing, Sales, HR, Finance, Analysis & more</div>
             </div>
           </button>
         </div>
@@ -278,8 +280,8 @@ export default function InterviewStart() {
                   onClick={() => setStack(s)}
                   className={`px-3 py-2 rounded-lg text-sm font-medium border transition-all ${
                     stack === s
-                      ? 'border-primary-500 bg-primary-900/40 text-primary-300'
-                      : 'border-dark-border text-gray-400 hover:border-primary-700 hover:text-white'
+                      ? 'border-primary-500 bg-primary-100 text-primary-800 font-semibold dark:bg-primary-900/40 dark:text-primary-300 shadow-sm'
+                      : 'border-dark-border text-gray-700 dark:text-gray-400 bg-dark-800/40 hover:border-primary-500 hover:text-primary-600 dark:hover:text-white'
                   }`}
                 >
                   {s}
@@ -315,7 +317,7 @@ export default function InterviewStart() {
                     className={`p-3.5 rounded-xl border-2 text-left transition-all group flex flex-col justify-between ${
                       isSelected
                         ? `${sector.border} ${sector.bg} shadow-lg shadow-black/20`
-                        : 'border-dark-border hover:border-gray-600 bg-dark-800/40 hover:bg-dark-800'
+                        : 'border-dark-border hover:border-gray-400 dark:hover:border-gray-600 bg-dark-800/40 hover:bg-dark-800'
                     }`}
                   >
                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 transition-colors ${
@@ -325,7 +327,7 @@ export default function InterviewStart() {
                     }`}>
                       {Icon && <Icon className="w-5 h-5" />}
                     </div>
-                    <div className={`font-semibold text-xs leading-tight ${isSelected ? 'text-white' : 'text-gray-300'}`}>
+                    <div className={`font-semibold text-xs leading-tight ${isSelected ? 'text-gray-900 dark:text-white font-bold' : 'text-gray-700 dark:text-gray-300'}`}>
                       {sector.label}
                     </div>
                   </button>
@@ -360,7 +362,7 @@ export default function InterviewStart() {
                 }`}
               >
                 <HiAcademicCap className={`w-6 h-6 mx-auto mb-2 ${level === lvl ? colors.color : 'text-gray-400'}`} />
-                <div className={`font-bold text-sm ${level === lvl ? 'text-white' : 'text-gray-300'}`}>Level {lvl}</div>
+                <div className={`font-bold text-sm ${level === lvl ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300'}`}>Level {lvl}</div>
                 <div className="text-xs text-gray-500 mt-1">{LEVEL_LABELS[lvl]}</div>
               </button>
             );
@@ -380,21 +382,21 @@ export default function InterviewStart() {
             {sectorLevelDesc.scenario && (
               <div className="mb-3 p-3 rounded-lg bg-dark-900/60 border border-dark-border">
                 <p className="text-xs text-gray-500 uppercase font-semibold mb-1 tracking-wider">Example Scenario</p>
-                <p className="text-gray-300 text-xs italic">"{sectorLevelDesc.scenario}"</p>
+                <p className="text-gray-700 dark:text-gray-300 text-xs italic">"{sectorLevelDesc.scenario}"</p>
               </div>
             )}
             <div className="flex flex-wrap gap-2">
               {sectorLevelDesc.topics.map((topic) => (
-                <span key={topic} className="text-xs px-2 py-1 rounded-md bg-dark-800 text-gray-300 border border-dark-border">
+                <span key={topic} className="text-xs px-2 py-1 rounded-md bg-gray-100 dark:bg-dark-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-dark-border">
                   {topic}
                 </span>
               ))}
             </div>
             {levelConfig && (
-              <div className="grid grid-cols-3 gap-4 text-sm text-center mt-4 pt-4 border-t border-dark-border">
-                <div><p className="text-gray-400 text-xs">Duration</p><p className="text-white font-medium">{levelConfig.durationMinutes} min</p></div>
-                <div><p className="text-gray-400 text-xs">Questions</p><p className="text-white font-medium">{levelConfig.questionCount}</p></div>
-                <div><p className="text-gray-400 text-xs">Pass Score</p><p className="text-white font-medium">{levelConfig.minimumPassScore}%</p></div>
+              <div className="grid grid-cols-3 gap-4 text-sm text-center mt-4 pt-4 border-t border-gray-200 dark:border-dark-border">
+                <div><p className="text-gray-500 dark:text-gray-400 text-xs">Duration</p><p className="text-gray-900 dark:text-white font-bold">{levelConfig.durationMinutes} min</p></div>
+                <div><p className="text-gray-500 dark:text-gray-400 text-xs">Questions</p><p className="text-gray-900 dark:text-white font-bold">{levelConfig.questionCount}</p></div>
+                <div><p className="text-gray-500 dark:text-gray-400 text-xs">Pass Score</p><p className="text-gray-900 dark:text-white font-bold">{levelConfig.minimumPassScore}%</p></div>
               </div>
             )}
           </div>
@@ -404,19 +406,19 @@ export default function InterviewStart() {
               <HiInformationCircle className={`w-4 h-4 ${techLevelDesc.color}`} />
               <span className={`text-sm font-semibold ${techLevelDesc.color}`}>{techLevelDesc.label} Level — What you'll be tested on:</span>
             </div>
-            <p className="text-gray-400 text-xs mb-3">{techLevelDesc.description}</p>
+            <p className="text-gray-600 dark:text-gray-400 text-xs mb-3">{techLevelDesc.description}</p>
             <div className="flex flex-wrap gap-2">
               {techLevelDesc.topics.map((topic) => (
-                <span key={topic} className="text-xs px-2 py-1 rounded-md bg-dark-800 text-gray-300 border border-dark-border">
+                <span key={topic} className="text-xs px-2 py-1 rounded-md bg-gray-100 dark:bg-dark-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-dark-border">
                   {topic}
                 </span>
               ))}
             </div>
             {levelConfig && (
-              <div className="grid grid-cols-3 gap-4 text-sm text-center mt-4 pt-4 border-t border-dark-border">
-                <div><p className="text-gray-400 text-xs">Duration</p><p className="text-white font-medium">{levelConfig.durationMinutes} min</p></div>
-                <div><p className="text-gray-400 text-xs">Questions</p><p className="text-white font-medium">{levelConfig.questionCount}</p></div>
-                <div><p className="text-gray-400 text-xs">Pass Score</p><p className="text-white font-medium">{levelConfig.minimumPassScore}%</p></div>
+              <div className="grid grid-cols-3 gap-4 text-sm text-center mt-4 pt-4 border-t border-gray-200 dark:border-dark-border">
+                <div><p className="text-gray-500 dark:text-gray-400 text-xs">Duration</p><p className="text-gray-900 dark:text-white font-bold">{levelConfig.durationMinutes} min</p></div>
+                <div><p className="text-gray-500 dark:text-gray-400 text-xs">Questions</p><p className="text-gray-900 dark:text-white font-bold">{levelConfig.questionCount}</p></div>
+                <div><p className="text-gray-500 dark:text-gray-400 text-xs">Pass Score</p><p className="text-gray-900 dark:text-white font-bold">{levelConfig.minimumPassScore}%</p></div>
               </div>
             )}
           </div>
@@ -424,72 +426,82 @@ export default function InterviewStart() {
       </div>
 
       {mode === 'interview_team' && (
-        <div className="card mb-6 border border-cyan-500/30 bg-cyan-900/10">
-          <p className="text-cyan-300 font-semibold text-sm">🎥 How Interview Team Works</p>
-          <ul className="mt-2 space-y-1 text-xs text-gray-400">
+        <div className="card mb-6 border border-cyan-500/30 bg-cyan-50 dark:bg-cyan-900/10">
+          <p className="text-cyan-700 dark:text-cyan-300 font-semibold text-sm">🎥 How Interview Team Works</p>
+          <ul className="mt-2 space-y-1 text-xs text-gray-600 dark:text-gray-400">
             <li>• You'll be matched with a real human interviewer</li>
-            <li>• A Zoom meeting is automatically created for your session</li>
-            <li>• You receive a 2-minute notification before it starts ⏰</li>
-            <li>• You can only have one team interview queued at a time</li>
-            <li>• Must pass previous levels sequentially (Level 1 → 2 → 3) 🔒</li>
-            <li>• A passed Zoom interview shows as top priority on your profile 🏆</li>
+            <li>• You will pick a topic, level, and scheduled date/time</li>
+            <li>• A Zoom meeting link will be automatically generated for your session</li>
+            <li>• Join at the scheduled time to complete your live interview</li>
           </ul>
         </div>
       )}
 
-      {mode === 'ai_agent' && (
-        <div className="card mb-6 border border-violet-500/30 bg-violet-900/10">
-          <p className="text-violet-300 font-semibold text-sm">🤖 How AI Agent Interview Works</p>
-          <ul className="mt-2 space-y-1 text-xs text-gray-400">
-            <li>• A live voice AI (powered by Gemini) asks you questions</li>
-            <li>• Dynamic follow-ups based on your answers</li>
-            {interviewType === 'tech'
-              ? <li>• Coding challenges may be included 💻</li>
-              : <li>• Scenario-based voice conversation — no coding 🎙️</li>
-            }
-            {interviewType === 'business' && (
-              <li>• For Sales & Customer Service, the AI acts as a real customer 👥</li>
-            )}
-            <li>• Must pass previous levels sequentially (Level 1 → 2 → 3) 🔒</li>
-          </ul>
-        </div>
-      )}
-
-      {(mode === 'standard' || mode === 'ai_agent' || mode === 'interview_team') && eligibility && (
-        <div className={`card mb-6 border-2 ${
-          eligibility.eligible
-            ? 'border-accent-500/40 bg-emerald-900/10'
-            : 'border-danger-500/40 bg-red-900/10'
-        }`}>
-          <div className="flex items-center gap-3">
-            {eligibility.eligible
-              ? <HiCheckCircle className="w-6 h-6 text-accent-400" />
-              : <div className="w-6 h-6 rounded-full border-2 border-danger-400 flex items-center justify-center text-danger-400 text-xs font-bold">✗</div>}
-            <div>
-              <p className={`font-medium ${eligibility.eligible ? 'text-accent-400' : 'text-danger-400'}`}>
-                {eligibility.eligible
-                  ? mode === 'standard'
-                    ? '✅ Open to all — Standard level has no prerequisites'
-                    : '✅ You are eligible for this level'
-                  : '🔒 Level locked'}
-              </p>
-              {!eligibility.eligible && <p className="text-gray-400 text-sm mt-0.5">{eligibility.reason}</p>}
-              {eligibility.eligible && eligibility.attemptsToday != null && (
-                <p className="text-gray-400 text-sm">{eligibility.attemptsToday}/{eligibility.maxAttemptsPerDay} attempts used today</p>
-              )}
+      {/* Sector mode overview info */}
+      {selectedSector && mode === 'ai_agent' && (
+        <div className="card mb-6 border border-violet-500/30 bg-violet-50 dark:bg-violet-900/10">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-xl">{selectedSector.icon}</span>
+            <p className="text-violet-700 dark:text-violet-300 font-semibold text-sm">{selectedSector.label} — Scenario AI Interview</p>
+          </div>
+          <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">{selectedSector.description}</p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+            <div className="p-2 rounded bg-white dark:bg-dark-800/60 border border-gray-200 dark:border-dark-border">
+              <p className="text-gray-500">Target Role</p>
+              <p className="text-gray-900 dark:text-white font-medium">{selectedSector.targetRole}</p>
+            </div>
+            <div className="p-2 rounded bg-white dark:bg-dark-800/60 border border-gray-200 dark:border-dark-border">
+              <p className="text-gray-500">Format</p>
+              <p className="text-gray-900 dark:text-white font-medium">Scenario + Q&A</p>
+            </div>
+            <div className="p-2 rounded bg-white dark:bg-dark-800/60 border border-gray-200 dark:border-dark-border">
+              <p className="text-gray-500">Language</p>
+              <p className="text-gray-900 dark:text-white font-medium">English (Voice/Text)</p>
+            </div>
+            <div className="p-2 rounded bg-white dark:bg-dark-800/60 border border-gray-200 dark:border-dark-border">
+              <p className="text-gray-500">Evaluation</p>
+              <p className="text-gray-900 dark:text-white font-medium">Domain Rubric (0-100)</p>
             </div>
           </div>
         </div>
       )}
 
-      <div className="card bg-gradient-to-r from-primary-900/40 to-dark-card">
+      {/* Eligibility status */}
+      {eligibility && (
+        <div className={`p-4 rounded-xl border mb-6 flex items-center gap-3.5 ${
+          eligibility.eligible
+            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300'
+            : 'bg-danger-500/10 border-danger-500/30 text-danger-700 dark:text-danger-300'
+        }`}>
+          <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+            eligibility.eligible ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' : 'bg-danger-500/20 text-danger-600 dark:text-danger-400'
+          }`}>
+            {eligibility.eligible ? <HiCheckCircle className="w-5 h-5" /> : <HiXCircle className="w-5 h-5" />}
+          </div>
+          <div>
+            <p className="font-semibold text-sm">
+              {eligibility.eligible
+                ? mode === 'standard'
+                  ? 'Open to all — Standard level has no prerequisites'
+                  : 'You are eligible for this level'
+                : 'Level locked'}
+            </p>
+            {!eligibility.eligible && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{eligibility.reason}</p>}
+            {eligibility.eligible && eligibility.attemptsToday != null && (
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{eligibility.attemptsToday}/{eligibility.maxAttemptsPerDay} attempts used today</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div className="card">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
-            <p className="text-white font-semibold">
+            <p className="text-gray-900 dark:text-white font-bold text-base">
               {mode === 'ai_agent' ? '🤖 Ready to talk to the AI Interviewer?' : mode === 'interview_team' ? '👥 Interview Team Mode' : '🚀 Ready to begin?'}
             </p>
-            <p className="text-gray-400 text-sm flex items-center gap-1 mt-1">
-              <HiClock />
+            <p className="text-gray-500 dark:text-gray-400 text-sm flex items-center gap-1.5 mt-1">
+              <HiClock className="w-4 h-4 text-primary-500 dark:text-primary-400 flex-shrink-0" />
               {mode === 'ai_agent'
                 ? interviewType === 'business'
                   ? 'AI will conduct a voice scenario interview tailored to your sector.'
@@ -497,6 +509,18 @@ export default function InterviewStart() {
                 : mode === 'interview_team'
                 ? 'Click to schedule your session — a Zoom link will be auto-created.'
                 : 'Timer starts once you click start'}
+            </p>
+            <p className="text-xs text-primary-600 dark:text-primary-400 mt-2 flex items-center gap-1 font-semibold">
+              <HiDownload className="w-3.5 h-3.5" />
+              <span>Interview Tracker Desktop App required.</span>
+              <a
+                href={TRACKER_DOWNLOAD_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:text-primary-700 dark:hover:text-primary-300 inline-flex items-center gap-0.5 ml-1"
+              >
+                Download here <HiExternalLink className="w-2.5 h-2.5" />
+              </a>
             </p>
           </div>
           <button

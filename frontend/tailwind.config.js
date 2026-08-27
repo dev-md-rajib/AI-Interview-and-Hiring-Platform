@@ -33,11 +33,11 @@ export default {
           900: '#450a0a',
         },
         dark: {
-          700: '#252537',
-          800: '#1e1e2e',
-          900: '#13131f',
-          card: '#1a1a2e',
-          border: '#2d2d42',
+          700: 'rgb(var(--color-bg-700) / <alpha-value>)',
+          800: 'rgb(var(--color-bg-800) / <alpha-value>)',
+          900: 'rgb(var(--color-bg-900) / <alpha-value>)',
+          card: 'rgb(var(--color-bg-card) / <alpha-value>)',
+          border: 'rgb(var(--color-border) / <alpha-value>)',
         },
       },
       fontFamily: {

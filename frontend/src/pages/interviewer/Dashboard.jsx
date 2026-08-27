@@ -46,8 +46,8 @@ export default function InterviewerDashboard() {
               <HiUserGroup className="w-5 h-5 text-cyan-400" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-white">Welcome back, {user?.name} 👋</h1>
-              <p className="text-cyan-300 text-sm">Interviewer Dashboard</p>
+              <h1 className="text-xl font-bold text-gray-900 dark:text-white">Welcome back, {user?.name} 👋</h1>
+              <p className="text-cyan-600 dark:text-cyan-300 text-sm font-medium">Interviewer Dashboard</p>
             </div>
           </div>
           {!hasProfile && (
@@ -65,15 +65,15 @@ export default function InterviewerDashboard() {
       {/* Stats grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: 'Total Assigned', value: stats?.total ?? 0, icon: HiClipboardList, color: 'text-blue-400', bg: 'bg-blue-900/20 border-blue-500/20' },
-          { label: 'Upcoming', value: stats?.pending ?? 0, icon: HiClock, color: 'text-cyan-400', bg: 'bg-cyan-900/20 border-cyan-500/20' },
-          { label: 'Completed', value: stats?.completed ?? 0, icon: HiCheckCircle, color: 'text-emerald-400', bg: 'bg-emerald-900/20 border-emerald-500/20' },
-          { label: 'Avg. Score Given', value: stats?.avgScore ? `${stats.avgScore}` : '—', icon: HiStar, color: 'text-yellow-400', bg: 'bg-yellow-900/20 border-yellow-500/20' },
+          { label: 'Total Assigned', value: stats?.total ?? 0, icon: HiClipboardList, color: 'text-blue-500 dark:text-blue-400', bg: 'bg-blue-900/20 border-blue-500/20' },
+          { label: 'Upcoming', value: stats?.pending ?? 0, icon: HiClock, color: 'text-cyan-500 dark:text-cyan-400', bg: 'bg-cyan-900/20 border-cyan-500/20' },
+          { label: 'Completed', value: stats?.completed ?? 0, icon: HiCheckCircle, color: 'text-emerald-500 dark:text-emerald-400', bg: 'bg-emerald-900/20 border-emerald-500/20' },
+          { label: 'Avg. Score Given', value: stats?.avgScore ? `${stats.avgScore}` : '—', icon: HiStar, color: 'text-yellow-500 dark:text-yellow-400', bg: 'bg-yellow-900/20 border-yellow-500/20' },
         ].map(({ label, value, icon: Icon, color, bg }) => (
           <div key={label} className={`card border ${bg} text-center`}>
             <Icon className={`w-6 h-6 mx-auto mb-2 ${color}`} />
-            <p className="text-2xl font-bold text-white">{value}</p>
-            <p className="text-xs text-gray-400 mt-1">{label}</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{value}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{label}</p>
           </div>
         ))}
       </div>
@@ -104,7 +104,7 @@ export default function InterviewerDashboard() {
             {upcoming.map((interview) => (
               <div
                 key={interview._id}
-                className="flex items-center gap-4 p-3 bg-dark-800 rounded-xl border border-dark-border hover:border-cyan-500/30 transition-all"
+                className="flex items-center gap-4 p-3 bg-slate-50 dark:bg-dark-800 rounded-xl border border-dark-border hover:border-cyan-500/30 transition-all"
               >
                 <div className="w-10 h-10 rounded-full bg-primary-700 flex items-center justify-center flex-shrink-0 overflow-hidden">
                   {interview.candidate?.profileImage
@@ -113,14 +113,14 @@ export default function InterviewerDashboard() {
                   }
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-white text-sm font-semibold truncate">{interview.candidate?.name}</p>
-                  <p className="text-gray-400 text-xs">{interview.stack} · {LEVEL_LABELS[interview.level]}</p>
+                  <p className="text-gray-900 dark:text-white text-sm font-semibold truncate">{interview.candidate?.name}</p>
+                  <p className="text-gray-500 dark:text-gray-400 text-xs">{interview.stack} · {LEVEL_LABELS[interview.level]}</p>
                 </div>
                 <div className="text-right flex-shrink-0">
-                  <p className="text-cyan-300 text-xs font-semibold">
+                  <p className="text-cyan-600 dark:text-cyan-300 text-xs font-semibold">
                     {interview.scheduledAt ? new Date(interview.scheduledAt).toLocaleDateString('en-US', { timeZone: 'Asia/Dhaka', month: 'short', day: 'numeric' }) : '—'}
                   </p>
-                  <p className="text-gray-400 text-[10px] font-mono">
+                  <p className="text-gray-500 dark:text-gray-400 text-[10px] font-mono">
                     {interview.scheduledAt ? new Date(interview.scheduledAt).toLocaleTimeString('en-US', { timeZone: 'Asia/Dhaka', hour: '2-digit', minute: '2-digit', hour12: true }) + ' BST' : ''}
                   </p>
                 </div>
@@ -133,21 +133,21 @@ export default function InterviewerDashboard() {
       {/* Quick actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Link to="/interviewer/assignments" className="card hover:border-cyan-500/30 transition-all group flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-cyan-900/30 border border-cyan-500/20 flex items-center justify-center group-hover:bg-cyan-900/50 transition-colors">
-            <HiClipboardList className="w-6 h-6 text-cyan-400" />
+          <div className="w-12 h-12 rounded-xl bg-cyan-100 dark:bg-cyan-900/30 border border-cyan-300 dark:border-cyan-500/20 flex items-center justify-center group-hover:bg-cyan-200 dark:group-hover:bg-cyan-900/50 transition-colors">
+            <HiClipboardList className="w-6 h-6 text-cyan-600 dark:text-cyan-400" />
           </div>
           <div>
-            <p className="text-white font-semibold">My Assignments</p>
-            <p className="text-gray-400 text-xs">View all interviews assigned to you</p>
+            <p className="text-gray-900 dark:text-white font-bold group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors">My Assignments</p>
+            <p className="text-gray-500 dark:text-gray-400 text-xs mt-0.5">View all interviews assigned to you</p>
           </div>
         </Link>
         <Link to="/interviewer/profile" className="card hover:border-primary-500/30 transition-all group flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-primary-900/30 border border-primary-500/20 flex items-center justify-center group-hover:bg-primary-900/50 transition-colors">
-            <HiChartBar className="w-6 h-6 text-primary-400" />
+          <div className="w-12 h-12 rounded-xl bg-primary-100 dark:bg-primary-900/30 border border-primary-300 dark:border-primary-500/20 flex items-center justify-center group-hover:bg-primary-200 dark:group-hover:bg-primary-900/50 transition-colors">
+            <HiChartBar className="w-6 h-6 text-primary-600 dark:text-primary-400" />
           </div>
           <div>
-            <p className="text-white font-semibold">Profile & Availability</p>
-            <p className="text-gray-400 text-xs">Manage expertise and time slots</p>
+            <p className="text-gray-900 dark:text-white font-bold group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">Profile & Availability</p>
+            <p className="text-gray-500 dark:text-gray-400 text-xs mt-0.5">Manage expertise and time slots</p>
           </div>
         </Link>
       </div>

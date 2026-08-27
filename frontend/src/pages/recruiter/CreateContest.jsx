@@ -123,7 +123,7 @@ export default function CreateContest() {
       <div className="flex gap-1 mb-6 bg-dark-800 rounded-xl p-1">
         {tabs.map(t => (
           <button key={t} onClick={() => setTab(t)}
-            className={`flex-1 py-2 rounded-lg text-sm font-medium capitalize transition-all ${tab === t ? 'bg-primary-600 text-white' : 'text-gray-400 hover:text-white'}`}
+            className={`flex-1 py-2 rounded-lg text-sm font-medium capitalize transition-all ${tab === t ? 'bg-primary-600 text-white' : 'text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-white'}`}
           >{t === 'mcq' ? `MCQ ${form.mcqRound.enabled ? `(${form.mcqRound.questions.length}q · ${totalMcqPts}pts)` : '(disabled)'}` : t === 'coding' ? `Coding (${form.codingRound.questions.length}q · ${totalCodingPts}pts)` : 'Settings'}</button>
         ))}
       </div>

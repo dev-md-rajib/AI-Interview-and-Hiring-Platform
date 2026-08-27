@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'react-hot-toast';
 import { HiAcademicCap, HiEye, HiEyeOff, HiExclamation } from 'react-icons/hi';
 import { useAuth } from '../../context/AuthContext';
+import ThemeToggle from '../../components/ThemeToggle';
 import api from '../../services/api';
 
 export default function Login() {
@@ -54,7 +55,12 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-dark-900 flex">
+    <div className="min-h-screen bg-dark-900 flex relative">
+      {/* Theme switcher */}
+      <div className="absolute top-5 right-5 z-20">
+        <ThemeToggle />
+      </div>
+
       {/* Left brand panel */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-dark-card to-dark-900 items-center justify-center p-12 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary-900/30 to-transparent" />
@@ -64,18 +70,21 @@ export default function Login() {
           <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-primary-500/20 to-accent-500/20 border border-primary-500/30 flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-primary-500/30 p-3">
             <img src="/images/logo.png" alt="AIH Logo" className="w-full h-full object-contain drop-shadow-md" />
           </div>
-          <h1 className="text-4xl font-bold text-white mb-4">A<span className="text-cyan-400">I</span><span className="text-accent-400">H</span></h1>
-          <p className="text-gray-400 text-lg leading-relaxed">
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">A<span className="text-cyan-600 dark:text-cyan-400">I</span><span className="text-accent-500 dark:text-accent-400">H</span></h1>
+          <p className="text-gray-600 dark:text-gray-400 text-lg leading-relaxed">
             The intelligent hiring platform connecting exceptional candidates with world-class companies through AI-powered interviews.
           </p>
           <div className="mt-10 grid grid-cols-3 gap-6 text-center">
-            {[['500+', 'Companies'], ['10K+', 'Candidates'], ['95%', 'Match Rate']].map(([val, lbl]) => (
+            {[['500+', 'Companies (Demo)'], ['10K+', 'Candidates (Demo)'], ['95%', 'Match Rate (Demo)']].map(([val, lbl]) => (
               <div key={lbl} className="bg-dark-800/50 rounded-xl p-4 border border-dark-border">
                 <div className="text-2xl font-bold text-gradient">{val}</div>
-                <div className="text-xs text-gray-400 mt-1">{lbl}</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 font-medium">{lbl}</div>
               </div>
             ))}
           </div>
+          <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-3 text-center italic">
+            * All figures and sample accounts shown are for demonstration purposes.
+          </p>
         </div>
       </div>
 
@@ -86,7 +95,7 @@ export default function Login() {
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500/20 to-accent-500/20 border border-primary-500/30 flex items-center justify-center p-1.5 shadow-md shadow-primary-500/20">
               <img src="/images/logo.png" alt="AIH Logo" className="w-full h-full object-contain" />
             </div>
-            <span className="font-bold text-xl text-white">A<span className="text-cyan-400">I</span><span className="text-accent-400">H</span></span>
+            <span className="font-bold text-xl text-gray-900 dark:text-white">A<span className="text-cyan-600 dark:text-cyan-400">I</span><span className="text-accent-500 dark:text-accent-400">H</span></span>
           </div>
 
           {bannedUser ? (
@@ -95,22 +104,22 @@ export default function Login() {
               <div className="w-16 h-16 bg-danger-500/10 rounded-full flex items-center justify-center mx-auto mb-4 text-danger-500">
                 <HiExclamation className="w-8 h-8" />
               </div>
-              <h2 className="text-2xl font-bold text-white mb-2">Account Suspended</h2>
-              <p className="text-gray-400 text-sm mb-4">Your account access has been revoked by an administrator.</p>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Account Suspended</h2>
+              <p className="text-gray-500 dark:text-gray-400 text-sm mb-4">Your account access has been revoked by an administrator.</p>
               
               <div className="bg-dark-900 border border-dark-border rounded-lg p-4 text-left mb-6">
                 <span className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1">Reason for suspension:</span>
-                <p className="text-white text-sm">{bannedUser.banReason || 'Violated platform policies'}</p>
+                <p className="text-gray-900 dark:text-white text-sm">{bannedUser.banReason || 'Violated platform policies'}</p>
               </div>
 
               {bannedUser.appealStatus === 'Pending' ? (
-                <div className="bg-primary-500/10 border border-primary-500/20 text-primary-400 p-4 rounded-lg text-sm">
+                <div className="bg-primary-500/10 border border-primary-500/20 text-primary-600 dark:text-primary-400 p-4 rounded-lg text-sm">
                   Your appeal has been submitted and is currently under review. We will notify you once a decision is made.
                 </div>
               ) : (
                 <div className="text-left">
                   {bannedUser.appealStatus === 'Rejected' && (
-                    <div className="mb-4 text-xs text-danger-400 font-semibold p-2 bg-danger-500/10 rounded">
+                    <div className="mb-4 text-xs text-danger-500 font-semibold p-2 bg-danger-500/10 rounded">
                       Your previous appeal was reviewed and rejected. You may submit another appeal.
                     </div>
                   )}
@@ -132,8 +141,8 @@ export default function Login() {
             </div>
           ) : (
             <>
-              <h2 className="text-3xl font-bold text-white mb-2">Welcome back</h2>
-              <p className="text-gray-400 mb-8">Sign in to continue your journey</p>
+              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Welcome back</h2>
+              <p className="text-gray-500 dark:text-gray-400 mb-8">Sign in to continue your journey</p>
 
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
                 <div>
@@ -161,7 +170,7 @@ export default function Login() {
                     <button
                       type="button"
                       onClick={() => setShowPassword((v) => !v)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
                     >
                       {showPassword ? <HiEyeOff className="w-5 h-5" /> : <HiEye className="w-5 h-5" />}
                     </button>
@@ -179,21 +188,44 @@ export default function Login() {
                 </button>
               </form>
 
-              <p className="mt-6 text-center text-gray-400">
+              <p className="mt-6 text-center text-gray-500 dark:text-gray-400">
                 Don't have an account?{' '}
-                <Link to="/register" className="text-primary-400 hover:text-primary-300 font-medium">
+                <Link to="/register" className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-semibold">
                   Create one
                 </Link>
               </p>
 
               {/* Demo credentials */}
-              <div className="mt-6 p-4 bg-dark-800 rounded-lg border border-dark-border">
-                <p className="text-xs text-gray-400 font-medium mb-2">Demo Credentials (passwords: password123):</p>
-                <div className="space-y-1 text-xs text-gray-500">
-                  <p>Admin: <span className="text-gray-300">admin@aiplatform.com / password123</span></p>
-                  <p>Candidate: <span className="text-gray-300">candidate_test@example.com / password123</span></p>
-                  <p>Recruiter: <span className="text-gray-300">recruiter@contest.com / password123</span></p>
-                  <p>Interviewer: <span className="text-gray-300">interviewer@aiplatform.com / password123</span></p>
+              <div className="mt-6 p-4 bg-dark-800 rounded-xl border border-dark-border">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs text-gray-900 dark:text-white font-bold flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-primary-500"></span>
+                    Demo Credentials (Sample Data)
+                  </p>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary-100 text-primary-800 dark:bg-primary-900/40 dark:text-primary-300 font-semibold border border-primary-200 dark:border-primary-500/30">
+                    Demo Mode
+                  </span>
+                </div>
+                <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-2.5">
+                  The provided accounts and metrics are for demonstration purposes. All demo passwords are: <code className="font-mono font-bold text-primary-600 dark:text-primary-400">password123</code>
+                </p>
+                <div className="space-y-1.5 text-xs text-gray-500 dark:text-gray-400">
+                  <p className="flex justify-between items-center bg-dark-900/40 px-2 py-1 rounded">
+                    <span>Admin:</span>
+                    <span className="text-gray-900 dark:text-gray-300 font-mono font-medium">admin@aiplatform.com</span>
+                  </p>
+                  <p className="flex justify-between items-center bg-dark-900/40 px-2 py-1 rounded">
+                    <span>Candidate:</span>
+                    <span className="text-gray-900 dark:text-gray-300 font-mono font-medium">candidate_test@example.com</span>
+                  </p>
+                  <p className="flex justify-between items-center bg-dark-900/40 px-2 py-1 rounded">
+                    <span>Recruiter:</span>
+                    <span className="text-gray-900 dark:text-gray-300 font-mono font-medium">recruiter@aiplatform.com</span>
+                  </p>
+                  <p className="flex justify-between items-center bg-dark-900/40 px-2 py-1 rounded">
+                    <span>Interviewer:</span>
+                    <span className="text-gray-900 dark:text-gray-300 font-mono font-medium">interviewer@aiplatform.com</span>
+                  </p>
                 </div>
               </div>
             </>
