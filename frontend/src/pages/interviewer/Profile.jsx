@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
 import {
-  HiLightBulb, HiClock, HiPlus, HiTrash, HiSave, HiUser, HiCheck, HiBriefcase, HiVideoCamera,
+  HiLightBulb, HiClock, HiPlus, HiTrash, HiSave, HiUser, HiCheck, HiBriefcase, HiVideoCamera, HiCamera, HiUpload,
 } from 'react-icons/hi';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -20,6 +20,9 @@ export default function InterviewerProfile() {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [newSlot, setNewSlot] = useState({ dayOfWeek: 1, startTime: '09:00', endTime: '17:00' });
+  const [newAvatarPreview, setNewAvatarPreview] = useState('');
+  const [newAvatarFile, setNewAvatarFile] = useState(null);
+  const avatarInputRef = useRef(null);
 
   const populateFields = (profileUser) => {
     const profile = profileUser?.interviewerProfile;
@@ -79,10 +82,39 @@ export default function InterviewerProfile() {
     setSlots((prev) => prev.filter((_, i) => i !== idx));
   };
 
+  const handleAvatarChange = (file) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size must be less than 5MB');
+      return;
+    }
+    setNewAvatarFile(file);
+    const reader = new FileReader();
+    reader.onload = () => {
+      setNewAvatarPreview(reader.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSave = async () => {
     if (expertise.length === 0 && sectors.length === 0) return toast.error('Please select at least one area of expertise or sector');
     setSaving(true);
     try {
+      if (newAvatarFile) {
+        const formData = new FormData();
+        formData.append('profileImage', newAvatarFile);
+        const { data: userRes } = await api.put('/auth/update-profile', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        if (userRes.user) {
+          updateUser(userRes.user);
+        }
+      }
+
       const { data } = await api.put('/interviewer/profile', {
         expertise,
         sectors,
@@ -107,6 +139,67 @@ export default function InterviewerProfile() {
           <HiLightBulb className="text-cyan-500 dark:text-cyan-400" /> My Profile & Availability
         </h1>
         <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">Configure your expertise, Zoom host details, and weekly availability for interviews.</p>
+      </div>
+
+      {/* User Info & Profile Picture Card */}
+      <div className="card flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex items-center gap-4">
+          <div className="relative group">
+            <div className="w-16 h-16 rounded-2xl bg-primary-700 border-2 border-primary-500/30 flex items-center justify-center text-2xl font-bold text-white overflow-hidden shadow-md">
+              {newAvatarPreview ? (
+                <img src={newAvatarPreview} alt="Preview" className="w-full h-full object-cover" />
+              ) : user?.profileImage ? (
+                <img src={user.profileImage} alt={user?.name} className="w-full h-full object-cover" />
+              ) : (
+                user?.name?.[0]?.toUpperCase() || <HiUser className="w-8 h-8 text-gray-400" />
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => avatarInputRef.current?.click()}
+              className="absolute inset-0 rounded-2xl bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white"
+            >
+              <HiCamera className="w-6 h-6" />
+            </button>
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white">{user?.name}</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{user?.email}</p>
+            <p className="text-xs text-cyan-600 dark:text-cyan-400 mt-0.5 font-medium">Interviewer Account</p>
+          </div>
+        </div>
+
+        <input
+          ref={avatarInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => handleAvatarChange(e.target.files?.[0])}
+        />
+
+        <div className="flex items-center gap-2">
+          {newAvatarPreview && (
+            <button
+              type="button"
+              onClick={() => {
+                setNewAvatarFile(null);
+                setNewAvatarPreview('');
+                if (avatarInputRef.current) avatarInputRef.current.value = '';
+              }}
+              className="btn-secondary text-xs text-danger-400 hover:text-danger-300"
+            >
+              Reset
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => avatarInputRef.current?.click()}
+            className="btn-secondary text-xs flex items-center gap-1"
+          >
+            <HiUpload className="w-3.5 h-3.5" />
+            {newAvatarPreview || user?.profileImage ? 'Change Photo' : 'Upload Photo'}
+          </button>
+        </div>
       </div>
 
       {/* Status toggle */}

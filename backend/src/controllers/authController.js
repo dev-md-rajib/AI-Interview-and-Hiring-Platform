@@ -9,18 +9,37 @@ const logger = require('../config/logger');
 const register = async (req, res, next) => {
   try {
     const { name, email, password, role } = req.body;
+    let profileImage = req.body?.profileImage || '';
+    if (req.file) {
+      profileImage = `/uploads/avatars/${req.file.filename}`;
+    }
+
     if (!name || !email || !password) {
       return res.status(400).json({ success: false, message: 'Name, email and password are required' });
     }
     const validRoles = ['CANDIDATE', 'RECRUITER', 'INTERVIEWER'];
     const userRole = validRoles.includes(role) ? role : 'CANDIDATE';
 
+    // Profile image is strictly required for Candidate role
+    if (userRole === 'CANDIDATE' && !profileImage) {
+      return res.status(400).json({
+        success: false,
+        message: 'Profile image is required for Candidate registration'
+      });
+    }
+
     const existing = await User.findOne({ email });
     if (existing) {
       return res.status(409).json({ success: false, message: 'Email already registered' });
     }
 
-    const userData = { name, email, password, role: userRole };
+    const userData = {
+      name,
+      email,
+      password,
+      role: userRole,
+      profileImage: profileImage || '',
+    };
 
     // Initialize interviewer profile
     if (userRole === 'INTERVIEWER') {
@@ -152,10 +171,17 @@ const updatePassword = async (req, res, next) => {
 // @access  Private
 const updateProfile = async (req, res, next) => {
   try {
-    const { name, profileImage } = req.body;
+    const updateData = {};
+    if (req.body?.name) updateData.name = req.body.name;
+    if (req.file) {
+      updateData.profileImage = `/uploads/avatars/${req.file.filename}`;
+    } else if (req.body?.profileImage !== undefined) {
+      updateData.profileImage = req.body.profileImage;
+    }
+
     const user = await User.findByIdAndUpdate(
       req.user._id,
-      { name, profileImage },
+      updateData,
       { new: true, runValidators: true }
     );
     res.status(200).json({ success: true, user });

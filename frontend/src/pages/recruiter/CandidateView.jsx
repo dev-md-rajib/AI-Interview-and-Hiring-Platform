@@ -119,32 +119,43 @@ export default function CandidateView() {
       <div className="card">
         <div className="flex items-start justify-between flex-wrap gap-4">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-primary-700 flex items-center justify-center text-2xl font-bold text-white overflow-hidden">
+            <div className="w-16 h-16 rounded-2xl bg-primary-700 flex items-center justify-center text-2xl font-bold text-white overflow-hidden shadow-md flex-shrink-0">
               {profile?.user?.profileImage ? <img src={profile.user.profileImage} alt="" className="w-full h-full object-cover" /> : profile?.user?.name?.[0]?.toUpperCase()}
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-white">{profile?.user?.name}</h1>
-              <p className="text-gray-400 text-sm">{profile?.user?.email}</p>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{profile?.user?.name}</h1>
+              <p className="text-gray-500 dark:text-gray-400 text-sm">{profile?.user?.email}</p>
               <div className="flex gap-2 mt-2 flex-wrap">
                 <span className="badge-primary">Level {profile?.currentLevel || 0}</span>
-                <span className={`badge ${profile?.availability === 'Available' ? 'badge-success' : 'badge-gray'}`}>{profile?.availability}</span>
-                <span className="badge bg-yellow-900 text-yellow-300">Score: {profile?.overallScore}%</span>
+                <span className={`badge ${profile?.availability === 'Available' ? 'badge-success' : 'badge-gray'}`}>{profile?.availability || 'Available'}</span>
+                <span className="badge bg-amber-100 text-amber-800 border border-amber-300 dark:bg-yellow-900 dark:text-yellow-300 dark:border-yellow-700/50">Score: {profile?.overallScore || 0}%</span>
               </div>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <button onClick={() => setIsReporting(true)} className="btn-secondary text-danger-400 hover:text-danger-300 hover:border-danger-500/50 flex items-center gap-2"><HiFlag /> Report</button>
+            <button onClick={() => setIsReporting(true)} className="btn-secondary text-danger-500 dark:text-danger-400 hover:text-danger-600 dark:hover:text-danger-300 hover:border-danger-500/50 flex items-center gap-2"><HiFlag /> Report</button>
             <button onClick={startConversation} className="btn-primary flex items-center gap-2"><HiMail /> Message</button>
           </div>
         </div>
-        {profile?.bio && <p className="text-gray-300 mt-4 border-t border-dark-border pt-4">{profile.bio}</p>}
+        {profile?.bio && <p className="text-gray-700 dark:text-gray-300 mt-4 border-t border-dark-border pt-4 text-sm leading-relaxed">{profile.bio}</p>}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="card">
           <h2 className="section-title">Professional Info</h2>
-          <p className="text-gray-400 text-sm mb-2">Experience: <span className="text-white">{profile?.yearsOfExperience} years</span></p>
-          <div className="flex flex-wrap gap-1">{profile?.expertise?.map((e) => <span key={e} className="badge-primary">{e}</span>)}</div>
+          <p className="text-gray-600 dark:text-gray-400 text-sm mb-3">
+            Experience: <span className="font-semibold text-gray-900 dark:text-white">{profile?.yearsOfExperience != null ? `${profile.yearsOfExperience} years` : '0 years'}</span>
+          </p>
+          <div>
+            <span className="text-gray-600 dark:text-gray-400 text-xs font-semibold block mb-2">Expertise / Tech Stacks</span>
+            {profile?.expertise?.length > 0 ? (
+              <div className="flex flex-wrap gap-1.5">
+                {profile.expertise.map((e) => <span key={e} className="badge-primary">{e}</span>)}
+              </div>
+            ) : (
+              <span className="text-gray-400 dark:text-gray-500 text-xs italic">No tech stack expertise listed yet</span>
+            )}
+          </div>
         </div>
         {profile?.skills?.length > 0 && (
           <div className="card">
@@ -152,8 +163,8 @@ export default function CandidateView() {
             <div className="space-y-2">
               {profile.skills.slice(0, 5).map((s) => (
                 <div key={s.name} className="flex justify-between text-sm">
-                  <span className="text-gray-300">{s.name}</span>
-                  <span className="text-primary-400 font-medium">{s.score}%</span>
+                  <span className="text-gray-700 dark:text-gray-300">{s.name}</span>
+                  <span className="text-primary-600 dark:text-primary-400 font-medium">{s.score}%</span>
                 </div>
               ))}
             </div>
@@ -174,32 +185,32 @@ export default function CandidateView() {
                   key={`lv-${lv.level}`}
                   className={`p-4 rounded-xl border transition-colors relative overflow-hidden flex flex-col justify-between ${
                     isHumanTeam
-                      ? 'bg-gradient-to-br from-cyan-900/30 to-dark-800 border-cyan-500/40 hover:border-cyan-500/70'
+                      ? 'bg-cyan-50 dark:bg-gradient-to-br dark:from-cyan-900/30 dark:to-dark-800 border-cyan-300 dark:border-cyan-500/40 hover:border-cyan-500'
                       : isAiAgent
-                      ? 'bg-gradient-to-br from-violet-900/20 to-dark-800 border-violet-500/30 hover:border-violet-500/50'
-                      : 'bg-dark-800/50 border-primary-500/20 hover:border-primary-500/50'
+                      ? 'bg-violet-50 dark:bg-gradient-to-br dark:from-violet-900/20 dark:to-dark-800 border-violet-300 dark:border-violet-500/30 hover:border-violet-500'
+                      : 'bg-dark-card border-dark-border dark:bg-dark-800/50 hover:border-primary-500/50'
                   }`}
                 >
                   {isHumanTeam && (
-                    <span className="absolute top-2 right-2 text-xs font-bold px-2 py-0.5 rounded-full bg-cyan-600/30 border border-cyan-500/50 text-cyan-300">
+                    <span className="absolute top-2 right-2 text-xs font-bold px-2 py-0.5 rounded-full bg-cyan-100 text-cyan-800 border border-cyan-300 dark:bg-cyan-600/30 dark:border-cyan-500/50 dark:text-cyan-300">
                       🏆 Top
                     </span>
                   )}
                   <div>
                     <div className="flex justify-between items-start mb-2">
-                      <span className="text-lg font-bold text-white text-gradient">L{lv.level} Passed</span>
-                      <span className={`text-2xl font-black ${isHumanTeam ? 'text-cyan-400' : isAiAgent ? 'text-violet-400' : 'text-primary-400'}`}>
+                      <span className="text-lg font-bold text-gray-900 dark:text-white">L{lv.level} Passed</span>
+                      <span className={`text-2xl font-black ${isHumanTeam ? 'text-cyan-600 dark:text-cyan-400' : isAiAgent ? 'text-violet-600 dark:text-violet-400' : 'text-primary-600 dark:text-primary-400'}`}>
                         {lv.totalScore}
-                        <span className="text-sm font-medium">/100</span>
+                        <span className="text-sm font-medium opacity-80">/100</span>
                       </span>
                     </div>
-                    <div className="text-sm text-gray-400 mb-2">Stack: <span className="text-white">{lv.stack}</span></div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">Stack: <span className="font-semibold text-gray-900 dark:text-white">{lv.stack}</span></div>
                     <div className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold border ${
                       isHumanTeam
-                        ? 'bg-cyan-900/30 text-cyan-300 border-cyan-500/30'
+                        ? 'bg-cyan-100 text-cyan-800 border-cyan-300 dark:bg-cyan-900/30 dark:text-cyan-300 dark:border-cyan-500/30'
                         : isAiAgent
-                        ? 'bg-violet-900/30 text-violet-300 border-violet-500/30'
-                        : 'bg-dark-700 text-gray-300 border-dark-600'
+                        ? 'bg-violet-100 text-violet-800 border-violet-300 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-500/30'
+                        : 'bg-gray-100 text-gray-800 border-gray-300 dark:bg-dark-700 dark:text-gray-300 dark:border-dark-600'
                     }`}>
                       {isHumanTeam ? '🎥' : isAiAgent ? '🤖' : '📝'} {lv.evaluator}
                     </div>
@@ -207,9 +218,9 @@ export default function CandidateView() {
 
                   <button
                     onClick={() => setSelectedInterviewForScreenshots({ ...lv, candidate: id })}
-                    className="mt-3 w-full py-1.5 rounded-lg bg-dark-800 hover:bg-dark-700 border border-dark-border text-xs text-gray-300 hover:text-white font-medium flex items-center justify-center gap-1.5 transition-all"
+                    className="mt-3 w-full py-1.5 rounded-lg bg-dark-card hover:bg-dark-800 border border-dark-border text-xs text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-medium flex items-center justify-center gap-1.5 transition-all"
                   >
-                    <HiPhotograph className="w-3.5 h-3.5 text-primary-400" />
+                    <HiPhotograph className="w-3.5 h-3.5 text-primary-500 dark:text-primary-400" />
                     <span>View Captures</span>
                   </button>
                 </div>
@@ -241,7 +252,7 @@ export default function CandidateView() {
           />
 
           {filteredHistory.length === 0 ? (
-            <div className="text-center py-10 text-gray-400 text-sm">
+            <div className="text-center py-10 text-gray-500 dark:text-gray-400 text-sm">
               No interviews match your filter criteria.
               <div className="mt-2">
                 <button onClick={handleResetFilters} className="btn-secondary text-xs">
@@ -252,7 +263,7 @@ export default function CandidateView() {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="text-gray-400 uppercase text-xs border-b border-dark-border">
+                <thead className="text-gray-500 dark:text-gray-400 uppercase text-xs border-b border-dark-border">
                   <tr>
                     {['Stack', 'Level', 'Evaluator', 'Score', 'Result', 'Date', 'Actions'].map((h) => (
                       <th key={h} className="text-left pb-2 pr-4">{h}</th>
@@ -261,22 +272,22 @@ export default function CandidateView() {
                 </thead>
                 <tbody className="divide-y divide-dark-border">
                   {filteredHistory.map((iv) => (
-                    <tr key={iv._id} className="hover:bg-dark-800/40 transition-colors">
-                      <td className="py-3 pr-4 text-white font-medium">{iv.stack}</td>
-                      <td className="py-3 pr-4 text-gray-400">L{iv.level}</td>
-                      <td className="py-3 pr-4 text-gray-400">{iv.evaluator}</td>
-                      <td className="py-3 pr-4 font-bold text-primary-400">{iv.totalScore}%</td>
+                    <tr key={iv._id} className="hover:bg-dark-800/20 transition-colors">
+                      <td className="py-3 pr-4 text-gray-900 dark:text-white font-medium">{iv.stack}</td>
+                      <td className="py-3 pr-4 text-gray-600 dark:text-gray-400">L{iv.level}</td>
+                      <td className="py-3 pr-4 text-gray-600 dark:text-gray-400">{iv.evaluator}</td>
+                      <td className="py-3 pr-4 font-bold text-primary-600 dark:text-primary-400">{iv.totalScore}%</td>
                       <td className="py-3 pr-4">
                         {iv.passed ? <span className="badge-success">Passed</span> : <span className="badge-danger">Failed</span>}
                       </td>
-                      <td className="py-3 pr-4 text-gray-400 text-xs">
+                      <td className="py-3 pr-4 text-gray-500 dark:text-gray-400 text-xs">
                         {iv.completedAt ? new Date(iv.completedAt).toLocaleDateString() : '—'}
                       </td>
                       <td className="py-3">
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => setSelectedFeedbackInterview(iv)}
-                            className="px-2.5 py-1 rounded-lg bg-primary-900/30 hover:bg-primary-800/50 border border-primary-500/30 text-xs text-primary-300 flex items-center gap-1.5 font-medium transition-all"
+                            className="px-2.5 py-1 rounded-lg bg-primary-50 dark:bg-primary-900/30 hover:bg-primary-100 dark:hover:bg-primary-800/50 border border-primary-300 dark:border-primary-500/30 text-xs text-primary-700 dark:text-primary-300 flex items-center gap-1.5 font-medium transition-all"
                             title="View Evaluator Feedback"
                           >
                             <HiChatAlt2 className="w-3.5 h-3.5" />
@@ -284,10 +295,10 @@ export default function CandidateView() {
                           </button>
                           <button
                             onClick={() => setSelectedInterviewForScreenshots({ ...iv, candidate: id })}
-                            className="px-2.5 py-1 rounded-lg bg-dark-800 hover:bg-dark-700 border border-dark-border text-xs text-gray-300 flex items-center gap-1.5 transition-all"
+                            className="px-2.5 py-1 rounded-lg bg-dark-card hover:bg-dark-800 border border-dark-border text-xs text-gray-700 dark:text-gray-300 flex items-center gap-1.5 transition-all"
                             title="View interval and violation screenshots"
                           >
-                            <HiPhotograph className="w-3.5 h-3.5 text-gray-400" />
+                            <HiPhotograph className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
                             <span>Captures</span>
                           </button>
                         </div>

@@ -90,6 +90,19 @@ export const ConsentReady: React.FC<ConsentReadyProps> = ({
     }
   };
 
+  const getAvatarUrl = (u: User | null | undefined): string | null => {
+    if (!u) return null;
+    const img = u.profileImage || u.avatar;
+    if (!img) return null;
+    if (img.startsWith('http://') || img.startsWith('https://') || img.startsWith('data:')) {
+      return img;
+    }
+    const apiBase = (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_API_BASE_URL) || 'http://localhost:5000';
+    return `${apiBase.replace(/\/$/, '')}${img.startsWith('/') ? img : `/${img}`}`;
+  };
+
+  const avatarUrl = getAvatarUrl(user);
+
   return (
     <div className="h-screen w-full flex bg-slate-50 dark:bg-zinc-950 text-zinc-900 dark:text-white overflow-x-hidden relative transition-colors">
       {/* Top drag bar for frameless window */}
@@ -111,17 +124,25 @@ export const ConsentReady: React.FC<ConsentReadyProps> = ({
 
           {/* User Profile Card */}
           <div className="flex items-center gap-3.5 pb-6 border-b border-slate-200 dark:border-zinc-800">
-            {user.avatar ? (
+            {avatarUrl ? (
               <img
-                src={user.avatar}
+                src={avatarUrl}
                 alt={user.name}
-                className="w-12 h-12 rounded-full object-cover border-2 border-blue-500/50 shadow-md"
+                className="w-12 h-12 rounded-full object-cover border-2 border-blue-500/50 shadow-md flex-shrink-0"
+                onError={(e) => {
+                  (e.currentTarget as HTMLElement).style.display = 'none';
+                  const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                  if (fallback) fallback.classList.remove('hidden');
+                }}
               />
-            ) : (
-              <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 flex items-center justify-center text-zinc-600 dark:text-zinc-300">
-                <UserIcon className="w-6 h-6" />
-              </div>
-            )}
+            ) : null}
+            <div
+              className={`w-12 h-12 rounded-full bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 flex items-center justify-center text-zinc-600 dark:text-zinc-300 flex-shrink-0 ${
+                avatarUrl ? 'hidden' : ''
+              }`}
+            >
+              <UserIcon className="w-6 h-6" />
+            </div>
             <div className="overflow-hidden">
               <h3 className="font-bold text-zinc-900 dark:text-white truncate text-base">{user.name}</h3>
               <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate">{user.email}</p>

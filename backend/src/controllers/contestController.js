@@ -315,7 +315,7 @@ exports.getParticipants = async (req, res) => {
     if (!contest) return res.status(404).json({ success: false, message: 'Contest not found' });
 
     const submissions = await ContestSubmission.find({ contest: contest._id })
-      .populate('candidate', 'name email')
+      .populate('candidate', 'name email profileImage')
       .sort('-codingScore codingTimeTaken');
 
     // Build leaderboard with sorting:

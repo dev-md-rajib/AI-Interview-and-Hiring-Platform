@@ -61,8 +61,12 @@ export default function JobApplications() {
           {apps.map((app) => (
             <div key={app._id} className="card flex items-center justify-between flex-wrap gap-3">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-primary-700 flex items-center justify-center text-white font-bold">
-                  {app.candidate?.name?.[0]?.toUpperCase()}
+                <div className="w-10 h-10 rounded-full bg-primary-700 flex items-center justify-center text-white font-bold overflow-hidden flex-shrink-0">
+                  {app.candidate?.profileImage ? (
+                    <img src={app.candidate.profileImage} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    app.candidate?.name?.[0]?.toUpperCase()
+                  )}
                 </div>
                 <div>
                   <Link to={`/recruiter/candidates/${app.candidate?._id}`} className="text-gray-900 dark:text-white font-bold hover:text-primary-600 dark:hover:text-primary-400 transition-colors">

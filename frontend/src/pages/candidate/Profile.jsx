@@ -127,28 +127,28 @@ export default function CandidateProfile() {
       <div className="card">
         <div className="flex items-start justify-between flex-wrap gap-4">
           <div className="flex items-center gap-4">
-            <div className="w-20 h-20 rounded-2xl bg-primary-700 flex items-center justify-center text-3xl font-bold text-white overflow-hidden">
+            <div className="w-20 h-20 rounded-2xl bg-primary-700 flex items-center justify-center text-3xl font-bold text-white overflow-hidden shadow-md flex-shrink-0">
               {user?.profileImage ? <img src={user.profileImage} alt={user.name} className="w-full h-full object-cover" /> : user?.name?.[0]?.toUpperCase()}
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-white">{user?.name}</h1>
-              <p className="text-gray-400">{user?.email}</p>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{user?.name}</h1>
+              <p className="text-gray-500 dark:text-gray-400">{user?.email}</p>
               <div className="flex items-center gap-2 mt-2 flex-wrap">
                 <span className="badge-primary">Level {profile?.currentLevel || 0}</span>
                 <span className={`badge ${profile?.availability === 'Available' ? 'badge-success' : 'badge-gray'}`}>{profile?.availability || 'Not Set'}</span>
-                <span className="badge bg-yellow-900 text-yellow-300">Score: {profile?.overallScore || 0}%</span>
+                <span className="badge bg-amber-100 text-amber-800 border border-amber-300 dark:bg-yellow-900 dark:text-yellow-300 dark:border-yellow-700/50">Score: {profile?.overallScore || 0}%</span>
               </div>
             </div>
           </div>
           <Link to="/candidate/profile/edit" className="btn-secondary flex items-center gap-2"><HiPencil /> Edit Profile</Link>
         </div>
 
-        {profile?.bio && <p className="text-gray-300 mt-4 border-t border-dark-border pt-4">{profile.bio}</p>}
+        {profile?.bio && <p className="text-gray-700 dark:text-gray-300 mt-4 border-t border-dark-border pt-4 text-sm leading-relaxed">{profile.bio}</p>}
 
         <div className="flex gap-4 mt-4 flex-wrap">
-          {profile?.linkedIn && <a href={profile.linkedIn} target="_blank" rel="noopener noreferrer" className="text-primary-400 hover:text-primary-300 text-sm flex items-center gap-1">LinkedIn <HiExternalLink /></a>}
-          {profile?.github && <a href={profile.github} target="_blank" rel="noopener noreferrer" className="text-primary-400 hover:text-primary-300 text-sm flex items-center gap-1">GitHub <HiExternalLink /></a>}
-          {profile?.website && <a href={profile.website} target="_blank" rel="noopener noreferrer" className="text-primary-400 hover:text-primary-300 text-sm flex items-center gap-1">Website <HiExternalLink /></a>}
+          {profile?.linkedIn && <a href={profile.linkedIn} target="_blank" rel="noopener noreferrer" className="text-primary-600 dark:text-primary-400 hover:underline text-sm flex items-center gap-1">LinkedIn <HiExternalLink /></a>}
+          {profile?.github && <a href={profile.github} target="_blank" rel="noopener noreferrer" className="text-primary-600 dark:text-primary-400 hover:underline text-sm flex items-center gap-1">GitHub <HiExternalLink /></a>}
+          {profile?.website && <a href={profile.website} target="_blank" rel="noopener noreferrer" className="text-primary-600 dark:text-primary-400 hover:underline text-sm flex items-center gap-1">Website <HiExternalLink /></a>}
         </div>
       </div>
 
@@ -157,11 +157,14 @@ export default function CandidateProfile() {
         <div className="card">
           <h2 className="section-title">Professional Info</h2>
           <div className="space-y-3 text-sm">
-            <div className="flex justify-between"><span className="text-gray-400">Experience</span><span className="text-white font-medium">{profile?.yearsOfExperience || 0} years</span></div>
+            <div className="flex justify-between">
+              <span className="text-gray-600 dark:text-gray-400">Experience</span>
+              <span className="text-gray-900 dark:text-white font-medium">{profile?.yearsOfExperience || 0} years</span>
+            </div>
             <div>
-              <span className="text-gray-400 block mb-2">Expertise</span>
+              <span className="text-gray-600 dark:text-gray-400 block mb-2 font-medium">Expertise</span>
               <div className="flex flex-wrap gap-2">
-                {profile?.expertise?.length > 0 ? profile.expertise.map((e) => <span key={e} className="badge-primary">{e}</span>) : <span className="text-gray-500">None added yet</span>}
+                {profile?.expertise?.length > 0 ? profile.expertise.map((e) => <span key={e} className="badge-primary">{e}</span>) : <span className="text-gray-400 dark:text-gray-500 text-xs italic">None added yet</span>}
               </div>
             </div>
           </div>
@@ -173,12 +176,12 @@ export default function CandidateProfile() {
             <div className="space-y-3">
               {profile.education.map((e, i) => (
                 <div key={i} className="border-l-2 border-primary-500 pl-3">
-                  <p className="text-white font-medium">{e.degree}</p>
-                  <p className="text-gray-400 text-sm">{e.institution} · {e.year}</p>
+                  <p className="text-gray-900 dark:text-white font-medium">{e.degree}</p>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm">{e.institution} · {e.year}</p>
                 </div>
               ))}
             </div>
-          ) : <p className="text-gray-500 text-sm">No education added</p>}
+          ) : <p className="text-gray-400 dark:text-gray-500 text-sm italic">No education added</p>}
         </div>
       </div>
 
@@ -198,13 +201,13 @@ export default function CandidateProfile() {
           <h2 className="section-title">Highest Level Verdicts</h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {levelVerdicts.map((lv) => (
-              <div key={`lv-${lv.level}`} className="p-4 rounded-xl bg-dark-800/50 border border-primary-500/20 hover:border-primary-500/50 transition-colors">
+              <div key={`lv-${lv.level}`} className="p-4 rounded-xl bg-gray-50 dark:bg-dark-800/50 border border-primary-500/20 hover:border-primary-500/50 transition-colors">
                 <div className="flex justify-between items-start mb-2">
-                  <span className="text-lg font-bold text-white text-gradient">L{lv.level} Passed</span>
-                  <span className="text-2xl font-black text-primary-400">{lv.totalScore}%</span>
+                  <span className="text-lg font-bold text-gray-900 dark:text-white">L{lv.level} Passed</span>
+                  <span className="text-2xl font-black text-primary-600 dark:text-primary-400">{lv.totalScore}%</span>
                 </div>
-                <div className="text-sm text-gray-400 mb-2">Stack: <span className="text-white">{lv.stack}</span></div>
-                <div className="inline-flex items-center px-2 py-1 rounded text-xs font-semibold bg-dark-700 text-gray-300 border border-dark-600">
+                <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">Stack: <span className="text-gray-900 dark:text-white font-semibold">{lv.stack}</span></div>
+                <div className="inline-flex items-center px-2 py-1 rounded text-xs font-semibold bg-gray-200 text-gray-800 dark:bg-dark-700 dark:text-gray-300 border border-gray-300 dark:border-dark-600">
                   Evaluated by: {lv.evaluator}
                 </div>
               </div>
@@ -236,7 +239,7 @@ export default function CandidateProfile() {
           />
 
           {filteredHistory.length === 0 ? (
-            <div className="text-center py-10 text-gray-400 text-sm">
+            <div className="text-center py-10 text-gray-500 dark:text-gray-400 text-sm">
               No interviews match your filter criteria.
               <div className="mt-2">
                 <button onClick={handleResetFilters} className="btn-secondary text-xs">
@@ -247,22 +250,22 @@ export default function CandidateProfile() {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="text-gray-400 uppercase text-xs border-b border-dark-border">
+                <thead className="text-gray-500 dark:text-gray-400 uppercase text-xs border-b border-dark-border">
                   <tr>{['Stack', 'Level', 'Evaluator', 'Score', 'Result', 'Date', 'Feedback'].map((h) => <th key={h} className="text-left pb-2 pr-4">{h}</th>)}</tr>
                 </thead>
                 <tbody className="divide-y divide-dark-border">
                   {filteredHistory.map((iv) => (
-                    <tr key={iv._id} className="hover:bg-dark-800/30">
-                      <td className="py-3 pr-4 text-white font-medium">{iv.stack}</td>
-                      <td className="py-3 pr-4 text-gray-400">L{iv.level}</td>
-                      <td className="py-3 pr-4 text-gray-400">{iv.evaluator}</td>
-                      <td className="py-3 pr-4 font-bold text-primary-400">{iv.totalScore}%</td>
+                    <tr key={iv._id} className="hover:bg-dark-800/20 transition-colors">
+                      <td className="py-3 pr-4 text-gray-900 dark:text-white font-medium">{iv.stack}</td>
+                      <td className="py-3 pr-4 text-gray-600 dark:text-gray-400">L{iv.level}</td>
+                      <td className="py-3 pr-4 text-gray-600 dark:text-gray-400">{iv.evaluator}</td>
+                      <td className="py-3 pr-4 font-bold text-primary-600 dark:text-primary-400">{iv.totalScore}%</td>
                       <td className="py-3 pr-4">{iv.passed ? <span className="badge-success">Passed</span> : <span className="badge-danger">Failed</span>}</td>
-                      <td className="py-3 pr-4 text-gray-400">{iv.completedAt ? new Date(iv.completedAt).toLocaleDateString() : '-'}</td>
+                      <td className="py-3 pr-4 text-gray-500 dark:text-gray-400">{iv.completedAt ? new Date(iv.completedAt).toLocaleDateString() : '-'}</td>
                       <td className="py-3">
                         <button
                           onClick={() => setSelectedFeedbackInterview(iv)}
-                          className="px-2.5 py-1 rounded-lg bg-primary-900/30 hover:bg-primary-800/50 border border-primary-500/30 text-xs text-primary-300 flex items-center gap-1 font-medium transition-all"
+                          className="px-2.5 py-1 rounded-lg bg-primary-50 dark:bg-primary-900/30 hover:bg-primary-100 dark:hover:bg-primary-800/50 border border-primary-300 dark:border-primary-500/30 text-xs text-primary-700 dark:text-primary-300 flex items-center gap-1 font-medium transition-all"
                           title="View detailed feedback"
                         >
                           <HiChatAlt2 className="w-3.5 h-3.5" />
@@ -297,10 +300,10 @@ export default function CandidateProfile() {
               <div key={item._id} className="border border-dark-border rounded-lg p-4 hover:border-primary-500/30 transition-colors group">
                 <div className="flex items-start justify-between">
                   <div>
-                    <h3 className="text-white font-semibold">{item.title}</h3>
-                    <p className="text-gray-400 text-sm mt-1">{item.description}</p>
+                    <h3 className="text-gray-900 dark:text-white font-semibold">{item.title}</h3>
+                    <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">{item.description}</p>
                     {item.mediaUrl && (
-                      <a href={item.mediaUrl} target="_blank" rel="noopener noreferrer" className="text-primary-400 hover:text-primary-300 text-xs mt-2 flex items-center gap-1">
+                      <a href={item.mediaUrl} target="_blank" rel="noopener noreferrer" className="text-primary-600 dark:text-primary-400 hover:underline text-xs mt-2 flex items-center gap-1">
                         View {item.mediaType} <HiExternalLink />
                       </a>
                     )}
@@ -313,7 +316,7 @@ export default function CandidateProfile() {
               </div>
             ))}
           </div>
-        ) : <p className="text-gray-500 text-sm">No portfolio items yet. Add your projects!</p>}
+        ) : <p className="text-gray-400 dark:text-gray-500 text-sm italic">No portfolio items yet. Add your projects!</p>}
       </div>
     </div>
   );

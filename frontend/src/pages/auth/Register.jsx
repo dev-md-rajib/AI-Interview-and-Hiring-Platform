@@ -1,8 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { toast } from 'react-hot-toast';
-import { HiAcademicCap, HiEye, HiEyeOff, HiUser, HiBriefcase, HiLightBulb } from 'react-icons/hi';
+import {
+  HiEye,
+  HiEyeOff,
+  HiUser,
+  HiBriefcase,
+  HiLightBulb,
+  HiCamera,
+  HiTrash,
+  HiUpload,
+} from 'react-icons/hi';
 import { useAuth } from '../../context/AuthContext';
 import ThemeToggle from '../../components/ThemeToggle';
 import api from '../../services/api';
@@ -20,13 +29,88 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // Profile image states
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState('');
+  const [imageError, setImageError] = useState('');
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef(null);
+
   const { register, handleSubmit, formState: { errors }, watch } = useForm();
   const password = watch('password');
 
+  const handleImageChange = (file) => {
+    setImageError('');
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setImageError('Please select a valid image file (JPG, PNG, WebP).');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setImageError('Image size must be less than 5MB.');
+      return;
+    }
+
+    setImageFile(file);
+    const reader = new FileReader();
+    reader.onload = () => {
+      setImagePreview(reader.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removeImage = (e) => {
+    e.stopPropagation();
+    setImageFile(null);
+    setImagePreview('');
+    setImageError('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleImageChange(e.dataTransfer.files[0]);
+    }
+  };
+
   const onSubmit = async (formData) => {
+    // Validate mandatory profile image for Candidate
+    if (selectedRole === 'CANDIDATE' && !imageFile) {
+      setImageError('Profile image is required for Candidate registration');
+      toast.error('Please upload a profile photo to verify your identity as a Candidate.');
+      return;
+    }
+
     setLoading(true);
     try {
-      const { data } = await api.post('/auth/register', { ...formData, role: selectedRole });
+      const dataPayload = new FormData();
+      dataPayload.append('name', formData.name);
+      dataPayload.append('email', formData.email);
+      dataPayload.append('password', formData.password);
+      dataPayload.append('role', selectedRole);
+      if (imageFile) {
+        dataPayload.append('profileImage', imageFile);
+      }
+
+      const { data } = await api.post('/auth/register', dataPayload, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
       login(data.user, data.token);
       toast.success(`Account created! Welcome, ${data.user.name}!`);
       const redirectMap = { RECRUITER: '/recruiter', INTERVIEWER: '/interviewer' };
@@ -56,12 +140,15 @@ export default function Register() {
         </div>
 
         {/* Role selector */}
-        <div className="grid grid-cols-3 gap-3 mb-8">
+        <div className="grid grid-cols-3 gap-3 mb-6">
           {roles.map(({ value, label, icon: Icon, desc }) => (
             <button
               key={value}
               type="button"
-              onClick={() => setSelectedRole(value)}
+              onClick={() => {
+                setSelectedRole(value);
+                setImageError('');
+              }}
               className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all duration-200 ${
                 selectedRole === value
                   ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/30 text-gray-900 dark:text-white shadow-sm'
@@ -76,6 +163,93 @@ export default function Register() {
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          {/* Profile Photo Upload Section */}
+          <div className="bg-dark-card border border-dark-border rounded-xl p-4 transition-all">
+            <div className="flex items-center justify-between mb-3">
+              <label className="text-sm font-semibold text-gray-900 dark:text-gray-200 flex items-center gap-1.5">
+                <span>Profile Photo</span>
+                {selectedRole === 'CANDIDATE' ? (
+                  <span className="text-xs font-bold text-danger-500 bg-danger-500/10 px-2 py-0.5 rounded-full">
+                    * Required for Candidate
+                  </span>
+                ) : (
+                  <span className="text-xs font-medium text-gray-500 bg-gray-500/10 px-2 py-0.5 rounded-full">
+                    Optional
+                  </span>
+                )}
+              </label>
+              {imagePreview && (
+                <button
+                  type="button"
+                  onClick={removeImage}
+                  className="text-xs text-danger-400 hover:text-danger-300 flex items-center gap-1 transition-colors"
+                >
+                  <HiTrash className="w-3.5 h-3.5" /> Remove
+                </button>
+              )}
+            </div>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => handleImageChange(e.target.files?.[0])}
+            />
+
+            <div
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              onClick={() => fileInputRef.current?.click()}
+              className={`cursor-pointer rounded-lg border-2 border-dashed p-4 flex items-center gap-4 transition-all duration-200 ${
+                isDragging
+                  ? 'border-primary-500 bg-primary-500/10'
+                  : imageError
+                  ? 'border-danger-500/60 bg-danger-500/5'
+                  : imagePreview
+                  ? 'border-primary-500/50 bg-primary-500/5'
+                  : 'border-dark-border hover:border-primary-500/40 bg-dark-800/40 hover:bg-dark-800/70'
+              }`}
+            >
+              <div className="relative group flex-shrink-0">
+                <div className="w-16 h-16 rounded-full overflow-hidden bg-dark-800 border-2 border-primary-500/40 flex items-center justify-center shadow-md">
+                  {imagePreview ? (
+                    <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                  ) : (
+                    <HiUser className="w-8 h-8 text-gray-500 group-hover:text-primary-400 transition-colors" />
+                  )}
+                </div>
+                <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                  <HiCamera className="w-5 h-5 text-white" />
+                </div>
+              </div>
+
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-200 truncate">
+                  {imageFile ? imageFile.name : 'Choose a profile photo or drag & drop'}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  PNG, JPG, WebP up to 5MB
+                </p>
+              </div>
+
+              <button
+                type="button"
+                className="btn-secondary text-xs px-3 py-1.5 flex items-center gap-1 pointer-events-none"
+              >
+                <HiUpload className="w-3.5 h-3.5" />
+                {imagePreview ? 'Change' : 'Browse'}
+              </button>
+            </div>
+
+            {imageError && (
+              <p className="mt-2 text-xs text-danger-400 font-medium animate-fade-in flex items-center gap-1">
+                <span>⚠️</span> {imageError}
+              </p>
+            )}
+          </div>
+
           <div>
             <label className="label">Full Name</label>
             <input
@@ -155,3 +329,4 @@ export default function Register() {
     </div>
   );
 }
+

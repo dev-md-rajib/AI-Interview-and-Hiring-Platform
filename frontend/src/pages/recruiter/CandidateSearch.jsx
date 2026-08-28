@@ -116,8 +116,12 @@ export default function CandidateSearch() {
           {candidates.map((c) => (
             <Link key={c._id} to={`/recruiter/candidates/${c.user?._id}`} className="card hover:border-primary-500/40 transition-all block">
               <div className="flex items-start gap-3 mb-3">
-                <div className="w-10 h-10 rounded-full bg-primary-700 flex items-center justify-center text-white font-bold flex-shrink-0">
-                  {c.user?.name?.[0]?.toUpperCase()}
+                <div className="w-10 h-10 rounded-full bg-primary-700 flex items-center justify-center text-white font-bold flex-shrink-0 overflow-hidden">
+                  {c.user?.profileImage ? (
+                    <img src={c.user.profileImage} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    c.user?.name?.[0]?.toUpperCase()
+                  )}
                 </div>
                 <div>
                   <h3 className="text-white font-semibold">{c.user?.name}</h3>

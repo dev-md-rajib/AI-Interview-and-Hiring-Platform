@@ -1,21 +1,28 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm, useFieldArray } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
-import { HiPlus, HiTrash, HiSave } from 'react-icons/hi';
+import { useAuth } from '../../context/AuthContext';
+import { HiPlus, HiTrash, HiSave, HiCamera, HiUpload, HiUser } from 'react-icons/hi';
 
 const SKILL_LEVELS = ['Beginner', 'Intermediate', 'Advanced', 'Expert'];
 const STACKS = ['JavaScript', 'TypeScript', 'React', 'Vue.js', 'Angular', 'Node.js', 'Python', 'Java', 'PHP', 'SQL', 'MongoDB', 'Docker', 'AWS', 'Go', 'Ruby', 'Swift', 'Kotlin', 'C#', 'C++'];
 
 export default function EditProfile() {
   const navigate = useNavigate();
+  const { user, updateUser } = useAuth();
   const [loading, setLoading] = useState(false);
   const [initLoading, setInitLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('basic');
   const [portfolioTitle, setPortfolioTitle] = useState('');
   const [portfolioDesc, setPortfolioDesc] = useState('');
   const [portfolioUrl, setPortfolioUrl] = useState('');
+
+  // Profile Image state
+  const [newImageFile, setNewImageFile] = useState(null);
+  const [newImagePreview, setNewImagePreview] = useState('');
+  const avatarInputRef = useRef(null);
 
   const { register, handleSubmit, control, reset, formState: { errors } } = useForm({
     defaultValues: {
@@ -53,9 +60,39 @@ export default function EditProfile() {
     }).finally(() => setInitLoading(false));
   }, [reset]);
 
+  const handleAvatarChange = (file) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size must be less than 5MB');
+      return;
+    }
+    setNewImageFile(file);
+    const reader = new FileReader();
+    reader.onload = () => {
+      setNewImagePreview(reader.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const onSubmit = async (data) => {
     setLoading(true);
     try {
+      // If a new avatar was selected, upload it
+      if (newImageFile) {
+        const formData = new FormData();
+        formData.append('profileImage', newImageFile);
+        const { data: userRes } = await api.put('/auth/update-profile', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        if (userRes.user) {
+          updateUser(userRes.user);
+        }
+      }
+
       const payload = {
         ...data,
         expertise: typeof data.expertise === 'string'
@@ -114,7 +151,69 @@ export default function EditProfile() {
       <form onSubmit={handleSubmit(onSubmit)}>
         {/* Basic info */}
         {activeTab === 'basic' && (
-          <div className="card space-y-4">
+          <div className="card space-y-5">
+            {/* Profile Photo Section */}
+            <div className="p-4 rounded-xl bg-dark-800/60 border border-dark-border flex items-center justify-between gap-4 flex-wrap">
+              <div className="flex items-center gap-4">
+                <div className="relative group">
+                  <div className="w-16 h-16 rounded-2xl bg-primary-700 border-2 border-primary-500/30 flex items-center justify-center text-2xl font-bold text-white overflow-hidden shadow-md">
+                    {newImagePreview ? (
+                      <img src={newImagePreview} alt="Preview" className="w-full h-full object-cover" />
+                    ) : user?.profileImage ? (
+                      <img src={user.profileImage} alt={user?.name} className="w-full h-full object-cover" />
+                    ) : (
+                      user?.name?.[0]?.toUpperCase() || <HiUser className="w-8 h-8 text-gray-400" />
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => avatarInputRef.current?.click()}
+                    className="absolute inset-0 rounded-2xl bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white"
+                  >
+                    <HiCamera className="w-6 h-6" />
+                  </button>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-white text-sm">Profile Picture</h4>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {newImageFile ? newImageFile.name : 'PNG, JPG, WebP up to 5MB'}
+                  </p>
+                </div>
+              </div>
+
+              <input
+                ref={avatarInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => handleAvatarChange(e.target.files?.[0])}
+              />
+
+              <div className="flex items-center gap-2">
+                {newImagePreview && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNewImageFile(null);
+                      setNewImagePreview('');
+                      if (avatarInputRef.current) avatarInputRef.current.value = '';
+                    }}
+                    className="btn-secondary text-xs text-danger-400 hover:text-danger-300"
+                  >
+                    Reset
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => avatarInputRef.current?.click()}
+                  className="btn-secondary text-xs flex items-center gap-1"
+                >
+                  <HiUpload className="w-3.5 h-3.5" />
+                  {newImagePreview || user?.profileImage ? 'Change Photo' : 'Upload Photo'}
+                </button>
+              </div>
+            </div>
+
             <div>
               <label className="label">Bio</label>
               <textarea className="input h-24 resize-none" placeholder="Tell recruiters about yourself..." {...register('bio')} />
