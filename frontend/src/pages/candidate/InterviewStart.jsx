@@ -3,9 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import {
-  HiAcademicCap, HiClock, HiCheckCircle, HiChip,
+  HiAcademicCap, HiClock, HiCheckCircle, HiXCircle, HiChip,
   HiUserGroup, HiLightningBolt, HiInformationCircle, HiCode, HiBriefcase,
-  HiDownload, HiExternalLink
+  HiDownload, HiExternalLink, HiLockClosed
 } from 'react-icons/hi';
 import { SECTORS, TECH_STACKS, getSectorById, isSector, SECTOR_LEVEL_DESCRIPTIONS } from '../../constants/sectors';
 import { TRACKER_DOWNLOAD_URL } from '../../constants/tracker';
@@ -85,6 +85,7 @@ export default function InterviewStart() {
   const [level, setLevel] = useState(1);
   const [stack, setStack] = useState('');
   const [interviewType, setInterviewType] = useState('tech'); // 'tech' | 'business'
+  const [levelStatus, setLevelStatus] = useState({ 1: { eligible: true }, 2: null, 3: null });
   const [eligibility, setEligibility] = useState(null);
   const [activeTeamInterview, setActiveTeamInterview] = useState(null);
   const [levels, setLevels] = useState([]);
@@ -105,21 +106,31 @@ export default function InterviewStart() {
     setEligibility(null);
   }, [interviewType]);
 
-  // Check eligibility based on mode
+  // Check eligibility for all levels
   useEffect(() => {
-    setEligibility(null);
     if (mode === 'standard') {
+      const allOpen = { 1: { eligible: true }, 2: { eligible: true }, 3: { eligible: true } };
+      setLevelStatus(allOpen);
       setEligibility({ eligible: true });
-    } else if (mode === 'ai_agent' || mode === 'interview_team') {
-      if (level === 1) {
-        setEligibility({ eligible: true });
-      } else {
-        api.get(`/team-interviews/eligibility?level=${level}`)
-          .then(({ data }) => setEligibility(data))
-          .catch(() => setEligibility({ eligible: true }));
-      }
+    } else {
+      Promise.all([
+        api.get('/team-interviews/eligibility?level=2').catch(() => ({ data: { eligible: false, reason: 'You must pass Level 1 first' } })),
+        api.get('/team-interviews/eligibility?level=3').catch(() => ({ data: { eligible: false, reason: 'You must pass Level 2 first' } })),
+      ]).then(([res2, res3]) => {
+        const status = {
+          1: { eligible: true },
+          2: res2.data,
+          3: res3.data,
+        };
+        setLevelStatus(status);
+        setEligibility(status[level] || { eligible: true });
+      });
     }
-  }, [level, mode]);
+  }, [mode, stack]);
+
+  useEffect(() => {
+    setEligibility(levelStatus[level] || (level === 1 ? { eligible: true } : null));
+  }, [level, levelStatus]);
 
   const handleModeClick = (selectedMode) => {
     if (selectedMode === 'interview_team' && activeTeamInterview) {
@@ -132,22 +143,33 @@ export default function InterviewStart() {
   const [showTrackerModal, setShowTrackerModal] = useState(false);
 
   const executeStart = async () => {
-    if (mode === 'interview_team') {
-      if (activeTeamInterview) {
-        navigate('/candidate/interview/team');
-        return;
-      }
-      if (!stack) return toast.error(`Please select a ${interviewType === 'business' ? 'sector' : 'tech stack'}`);
-      navigate('/candidate/interview/team', { state: { stack, level, interviewType } });
-      return;
-    }
     if (!stack) return toast.error(`Please select a ${interviewType === 'business' ? 'sector' : 'tech stack'}`);
-    if (mode === 'standard' && !eligibility?.eligible) {
-      return toast.error(eligibility?.reason || 'Not eligible');
+    if (eligibility && !eligibility.eligible) {
+      return toast.error(eligibility.reason || `Level ${level} is locked! You must pass Level ${level - 1} first.`);
     }
+
     setStarting(true);
     try {
-      if (mode === 'ai_agent') {
+      if (mode === 'interview_team') {
+        if (activeTeamInterview) {
+          navigate('/candidate/interview/team');
+          return;
+        }
+
+        const { data } = await api.post('/team-interviews/request', {
+          stack,
+          level,
+          interviewType,
+        });
+
+        if (data.noInterviewer) {
+          toast(data.message || 'No interviewer with matching expertise is available right now. Please try again later or select another field.', { icon: '⚠️' });
+        } else {
+          toast.success(data.message || 'Live Human Interview Scheduled! 🎉');
+        }
+
+        navigate('/candidate/interview/team');
+      } else if (mode === 'ai_agent') {
         const { data } = await api.post('/interviews/ai-agent/start', { level, stack });
         toast.success('Interview started! 🚀');
         navigate(`/candidate/interview/ai-agent/${data.interviewId}`, { state: { interview: data } });
@@ -166,6 +188,17 @@ export default function InterviewStart() {
   const handleStart = async () => {
     if (mode !== 'interview_team' && !stack) {
       return toast.error(`Please select a ${interviewType === 'business' ? 'sector' : 'tech stack'}`);
+    }
+
+    if (eligibility && !eligibility.eligible) {
+      return toast.error(eligibility.reason || `Level ${level} is locked! You must pass Level ${level - 1} first.`);
+    }
+
+    // For Human Team interview, booking a future schedule does not require tracker at creation time.
+    // Tracker is checked when the candidate actually starts/joins the live meeting room.
+    if (mode === 'interview_team') {
+      executeStart();
+      return;
     }
 
     try {
@@ -353,17 +386,38 @@ export default function InterviewStart() {
         <div className="grid grid-cols-3 gap-3 mb-4">
           {[1, 2, 3].map((lvl) => {
             const colors = LEVEL_COLORS[lvl];
+            const isLocked = mode !== 'standard' && lvl > 1 && levelStatus[lvl] && !levelStatus[lvl].eligible;
             return (
               <button
                 key={lvl}
-                onClick={() => setLevel(lvl)}
-                className={`p-4 rounded-xl border-2 text-center transition-all ${
-                  level === lvl ? `${colors.border} ${colors.bg}` : 'border-dark-border hover:border-primary-700'
+                onClick={() => {
+                  setLevel(lvl);
+                  if (isLocked) {
+                    toast.error(levelStatus[lvl]?.reason || `Level ${lvl} is locked. You must pass Level ${lvl - 1} first.`, { id: `lvl-lock-${lvl}` });
+                  }
+                }}
+                className={`relative p-4 rounded-xl border-2 text-center transition-all ${
+                  level === lvl
+                    ? isLocked
+                      ? 'border-red-500 bg-red-900/20 shadow-sm'
+                      : `${colors.border} ${colors.bg}`
+                    : isLocked
+                    ? 'border-red-500/30 bg-red-950/20 opacity-80 hover:border-red-500/60'
+                    : 'border-dark-border hover:border-primary-700'
                 }`}
               >
-                <HiAcademicCap className={`w-6 h-6 mx-auto mb-2 ${level === lvl ? colors.color : 'text-gray-400'}`} />
-                <div className={`font-bold text-sm ${level === lvl ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300'}`}>Level {lvl}</div>
-                <div className="text-xs text-gray-500 mt-1">{LEVEL_LABELS[lvl]}</div>
+                {isLocked && (
+                  <span className="absolute top-2 right-2 text-[10px] text-red-400 bg-red-900/50 px-1.5 py-0.5 rounded flex items-center gap-0.5 border border-red-500/30 font-bold">
+                    <HiLockClosed className="w-3 h-3" /> Locked
+                  </span>
+                )}
+                <HiAcademicCap className={`w-6 h-6 mx-auto mb-2 ${isLocked ? 'text-red-400' : level === lvl ? colors.color : 'text-gray-400'}`} />
+                <div className={`font-bold text-sm ${isLocked ? 'text-red-300' : level === lvl ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300'}`}>
+                  Level {lvl}
+                </div>
+                <div className={`text-xs mt-1 ${isLocked ? 'text-red-400/80 font-medium' : 'text-gray-500'}`}>
+                  {isLocked ? `Requires L${lvl - 1}` : LEVEL_LABELS[lvl]}
+                </div>
               </button>
             );
           })}
@@ -468,25 +522,29 @@ export default function InterviewStart() {
 
       {/* Eligibility status */}
       {eligibility && (
-        <div className={`p-4 rounded-xl border mb-6 flex items-center gap-3.5 ${
+        <div className={`p-4 rounded-xl border mb-6 flex items-start gap-3.5 ${
           eligibility.eligible
             ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300'
-            : 'bg-danger-500/10 border-danger-500/30 text-danger-700 dark:text-danger-300'
+            : 'bg-red-500/10 border-red-500/30 text-red-700 dark:text-red-300'
         }`}>
-          <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-            eligibility.eligible ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' : 'bg-danger-500/20 text-danger-600 dark:text-danger-400'
+          <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${
+            eligibility.eligible ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' : 'bg-red-500/20 text-red-600 dark:text-red-400'
           }`}>
-            {eligibility.eligible ? <HiCheckCircle className="w-5 h-5" /> : <HiXCircle className="w-5 h-5" />}
+            {eligibility.eligible ? <HiCheckCircle className="w-5 h-5" /> : <HiLockClosed className="w-5 h-5" />}
           </div>
           <div>
-            <p className="font-semibold text-sm">
+            <p className="font-bold text-sm">
               {eligibility.eligible
                 ? mode === 'standard'
                   ? 'Open to all — Standard level has no prerequisites'
-                  : 'You are eligible for this level'
-                : 'Level locked'}
+                  : `Level ${level} Unlocked — You are eligible to take this interview`
+                : `Level ${level} Locked — Candidate Not Allowed`}
             </p>
-            {!eligibility.eligible && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{eligibility.reason}</p>}
+            {!eligibility.eligible && (
+              <p className="text-xs text-red-400 dark:text-red-300 mt-1 leading-relaxed font-medium">
+                {eligibility.reason || `You must pass Level ${level - 1} first before you are allowed to attempt Level ${level}.`}
+              </p>
+            )}
             {eligibility.eligible && eligibility.attemptsToday != null && (
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{eligibility.attemptsToday}/{eligibility.maxAttemptsPerDay} attempts used today</p>
             )}
@@ -512,7 +570,11 @@ export default function InterviewStart() {
             </p>
             <p className="text-xs text-primary-600 dark:text-primary-400 mt-2 flex items-center gap-1 font-semibold">
               <HiDownload className="w-3.5 h-3.5" />
-              <span>Interview Tracker Desktop App required.</span>
+              <span>
+                {mode === 'interview_team'
+                  ? 'Interview Tracker required when joining your live Zoom interview.'
+                  : 'Interview Tracker Desktop App required to take interview.'}
+              </span>
               <a
                 href={TRACKER_DOWNLOAD_URL}
                 target="_blank"
@@ -528,10 +590,12 @@ export default function InterviewStart() {
             disabled={
               starting ||
               (mode !== 'interview_team' && !stack) ||
-              (mode !== 'standard' && eligibility && !eligibility.eligible)
+              (eligibility && !eligibility.eligible)
             }
-            className={`px-8 py-3 text-base rounded-xl font-bold transition-all disabled:opacity-50 ${
-              mode === 'ai_agent'
+            className={`px-8 py-3 text-base rounded-xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+              eligibility && !eligibility.eligible
+                ? 'bg-gray-700 text-gray-400 border border-gray-600'
+                : mode === 'ai_agent'
                 ? 'bg-violet-600 hover:bg-violet-700 text-white'
                 : mode === 'interview_team'
                 ? 'bg-cyan-700 hover:bg-cyan-600 text-white'
@@ -543,6 +607,8 @@ export default function InterviewStart() {
                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 {mode === 'ai_agent' ? 'Connecting...' : 'Preparing...'}
               </span>
+            ) : eligibility && !eligibility.eligible ? (
+              <span className="flex items-center gap-2">🔒 Level {level} Locked</span>
             ) : mode === 'ai_agent' ? (
               <span className="flex items-center gap-2"><HiLightningBolt /> Start AI Interview</span>
             ) : mode === 'interview_team' ? (

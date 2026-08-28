@@ -118,6 +118,9 @@ export default function InterviewTeamRoom() {
 
   const handleRequest = async () => {
     if (!stack) return toast.error(`Please select a ${interviewType === 'business' ? 'business sector' : 'tech stack'}`);
+    if (eligibility && !eligibility.eligible) {
+      return toast.error(eligibility.reason || `Level ${level} is locked! You must pass Level ${level - 1} first.`);
+    }
 
     setSubmitting(true);
     try {
@@ -346,25 +349,41 @@ export default function InterviewTeamRoom() {
           {/* Level */}
           <div>
             <label className="label">Interview Level</label>
-            {eligibility?.levelLocked && (
-              <p className="text-xs text-red-500 dark:text-red-400 mb-2 font-medium">🔒 {eligibility.reason}</p>
+            {eligibility && !eligibility.eligible && (
+              <div className="p-3 bg-red-950/40 border border-red-500/40 rounded-xl mb-3 flex items-start gap-2.5 text-xs text-red-300">
+                <HiLockClosed className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-bold text-red-300">Level {level} Locked</p>
+                  <p className="text-red-300/80 mt-0.5">{eligibility.reason || `You must pass Level ${level - 1} first before requesting Level ${level}.`}</p>
+                </div>
+              </div>
             )}
             <div className="grid grid-cols-3 gap-3">
-              {[1, 2, 3].map((lvl) => (
-                <button
-                  key={lvl}
-                  type="button"
-                  onClick={() => setLevel(lvl)}
-                  className={`py-3 rounded-xl border-2 text-center transition-all ${
-                    level === lvl
-                      ? 'border-cyan-500 bg-cyan-50 dark:bg-cyan-900/20 text-gray-900 dark:text-white shadow-sm'
-                      : 'border-dark-border bg-dark-card text-gray-700 dark:text-gray-400 hover:border-cyan-500/50'
-                  }`}
-                >
-                  <p className={`font-bold text-sm ${level === lvl ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300'}`}>Level {lvl}</p>
-                  <p className={`text-xs ${level === lvl ? 'text-cyan-700 dark:text-cyan-300 font-semibold' : 'text-gray-500 dark:text-gray-400'}`}>{LEVEL_LABELS[lvl]}</p>
-                </button>
-              ))}
+              {[1, 2, 3].map((lvl) => {
+                const isSelected = level === lvl;
+                const isLvlLocked = isSelected && eligibility && !eligibility.eligible;
+                return (
+                  <button
+                    key={lvl}
+                    type="button"
+                    onClick={() => setLevel(lvl)}
+                    className={`py-3 rounded-xl border-2 text-center transition-all ${
+                      isSelected
+                        ? isLvlLocked
+                          ? 'border-red-500 bg-red-950/30 text-red-300 shadow-sm'
+                          : 'border-cyan-500 bg-cyan-50 dark:bg-cyan-900/20 text-gray-900 dark:text-white shadow-sm'
+                        : 'border-dark-border bg-dark-card text-gray-700 dark:text-gray-400 hover:border-cyan-500/50'
+                    }`}
+                  >
+                    <p className={`font-bold text-sm ${isSelected ? (isLvlLocked ? 'text-red-300' : 'text-gray-900 dark:text-white') : 'text-gray-700 dark:text-gray-300'}`}>
+                      Level {lvl}
+                    </p>
+                    <p className={`text-xs ${isSelected ? (isLvlLocked ? 'text-red-400 font-semibold' : 'text-cyan-700 dark:text-cyan-300 font-semibold') : 'text-gray-500 dark:text-gray-400'}`}>
+                      {LEVEL_LABELS[lvl]}
+                    </p>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -386,7 +405,7 @@ export default function InterviewTeamRoom() {
 
           <button
             onClick={handleRequest}
-            disabled={submitting || !stack || (eligibility?.levelLocked)}
+            disabled={submitting || !stack || (eligibility && !eligibility.eligible)}
             className="w-full py-3.5 bg-gradient-to-r from-cyan-600 via-primary-600 to-indigo-600 hover:from-cyan-500 hover:via-primary-500 hover:to-indigo-500 text-white rounded-xl font-bold transition-all shadow-md shadow-primary-500/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-base"
           >
             {submitting ? (
@@ -394,6 +413,8 @@ export default function InterviewTeamRoom() {
                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 Searching Interviewer & Scheduling...
               </>
+            ) : eligibility && !eligibility.eligible ? (
+              <>🔒 Level {level} Locked (Not Allowed)</>
             ) : (
               <>⚡ Find Interviewer & Auto-Schedule Zoom</>
             )}
