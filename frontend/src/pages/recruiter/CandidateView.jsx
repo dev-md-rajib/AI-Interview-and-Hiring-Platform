@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../../services/api';
-import { HiMail, HiFlag, HiX, HiPhotograph, HiChatAlt2 } from 'react-icons/hi';
+import { useAuth } from '../../context/AuthContext';
+import { HiMail, HiFlag, HiX, HiPhotograph, HiChatAlt2, HiArrowLeft, HiShieldCheck } from 'react-icons/hi';
 import toast from 'react-hot-toast';
 import InterviewScreenshotsModal from '../../components/InterviewScreenshotsModal';
 import InterviewFeedbackModal from '../../components/InterviewFeedbackModal';
@@ -10,6 +11,7 @@ import InterviewHistoryFilter from '../../components/InterviewHistoryFilter';
 export default function CandidateView() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user: currentUser } = useAuth();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isReporting, setIsReporting] = useState(false);
@@ -39,7 +41,8 @@ export default function CandidateView() {
   const startConversation = async () => {
     try {
       const { data: convData } = await api.post('/messages/conversation', { recipientId: id });
-      navigate('/recruiter/messages', { state: { conversationId: convData.conversation._id } });
+      const targetPath = currentUser?.role === 'ADMIN' ? '/admin/messages' : '/recruiter/messages';
+      navigate(targetPath, { state: { conversationId: convData.conversation._id } });
     } catch { toast.error('Failed to open message'); }
   };
 
@@ -116,6 +119,20 @@ export default function CandidateView() {
 
   return (
     <div className="max-w-4xl mx-auto animate-fade-in space-y-6">
+      <div className="flex items-center justify-between">
+        <button
+          onClick={() => navigate(-1)}
+          className="btn-secondary text-xs px-3 py-1.5 flex items-center gap-1 text-gray-400 hover:text-white"
+        >
+          <HiArrowLeft /> Back
+        </button>
+        {currentUser?.role === 'ADMIN' && (
+          <span className="badge bg-purple-900/60 text-purple-300 border border-purple-500/30 flex items-center gap-1 text-xs">
+            <HiShieldCheck className="w-3.5 h-3.5" /> Admin Profile Inspection
+          </span>
+        )}
+      </div>
+
       <div className="card">
         <div className="flex items-start justify-between flex-wrap gap-4">
           <div className="flex items-center gap-4">
@@ -125,15 +142,27 @@ export default function CandidateView() {
             <div>
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{profile?.user?.name}</h1>
               <p className="text-gray-500 dark:text-gray-400 text-sm">{profile?.user?.email}</p>
-              <div className="flex gap-2 mt-2 flex-wrap">
+              <div className="flex gap-2 mt-2 flex-wrap items-center">
                 <span className="badge-primary">Level {profile?.currentLevel || 0}</span>
                 <span className={`badge ${profile?.availability === 'Available' ? 'badge-success' : 'badge-gray'}`}>{profile?.availability || 'Available'}</span>
                 <span className="badge bg-amber-100 text-amber-800 border border-amber-300 dark:bg-yellow-900 dark:text-yellow-300 dark:border-yellow-700/50">Score: {profile?.overallScore || 0}%</span>
+                {profile?.user?.role && profile?.user?.role !== 'CANDIDATE' && (
+                  <span className="badge bg-blue-900/50 text-blue-300 border border-blue-500/30 text-xs">
+                    {profile.user.role}
+                  </span>
+                )}
+                {profile?.user?.isBanned && (
+                  <span className="badge bg-danger-900/50 text-danger-400 border border-danger-500/30 text-xs">
+                    Banned
+                  </span>
+                )}
               </div>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <button onClick={() => setIsReporting(true)} className="btn-secondary text-danger-500 dark:text-danger-400 hover:text-danger-600 dark:hover:text-danger-300 hover:border-danger-500/50 flex items-center gap-2"><HiFlag /> Report</button>
+            {currentUser?.role !== 'ADMIN' && (
+              <button onClick={() => setIsReporting(true)} className="btn-secondary text-danger-500 dark:text-danger-400 hover:text-danger-600 dark:hover:text-danger-300 hover:border-danger-500/50 flex items-center gap-2"><HiFlag /> Report</button>
+            )}
             <button onClick={startConversation} className="btn-primary flex items-center gap-2"><HiMail /> Message</button>
           </div>
         </div>

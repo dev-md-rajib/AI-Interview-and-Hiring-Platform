@@ -280,24 +280,44 @@ const searchCandidates = async (req, res, next) => {
           let candidateSets = [];
           
           for (const req of reqs) {
-            const query = { status: 'completed', passed: true };
-            if (req.stack) query.stack = new RegExp(req.stack, 'i');
-            if (req.level) query.level = parseInt(req.level);
-            if (req.minScore) {
-              query.totalScore = { $gte: parseInt(req.minScore) };
+            const stackRegex = req.stack ? new RegExp(`^${req.stack.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') : null;
+            const minLevel = req.level ? parseInt(req.level) : 1;
+            const minScore = req.minScore ? parseInt(req.minScore) : 0;
+
+            const query = {
+              status: 'completed',
+              passed: true,
+              level: { $gte: minLevel },
+              totalScore: { $gte: minScore },
+            };
+            if (stackRegex) {
+              query.$or = [{ stack: stackRegex }, { sector: stackRegex }];
             }
 
-            const zoomQuery = { status: 'completed', passed: true, resultReleasedAt: { $ne: null } };
-            if (req.stack) zoomQuery.stack = new RegExp(req.stack, 'i');
-            if (req.level) zoomQuery.level = parseInt(req.level);
-            if (req.minScore) {
-              zoomQuery.interviewerScore = { $gte: parseInt(req.minScore) };
+            const zoomQuery = {
+              status: 'completed',
+              passed: true,
+              level: { $gte: minLevel },
+              interviewerScore: { $gte: minScore },
+            };
+            if (stackRegex) {
+              zoomQuery.$or = [{ stack: stackRegex }, { sector: stackRegex }];
             }
             
-            // Find candidates matching this specific requirement in Standard, AI, and Team interviews
-            const stdMatches = await Interview.distinct('candidate', query);
-            const aiMatches = await AiAgentInterview.distinct('candidate', query);
-            const zoomMatches = await TeamInterview.distinct('candidate', zoomQuery);
+            // Find candidates matching this specific requirement in Standard, AI, and Team interviews based on method
+            let stdMatches = [];
+            let aiMatches = [];
+            let zoomMatches = [];
+
+            if (req.method !== 'AI' && req.method !== 'Human') {
+              stdMatches = await Interview.distinct('candidate', query);
+            }
+            if (req.method !== 'Standard' && req.method !== 'Human') {
+              aiMatches = await AiAgentInterview.distinct('candidate', query);
+            }
+            if (req.method !== 'Standard' && req.method !== 'AI') {
+              zoomMatches = await TeamInterview.distinct('candidate', zoomQuery);
+            }
             
             // Combine and unique the candidates who satisfied THIS requirement
             const matchesForThisReq = [...new Set([
@@ -418,9 +438,13 @@ const searchCandidates = async (req, res, next) => {
 const getReports = async (req, res, next) => {
   try {
     const reports = await Report.find({ status: 'Pending' })
-      .populate('reporter', 'name email role')
-      .populate('reportedUser', 'name email role')
-      .populate('reportedJob', 'title status')
+      .populate('reporter', 'name email role profileImage')
+      .populate('reportedUser', 'name email role profileImage isBanned createdAt')
+      .populate({
+        path: 'reportedJob',
+        select: 'title description sector status location isRemote salaryMin salaryMax requirements experienceRequired createdAt recruiter',
+        populate: { path: 'recruiter', select: 'name email profileImage role isBanned' },
+      })
       .sort({ createdAt: -1 });
     res.status(200).json({ success: true, count: reports.length, reports });
   } catch (err) {
@@ -482,7 +506,7 @@ const resolveReport = async (req, res, next) => {
 const getAppeals = async (req, res, next) => {
   try {
     const appeals = await User.find({ appealStatus: 'Pending' })
-      .select('name email role banReason appealText appealStatus createdAt')
+      .select('name email role profileImage isBanned banReason appealText appealStatus createdAt updatedAt')
       .sort({ updatedAt: -1 });
     res.status(200).json({ success: true, count: appeals.length, appeals });
   } catch (err) {
@@ -533,7 +557,7 @@ const resolveAppeal = async (req, res, next) => {
 const getBannedUsers = async (req, res, next) => {
   try {
     const users = await User.find({ isBanned: true })
-      .select('name email role banReason appealStatus createdAt updatedAt')
+      .select('name email role profileImage banReason appealStatus createdAt updatedAt')
       .sort({ updatedAt: -1 });
     res.status(200).json({ success: true, count: users.length, users });
   } catch (err) {

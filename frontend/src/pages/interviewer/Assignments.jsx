@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import {
   HiCalendar, HiClock, HiExternalLink, HiX, HiCheck, HiStar,
-  HiChevronDown, HiChevronUp, HiBadgeCheck, HiPlay,
+  HiChevronDown, HiChevronUp, HiBadgeCheck, HiPlay, HiShieldCheck,
 } from 'react-icons/hi';
 import api from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 
 const LEVEL_LABELS = { 1: 'Junior', 2: 'Mid-level', 3: 'Senior' };
 const STATUS_CONFIG = {
@@ -160,7 +161,9 @@ function FeedbackModal({ interview, onClose, onSubmit }) {
 }
 
 export default function InterviewerAssignments() {
+  const { user } = useAuth();
   const [interviews, setInterviews] = useState([]);
+  const [isVerified, setIsVerified] = useState(user?.isVerified ?? false);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
   const [expandedId, setExpandedId] = useState(null);
@@ -171,6 +174,9 @@ export default function InterviewerAssignments() {
     try {
       const { data } = await api.get('/team-interviews/interviewer/assigned');
       setInterviews(data.interviews || []);
+      if (data.isVerified !== undefined) {
+        setIsVerified(data.isVerified);
+      }
     } catch {
       toast.error('Failed to load assignments');
     } finally {
@@ -243,13 +249,37 @@ export default function InterviewerAssignments() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto animate-fade-in">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-          <HiCalendar className="text-cyan-400" /> My Assignments
-        </h1>
-        <p className="text-gray-400 mt-1 text-sm">Manage all your assigned interviews.</p>
+    <div className="max-w-4xl mx-auto animate-fade-in space-y-6">
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+            <HiCalendar className="text-cyan-400" /> My Assignments
+          </h1>
+          <p className="text-gray-400 mt-1 text-sm">Manage all your assigned live interviews.</p>
+        </div>
+
+        {isVerified ? (
+          <span className="badge bg-emerald-900/40 text-emerald-300 border border-emerald-500/30 text-xs px-3 py-1 flex items-center gap-1.5 font-bold">
+            <HiShieldCheck className="w-4 h-4 text-emerald-400" /> Verified by Admin
+          </span>
+        ) : (
+          <span className="badge bg-amber-900/40 text-amber-300 border border-amber-500/30 text-xs px-3 py-1 flex items-center gap-1.5 font-bold">
+            ⏳ Pending Admin Verification
+          </span>
+        )}
       </div>
+
+      {!isVerified && (
+        <div className="p-4 bg-amber-950/40 border border-amber-500/40 rounded-xl flex items-start gap-3">
+          <span className="text-2xl flex-shrink-0">⚠️</span>
+          <div className="text-xs">
+            <p className="text-amber-300 font-bold text-sm">Admin Verification Required</p>
+            <p className="text-amber-200/80 mt-1 leading-relaxed">
+              Your interviewer account is currently pending verification from the platform administration. To ensure high interview standards, only verified interviewers are assigned candidate interviews. Once an Admin verifies your account, you will receive assignment notifications here.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Filter tabs */}
       <div className="flex gap-2 mb-5 flex-wrap">

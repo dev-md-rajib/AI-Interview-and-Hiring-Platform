@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
-import { HiLocationMarker, HiBriefcase, HiCurrencyDollar, HiSearch, HiFlag, HiX, HiFilter } from 'react-icons/hi';
+import { HiLocationMarker, HiBriefcase, HiCurrencyDollar, HiSearch, HiFlag, HiX, HiFilter, HiShieldCheck } from 'react-icons/hi';
+import { HiBuildingOffice2 } from 'react-icons/hi2';
 import { SECTORS, getSectorById, isSector } from '../../constants/sectors';
 
 export default function JobBoard() {
@@ -116,7 +118,24 @@ export default function JobBoard() {
                       </span>
                     )}
                     <h2 className="text-gray-900 dark:text-white font-bold text-lg group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">{job.title}</h2>
-                    <p className="text-gray-500 dark:text-gray-400 text-sm">{job.recruiter?.name}</p>
+                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                      <Link
+                        to={`/candidate/recruiters/${job.recruiter?._id}`}
+                        className="text-primary-600 dark:text-primary-400 hover:underline text-sm font-semibold flex items-center gap-1.5"
+                        title="View Recruiter / Company Profile"
+                      >
+                        <HiBuildingOffice2 className="w-4 h-4 text-primary-400 flex-shrink-0" />
+                        <span>{job.recruiter?.recruiterProfile?.company || job.recruiter?.name}</span>
+                        {job.recruiter?.recruiterProfile?.position && (
+                          <span className="text-gray-400 font-normal text-xs">• {job.recruiter.recruiterProfile.position}</span>
+                        )}
+                      </Link>
+                      {job.recruiter?.isVerified && (
+                        <span className="text-accent-400 text-xs font-semibold flex items-center gap-0.5" title="Verified Recruiter">
+                          <HiShieldCheck className="w-3.5 h-3.5" /> Verified
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <button
                     onClick={(e) => { e.stopPropagation(); setReportJobId(job._id); }}
@@ -140,9 +159,9 @@ export default function JobBoard() {
                             {reqSector?.Icon && <reqSector.Icon className="w-3.5 h-3.5" />}
                             <span className="text-gray-900 dark:text-white text-sm font-semibold">
                               {req.stack}
-                              {req.method && req.method !== 'Both' && (
+                              {req.method && req.method !== 'Both' && req.method !== 'Any' && (
                                 <span className="ml-1 text-[10px] text-gray-500 dark:text-gray-400 font-normal">
-                                  ({req.method === 'Standard' ? 'Human' : 'AI'})
+                                  ({req.method === 'Standard' ? 'Standard' : req.method === 'AI' ? 'AI' : req.method === 'Human' ? 'Human' : req.method})
                                 </span>
                               )}
                             </span>

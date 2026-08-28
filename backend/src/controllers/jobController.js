@@ -3,6 +3,7 @@ const Application = require('../models/Application');
 const CandidateProfile = require('../models/CandidateProfile');
 const Interview = require('../models/Interview');
 const AiAgentInterview = require('../models/AiAgentInterview');
+const TeamInterview = require('../models/TeamInterview');
 
 // @desc    Create a job
 // @route   POST /api/jobs
@@ -35,7 +36,7 @@ const getJobs = async (req, res, next) => {
 
     const skip = (page - 1) * limit;
     const [jobs, total] = await Promise.all([
-      Job.find(query).populate('recruiter', 'name profileImage').sort({ createdAt: -1 }).skip(skip).limit(parseInt(limit)),
+      Job.find(query).populate('recruiter', 'name profileImage email recruiterProfile isVerified').sort({ createdAt: -1 }).skip(skip).limit(parseInt(limit)),
       Job.countDocuments(query),
     ]);
 
@@ -50,7 +51,7 @@ const getJobs = async (req, res, next) => {
 // @access  Private
 const getJob = async (req, res, next) => {
   try {
-    const job = await Job.findById(req.params.id).populate('recruiter', 'name profileImage email');
+    const job = await Job.findById(req.params.id).populate('recruiter', 'name profileImage email recruiterProfile isVerified');
     if (!job) return res.status(404).json({ success: false, message: 'Job not found' });
     res.status(200).json({ success: true, job });
   } catch (err) {
@@ -120,32 +121,63 @@ const applyToJob = async (req, res, next) => {
 
     if (job.requirements && job.requirements.length > 0) {
       for (const reqObj of job.requirements) {
+        const stackRegex = new RegExp(`^${reqObj.stack.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
+        const minLevel = Number(reqObj.level) || 1;
+        const minScore = Number(reqObj.minScore) || 0;
+
         const query = {
           candidate: req.user._id,
-          stack: new RegExp(reqObj.stack, 'i'),
-          level: { $gte: reqObj.level },
+          $or: [{ stack: stackRegex }, { sector: stackRegex }],
+          level: { $gte: minLevel },
           status: 'completed',
           passed: true,
-          totalScore: { $gte: reqObj.minScore }
+          totalScore: { $gte: minScore },
         };
 
         let stdBest = null;
         let aiBest = null;
+        let humanBest = null;
 
-        if (reqObj.method !== 'AI') {
+        if (reqObj.method !== 'AI' && reqObj.method !== 'Human') {
           stdBest = await Interview.findOne(query).sort({ totalScore: -1 });
         }
-        if (reqObj.method !== 'Standard') {
+        if (reqObj.method !== 'Standard' && reqObj.method !== 'Human') {
           aiBest = await AiAgentInterview.findOne(query).sort({ totalScore: -1 });
         }
+        if (reqObj.method !== 'Standard' && reqObj.method !== 'AI') {
+          const humanQuery = {
+            candidate: req.user._id,
+            $or: [{ stack: stackRegex }, { sector: stackRegex }],
+            level: { $gte: minLevel },
+            status: 'completed',
+            passed: true,
+            interviewerScore: { $gte: minScore },
+          };
+          const foundHuman = await TeamInterview.findOne(humanQuery).sort({ interviewerScore: -1 });
+          if (foundHuman) {
+            humanBest = {
+              ...foundHuman.toObject(),
+              totalScore: foundHuman.interviewerScore,
+            };
+          }
+        }
 
+        const validCandidates = [stdBest, aiBest, humanBest].filter(Boolean);
         let bestInterview = null;
-        if (stdBest && aiBest) bestInterview = stdBest.totalScore > aiBest.totalScore ? stdBest : aiBest;
-        else if (stdBest) bestInterview = stdBest;
-        else if (aiBest) bestInterview = aiBest;
+        if (validCandidates.length > 0) {
+          validCandidates.sort((a, b) => b.totalScore - a.totalScore);
+          bestInterview = validCandidates[0];
+        }
 
         if (!bestInterview) {
-          const methodText = reqObj.method === 'Standard' ? ' (Human Interview)' : reqObj.method === 'AI' ? ' (AI Agent)' : '';
+          const methodText =
+            reqObj.method === 'Standard'
+              ? ' (Standard Interview)'
+              : reqObj.method === 'AI'
+              ? ' (AI Agent)'
+              : reqObj.method === 'Human'
+              ? ' (Human Interview)'
+              : '';
           missingRequirements.push(`${reqObj.stack}${methodText} (Level ${reqObj.level}+, ${reqObj.minScore}%+)`);
         } else {
           requirementScores.push(bestInterview.totalScore);
@@ -292,15 +324,28 @@ const getMatchedJobsCount = async (req, res, next) => {
       candidate: req.user._id,
       status: 'completed',
       passed: true
-    }).select('stack level totalScore');
+    }).select('stack sector level totalScore');
 
     const passedAi = await AiAgentInterview.find({
       candidate: req.user._id,
       status: 'completed',
       passed: true
-    }).select('stack level totalScore');
+    }).select('stack sector level totalScore');
 
-    const allPassed = [...passedStd, ...passedAi];
+    const passedHumanRaw = await TeamInterview.find({
+      candidate: req.user._id,
+      status: 'completed',
+      passed: true
+    }).select('stack sector level interviewerScore');
+
+    const passedHuman = passedHumanRaw.map(h => ({
+      stack: h.stack,
+      sector: h.sector,
+      level: h.level,
+      totalScore: h.interviewerScore
+    }));
+
+    const allPassed = [...passedStd, ...passedAi, ...passedHuman];
 
     // 4. Check eligibility for each open job
     let matchedCount = 0;
@@ -318,13 +363,18 @@ const getMatchedJobsCount = async (req, res, next) => {
         let searchPool = allPassed;
         if (reqObj.method === 'Standard') searchPool = passedStd;
         else if (reqObj.method === 'AI') searchPool = passedAi;
+        else if (reqObj.method === 'Human') searchPool = passedHuman;
+
+        const reqStackLower = (reqObj.stack || '').toLowerCase();
+        const minLevel = Number(reqObj.level) || 1;
+        const minScore = Number(reqObj.minScore) || 0;
 
         // Find if candidate has ANY passed interview meeting this specific requirement in the allowed pool
-        const matchedInterview = searchPool.find(i => 
-          i.stack.toLowerCase() === reqObj.stack.toLowerCase() &&
-          i.level >= reqObj.level &&
-          i.totalScore >= reqObj.minScore
-        );
+        const matchedInterview = searchPool.find(i => {
+          const stackMatch = (i.stack && i.stack.toLowerCase() === reqStackLower) ||
+                             (i.sector && i.sector.toLowerCase() === reqStackLower);
+          return stackMatch && i.level >= minLevel && (i.totalScore || 0) >= minScore;
+        });
         
         if (!matchedInterview) {
           meetsAll = false;

@@ -11,7 +11,7 @@ const jobSchema = new mongoose.Schema(
         stack: { type: String, required: true },
         level: { type: Number, enum: [1, 2, 3], required: true },
         minScore: { type: Number, required: true, default: 70 },
-        method: { type: String, enum: ['Standard', 'AI', 'Both'], default: 'Both' },
+        method: { type: String, enum: ['Standard', 'AI', 'Human', 'Both', 'Any'], default: 'Both' },
       },
     ],
     experienceRequired: { type: Number, default: 0 },

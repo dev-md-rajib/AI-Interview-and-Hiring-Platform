@@ -46,6 +46,8 @@ async function findEarliestAvailableInterviewer(stack, excludeIds = [], intervie
 
   const interviewers = await User.find({
     role: 'INTERVIEWER',
+    isVerified: true,
+    isBanned: false,
     'interviewerProfile.isActive': true,
     ...expertiseQuery,
     _id: { $nin: excludeIds },
@@ -410,10 +412,20 @@ const cancelInterview = async (req, res, next) => {
 // ─────────────────────────────────────────────
 const getAssignedInterviews = async (req, res, next) => {
   try {
+    const user = await User.findById(req.user._id);
+    if (!user?.isVerified) {
+      return res.json({
+        success: true,
+        interviews: [],
+        isVerified: false,
+        message: 'Your interviewer account is pending admin verification. You will be assigned interviews once verified by an Admin.',
+      });
+    }
+
     const interviews = await TeamInterview.find({ interviewer: req.user._id })
       .populate('candidate', 'name email profileImage')
       .sort({ scheduledAt: 1 });
-    res.json({ success: true, interviews });
+    res.json({ success: true, interviews, isVerified: true });
   } catch (err) {
     next(err);
   }
@@ -426,6 +438,10 @@ const getAssignedInterviews = async (req, res, next) => {
 // ─────────────────────────────────────────────
 const declineInterview = async (req, res, next) => {
   try {
+    const user = await User.findById(req.user._id);
+    if (!user?.isVerified) {
+      return res.status(403).json({ success: false, message: 'You must be verified by an Admin to manage assignments.' });
+    }
     const interview = await TeamInterview.findOne({
       _id: req.params.id,
       interviewer: req.user._id,
@@ -534,6 +550,11 @@ const declineInterview = async (req, res, next) => {
 // ─────────────────────────────────────────────
 const submitResult = async (req, res, next) => {
   try {
+    const user = await User.findById(req.user._id);
+    if (!user?.isVerified) {
+      return res.status(403).json({ success: false, message: 'You must be verified by an Admin to submit interview results.' });
+    }
+
     const { score, feedback, strengths, weaknesses } = req.body;
 
     if (score == null || score < 0 || score > 100) {

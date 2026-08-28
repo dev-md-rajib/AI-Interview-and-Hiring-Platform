@@ -52,7 +52,7 @@ exports.getContests = async (req, res) => {
       query.status = { $in: ['active', 'ended', 'published'] };
     }
     const contests = await Contest.find(query)
-      .populate('recruiter', 'name email')
+      .populate('recruiter', 'name email profileImage recruiterProfile isVerified')
       .sort('-scheduledAt')
       .select('-codingRound.questions.testCases.expectedOutput -mcqRound.questions.correctAnswer');
     res.json({ success: true, contests });
@@ -64,7 +64,7 @@ exports.getContests = async (req, res) => {
 // ─── GET single contest ────────────────────────────────────────────────────────
 exports.getContest = async (req, res) => {
   try {
-    const contest = await Contest.findById(req.params.id).populate('recruiter', 'name email');
+    const contest = await Contest.findById(req.params.id).populate('recruiter', 'name email profileImage recruiterProfile isVerified');
     if (!contest) return res.status(404).json({ success: false, message: 'Contest not found' });
 
     // Candidates can't see correct answers or hidden test case outputs

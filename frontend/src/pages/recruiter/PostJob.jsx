@@ -168,9 +168,10 @@ export default function PostJob() {
                   <div className="md:col-span-2">
                     <label className="label text-xs">Method</label>
                     <select className="input text-sm px-2" value={req.method || 'Both'} onChange={(e) => updateReq(req.id, 'method', e.target.value)}>
-                      <option value="Both">Both</option>
+                      <option value="Both">Both (Any)</option>
                       <option value="Standard">Standard</option>
                       <option value="AI">AI Agent</option>
+                      <option value="Human">Human Interview</option>
                     </select>
                   </div>
                   <div className="md:col-span-2">

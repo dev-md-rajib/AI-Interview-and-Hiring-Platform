@@ -11,6 +11,7 @@ import {
   HiSearch, HiDocumentText, HiQuestionMarkCircle, HiStar, HiExclamation, HiCode,
   HiCalendar, HiLightBulb, HiDownload, HiExternalLink, HiDesktopComputer
 } from 'react-icons/hi';
+import { HiBuildingOffice2 } from 'react-icons/hi2';
 
 const getNavItems = (role, basePath) => {
   if (role === 'CANDIDATE') return [
@@ -26,6 +27,7 @@ const getNavItems = (role, basePath) => {
   ];
   if (role === 'RECRUITER') return [
     { to: `${basePath}`, icon: HiHome, label: 'Dashboard', exact: true },
+    { to: `${basePath}/profile`, icon: HiBuildingOffice2, label: 'Company Profile' },
     { to: `${basePath}/jobs`, icon: HiBriefcase, label: 'My Jobs' },
     { to: `${basePath}/jobs/new`, icon: HiDocumentText, label: 'Post a Job' },
     { to: `${basePath}/candidates`, icon: HiSearch, label: 'Find Candidates' },
@@ -44,6 +46,7 @@ const getNavItems = (role, basePath) => {
     { to: `${basePath}/users`, icon: HiUser, label: 'Users' },
     { to: `${basePath}/candidates`, icon: HiSearch, label: 'Candidates' },
     { to: `${basePath}/reports`, icon: HiExclamation, label: 'Reports & Appeals' },
+    { to: `${basePath}/messages`, icon: HiChatAlt2, label: 'Messages' },
   ];
   return [];
 };

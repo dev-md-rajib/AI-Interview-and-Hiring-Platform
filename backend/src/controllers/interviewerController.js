@@ -70,19 +70,22 @@ const updateProfile = async (req, res, next) => {
 const getDashboard = async (req, res, next) => {
   try {
     const interviewerId = req.user._id;
+    const user = await User.findById(interviewerId).select('name email isVerified interviewerProfile');
 
     const [total, pending, completed, upcoming] = await Promise.all([
       TeamInterview.countDocuments({ interviewer: interviewerId }),
-      TeamInterview.countDocuments({ interviewer: interviewerId, status: 'scheduled' }),
+      TeamInterview.countDocuments({
+        interviewer: interviewerId,
+        status: { $in: ['scheduled', 'active'] },
+      }),
       TeamInterview.countDocuments({ interviewer: interviewerId, status: 'completed' }),
       TeamInterview.find({
         interviewer: interviewerId,
-        status: 'scheduled',
-        scheduledAt: { $gte: new Date() },
+        status: { $in: ['scheduled', 'active'] },
       })
-        .populate('candidate', 'name profileImage')
-        .sort({ scheduledAt: 1 })
-        .limit(5),
+        .populate('candidate', 'name email profileImage')
+        .sort({ scheduledAt: 1, createdAt: -1 })
+        .limit(10),
     ]);
 
     const completedInterviews = await TeamInterview.find({
@@ -101,6 +104,7 @@ const getDashboard = async (req, res, next) => {
 
     res.json({
       success: true,
+      isVerified: user?.isVerified ?? false,
       stats: { total, pending, completed, avgScore, passRate },
       upcoming,
     });

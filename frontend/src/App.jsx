@@ -30,6 +30,7 @@ const CandidateMultiplayerRoom = lazy(() => import('./pages/candidate/CandidateM
 
 // Recruiter pages (lazy loaded)
 const RecruiterDashboard = lazy(() => import('./pages/recruiter/Dashboard'));
+const RecruiterProfile = lazy(() => import('./pages/recruiter/Profile'));
 const PostJob = lazy(() => import('./pages/recruiter/PostJob'));
 const MyJobs = lazy(() => import('./pages/recruiter/MyJobs'));
 const CandidateSearch = lazy(() => import('./pages/recruiter/CandidateSearch'));
@@ -48,6 +49,7 @@ const AdminReports = lazy(() => import('./pages/admin/Reports'));
 
 // Shared pages
 const Messages = lazy(() => import('./pages/shared/Messages'));
+const RecruiterPublicProfile = lazy(() => import('./pages/shared/RecruiterPublicProfile'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 // Interviewer pages
@@ -107,6 +109,7 @@ export default function App() {
                 <Route index element={<CandidateDashboard />} />
                 <Route path="profile" element={<CandidateProfile />} />
                 <Route path="profile/edit" element={<EditProfile />} />
+                <Route path="recruiters/:id" element={<RecruiterPublicProfile />} />
                 <Route path="interview" element={<InterviewStart />} />
                 <Route path="interview/ai-agent/:id" element={<AIAgentInterviewRoom />} />
                 <Route path="interview/team" element={<InterviewTeamRoom />} />
@@ -127,6 +130,8 @@ export default function App() {
               {/* Recruiter routes */}
               <Route path="/recruiter" element={<ProtectedRoute allowedRoles={['RECRUITER']}><DashboardLayout /></ProtectedRoute>}>
                 <Route index element={<RecruiterDashboard />} />
+                <Route path="profile" element={<RecruiterProfile />} />
+                <Route path="recruiters/:id" element={<RecruiterPublicProfile />} />
                 <Route path="jobs/new" element={<PostJob />} />
                 <Route path="jobs" element={<MyJobs />} />
                 <Route path="jobs/:id/edit" element={<PostJob />} />
@@ -146,8 +151,12 @@ export default function App() {
                 <Route path="levels" element={<LevelManager />} />
                 <Route path="questions" element={<QuestionBank />} />
                 <Route path="users" element={<UserManager />} />
+                <Route path="users/:id" element={<CandidateView />} />
                 <Route path="candidates" element={<CandidateSearch />} />
+                <Route path="candidates/:id" element={<CandidateView />} />
+                <Route path="recruiters/:id" element={<RecruiterPublicProfile />} />
                 <Route path="reports" element={<AdminReports />} />
+                <Route path="messages" element={<Messages />} />
               </Route>
 
               {/* Interviewer routes */}

@@ -105,7 +105,7 @@ const getMessages = async (req, res, next) => {
     }
 
     const messages = await Message.find({ conversation: req.params.conversationId })
-      .populate('sender', 'name profileImage')
+      .populate('sender', 'name profileImage role')
       .sort({ createdAt: 1 });
 
     // Mark as read
@@ -148,7 +148,7 @@ const sendMessage = async (req, res, next) => {
     conversation.lastMessageAt = new Date();
     await conversation.save();
 
-    const populated = await message.populate('sender', 'name profileImage');
+    const populated = await message.populate('sender', 'name profileImage role');
     res.status(201).json({ success: true, message: populated });
   } catch (err) {
     next(err);

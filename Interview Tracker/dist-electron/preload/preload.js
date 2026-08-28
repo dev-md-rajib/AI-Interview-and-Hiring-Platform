@@ -1,1 +1,30 @@
-"use strict";const e=require("electron");e.contextBridge.exposeInMainWorld("electronAPI",{login:n=>e.ipcRenderer.invoke("auth:login",n),logout:()=>e.ipcRenderer.invoke("auth:logout"),getStoredAuth:()=>e.ipcRenderer.invoke("auth:getStoredAuth"),getNextInterview:()=>e.ipcRenderer.invoke("candidate:getNextInterview"),sendConsent:n=>e.ipcRenderer.invoke("tracker:consent",n),sendReady:n=>e.ipcRenderer.invoke("tracker:ready",n),getOpenWindows:()=>e.ipcRenderer.invoke("tracker:getOpenWindows"),startLockdown:(n,t,r)=>e.ipcRenderer.invoke("tracker:startLockdown",n,t,r),stopLockdown:()=>e.ipcRenderer.invoke("tracker:stopLockdown"),setWindowHeight:n=>e.ipcRenderer.invoke("tracker:setWindowHeight",n),minimizeWindow:()=>e.ipcRenderer.invoke("window:minimize"),closeWindow:()=>e.ipcRenderer.invoke("window:close"),endInterview:n=>e.ipcRenderer.invoke("tracker:endInterview",n),onStatusChange:n=>{e.ipcRenderer.on("tracker:status-change",(t,r)=>n(r))},openExternal:n=>e.shell.openExternal(n)});e.contextBridge.exposeInMainWorld("trackerAPI",{listWindows:()=>e.ipcRenderer.invoke("tracker:list-windows"),debugWindows:()=>e.ipcRenderer.invoke("tracker:debug-windows"),startActive:n=>e.ipcRenderer.invoke("tracker:start-active",n),stopActive:()=>e.ipcRenderer.invoke("tracker:stop-active"),onTrackerEvent:n=>{e.ipcRenderer.on("tracker:event",(t,r)=>n(r))}});
+"use strict";
+const electron = require("electron");
+electron.contextBridge.exposeInMainWorld("electronAPI", {
+  login: (credentials) => electron.ipcRenderer.invoke("auth:login", credentials),
+  logout: () => electron.ipcRenderer.invoke("auth:logout"),
+  getStoredAuth: () => electron.ipcRenderer.invoke("auth:getStoredAuth"),
+  getNextInterview: () => electron.ipcRenderer.invoke("candidate:getNextInterview"),
+  sendConsent: (payload) => electron.ipcRenderer.invoke("tracker:consent", payload),
+  sendReady: (payload) => electron.ipcRenderer.invoke("tracker:ready", payload),
+  getOpenWindows: () => electron.ipcRenderer.invoke("tracker:getOpenWindows"),
+  startLockdown: (interviewId, allowedPids, allowedTitle) => electron.ipcRenderer.invoke("tracker:startLockdown", interviewId, allowedPids, allowedTitle),
+  stopLockdown: () => electron.ipcRenderer.invoke("tracker:stopLockdown"),
+  setWindowHeight: (height) => electron.ipcRenderer.invoke("tracker:setWindowHeight", height),
+  minimizeWindow: () => electron.ipcRenderer.invoke("window:minimize"),
+  closeWindow: () => electron.ipcRenderer.invoke("window:close"),
+  endInterview: (payload) => electron.ipcRenderer.invoke("tracker:endInterview", payload),
+  onStatusChange: (callback) => {
+    electron.ipcRenderer.on("tracker:status-change", (_event, status) => callback(status));
+  },
+  openExternal: (url) => electron.shell.openExternal(url)
+});
+electron.contextBridge.exposeInMainWorld("trackerAPI", {
+  listWindows: () => electron.ipcRenderer.invoke("tracker:list-windows"),
+  debugWindows: () => electron.ipcRenderer.invoke("tracker:debug-windows"),
+  startActive: (interviewUrl) => electron.ipcRenderer.invoke("tracker:start-active", interviewUrl),
+  stopActive: () => electron.ipcRenderer.invoke("tracker:stop-active"),
+  onTrackerEvent: (callback) => {
+    electron.ipcRenderer.on("tracker:event", (_e, data) => callback(data));
+  }
+});

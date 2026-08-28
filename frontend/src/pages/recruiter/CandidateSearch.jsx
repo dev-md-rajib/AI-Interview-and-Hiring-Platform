@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 import { HiSearch, HiFilter, HiPlus, HiTrash } from 'react-icons/hi';
 import { SECTORS, TECH_STACKS, getSectorById, isSector } from '../../constants/sectors';
 
 export default function CandidateSearch() {
+  const { user } = useAuth();
   const [candidates, setCandidates] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
-  const [requirements, setRequirements] = useState([{ id: Date.now(), stack: '', level: '1', minScore: '' }]);
+  const [requirements, setRequirements] = useState([{ id: Date.now(), stack: '', level: '1', minScore: '', method: 'Both' }]);
   const [filters, setFilters] = useState({ minExp: '', availability: '' });
 
-  const addReq = () => setRequirements([...requirements, { id: Date.now(), stack: '', level: '1', minScore: '' }]);
+  const addReq = () => setRequirements([...requirements, { id: Date.now(), stack: '', level: '1', minScore: '', method: 'Both' }]);
   const removeReq = (id) => setRequirements(requirements.filter(r => r.id !== id));
   const updateReq = (id, field, value) => setRequirements(requirements.map(r => r.id === id ? { ...r, [field]: value } : r));
 
@@ -20,7 +22,12 @@ export default function CandidateSearch() {
     setSearched(true);
     
     // Filter out empty requirements
-    const validReqs = requirements.filter(r => r.stack).map(({ stack, level, minScore }) => ({ stack, level: Number(level), minScore: minScore ? Number(minScore) : 0 }));
+    const validReqs = requirements.filter(r => r.stack).map(({ stack, level, minScore, method }) => ({
+      stack,
+      level: Number(level),
+      minScore: minScore ? Number(minScore) : 0,
+      method: method || 'Both'
+    }));
     
     const queryObj = { ...Object.fromEntries(Object.entries(filters).filter(([, v]) => v)) };
     if (validReqs.length > 0) queryObj.requirements = JSON.stringify(validReqs);
@@ -46,7 +53,7 @@ export default function CandidateSearch() {
           <div className="space-y-3">
             {requirements.map((req) => (
               <div key={req.id} className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end bg-dark-800/50 p-3 rounded-lg border border-dark-border">
-                <div className="md:col-span-5">
+                <div className="md:col-span-4">
                   <label className="label text-xs">Require Stack / Domain</label>
                   <select className="input text-sm" value={req.stack} onChange={(e) => updateReq(req.id, 'stack', e.target.value)}>
                     <option value="">Select Stack or Domain</option>
@@ -64,7 +71,16 @@ export default function CandidateSearch() {
                     </p>
                   )}
                 </div>
-                <div className="md:col-span-3">
+                <div className="md:col-span-2">
+                  <label className="label text-xs">Method</label>
+                  <select className="input text-sm px-2" value={req.method || 'Both'} onChange={(e) => updateReq(req.id, 'method', e.target.value)}>
+                    <option value="Both">Both (Any)</option>
+                    <option value="Standard">Standard</option>
+                    <option value="AI">AI Agent</option>
+                    <option value="Human">Human Interview</option>
+                  </select>
+                </div>
+                <div className="md:col-span-2">
                   <label className="label text-xs">Min Level</label>
                   <select className="input text-sm" value={req.level} onChange={(e) => updateReq(req.id, 'level', e.target.value)}>
                     <option value="1">Level 1 (Junior)</option>
@@ -113,8 +129,10 @@ export default function CandidateSearch() {
 
       {candidates.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {candidates.map((c) => (
-            <Link key={c._id} to={`/recruiter/candidates/${c.user?._id}`} className="card hover:border-primary-500/40 transition-all block">
+          {candidates.map((c) => {
+            const profileUrl = user?.role === 'ADMIN' ? `/admin/candidates/${c.user?._id}` : `/recruiter/candidates/${c.user?._id}`;
+            return (
+              <Link key={c._id} to={profileUrl} className="card hover:border-primary-500/40 transition-all block">
               <div className="flex items-start gap-3 mb-3">
                 <div className="w-10 h-10 rounded-full bg-primary-700 flex items-center justify-center text-white font-bold flex-shrink-0 overflow-hidden">
                   {c.user?.profileImage ? (
@@ -144,7 +162,8 @@ export default function CandidateSearch() {
               </div>
               <span className={`badge ${c.availability === 'Available' ? 'badge-success' : 'badge-gray'}`}>{c.availability}</span>
             </Link>
-          ))}
+          );
+        })}
         </div>
       )}
     </div>

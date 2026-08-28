@@ -1,7 +1,10 @@
 const CandidateProfile = require('../models/CandidateProfile');
+const User = require('../models/User');
 const Interview = require('../models/Interview');
 const AiAgentInterview = require('../models/AiAgentInterview');
 const TeamInterview = require('../models/TeamInterview');
+const Job = require('../models/Job');
+const Contest = require('../models/Contest');
 
 // @desc    Get my candidate profile
 // @route   GET /api/profile/me
@@ -181,10 +184,25 @@ const deletePortfolioItem = async (req, res, next) => {
 // @access  Private (RECRUITER, ADMIN)
 const getPublicProfile = async (req, res, next) => {
   try {
-    const profile = await CandidateProfile.findOne({ user: req.params.userId })
-      .populate('user', 'name email profileImage createdAt');
+    const targetUser = await User.findById(req.params.userId).select('name email role profileImage isBanned banReason createdAt isVerified');
+    if (!targetUser) return res.status(404).json({ success: false, message: 'User not found' });
 
-    if (!profile) return res.status(404).json({ success: false, message: 'Profile not found' });
+    let profile = await CandidateProfile.findOne({ user: req.params.userId })
+      .populate('user', 'name email profileImage createdAt role isBanned isVerified');
+
+    if (!profile) {
+      profile = {
+        _id: targetUser._id,
+        user: targetUser,
+        bio: `${targetUser.role} Account`,
+        yearsOfExperience: 0,
+        expertise: [],
+        availability: 'Available',
+        portfolio: [],
+        currentLevel: 0,
+        overallScore: 0,
+      };
+    }
 
     const standardHistory = await Interview.find({ candidate: req.params.userId, status: 'completed' })
       .select('level stack totalScore passed completedAt feedback strengths weaknesses')
@@ -275,4 +293,78 @@ const getPublicProfile = async (req, res, next) => {
   }
 };
 
-module.exports = { getMyProfile, updateProfile, updateSkills, addPortfolioItem, deletePortfolioItem, getPublicProfile };
+// @desc    Get recruiter's own profile & activity
+// @route   GET /api/profile/recruiter/me
+// @access  Private (RECRUITER)
+const getMyRecruiterProfile = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+    const jobs = await Job.find({ recruiter: req.user._id }).sort({ createdAt: -1 });
+    const contests = await Contest.find({ recruiter: req.user._id }).sort({ createdAt: -1 });
+
+    res.status(200).json({ success: true, user, jobs, contests });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// @desc    Update recruiter's profile
+// @route   PUT /api/profile/recruiter/me
+// @access  Private (RECRUITER)
+const updateRecruiterProfile = async (req, res, next) => {
+  try {
+    const { name, profileImage, recruiterProfile } = req.body;
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+    if (name) user.name = name;
+    if (profileImage !== undefined) user.profileImage = profileImage;
+    if (recruiterProfile) {
+      user.recruiterProfile = {
+        ...(user.recruiterProfile?.toObject ? user.recruiterProfile.toObject() : (user.recruiterProfile || {})),
+        ...recruiterProfile,
+      };
+    }
+
+    await user.save();
+    res.status(200).json({ success: true, user });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// @desc    Get public recruiter profile (for candidates, recruiters, admins)
+// @route   GET /api/profile/recruiter/:id
+// @access  Private
+const getPublicRecruiterProfile = async (req, res, next) => {
+  try {
+    const recruiter = await User.findById(req.params.id)
+      .select('name email role profileImage isVerified recruiterProfile createdAt');
+    if (!recruiter || recruiter.role !== 'RECRUITER') {
+      return res.status(404).json({ success: false, message: 'Recruiter profile not found' });
+    }
+
+    const jobs = await Job.find({ recruiter: recruiter._id, status: 'Open' }).sort({ createdAt: -1 });
+    const contests = await Contest.find({ recruiter: recruiter._id, status: { $in: ['active', 'ended', 'published'] } })
+      .select('-codingRound.questions.testCases.expectedOutput -mcqRound.questions.correctAnswer')
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({ success: true, recruiter, jobs, contests });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = {
+  getMyProfile,
+  updateProfile,
+  updateSkills,
+  addPortfolioItem,
+  deletePortfolioItem,
+  getPublicProfile,
+  getMyRecruiterProfile,
+  updateRecruiterProfile,
+  getPublicRecruiterProfile,
+};

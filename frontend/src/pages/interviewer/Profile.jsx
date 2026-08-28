@@ -141,6 +141,18 @@ export default function InterviewerProfile() {
         <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">Configure your expertise, Zoom host details, and weekly availability for interviews.</p>
       </div>
 
+      {!user?.isVerified && (
+        <div className="p-4 bg-amber-950/40 border border-amber-500/40 rounded-xl flex items-start gap-3">
+          <span className="text-2xl flex-shrink-0">⏳</span>
+          <div className="text-xs">
+            <p className="text-amber-300 font-bold text-sm">Account Pending Admin Verification</p>
+            <p className="text-amber-200/80 mt-1 leading-relaxed">
+              Your interviewer profile is currently pending verification from the platform administration. You can configure your availability slots and expertise now; you will automatically be matched with candidate interviews once approved by an Admin.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* User Info & Profile Picture Card */}
       <div className="card flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-4">
@@ -165,7 +177,18 @@ export default function InterviewerProfile() {
           <div>
             <h3 className="text-lg font-bold text-gray-900 dark:text-white">{user?.name}</h3>
             <p className="text-sm text-gray-500 dark:text-gray-400">{user?.email}</p>
-            <p className="text-xs text-cyan-600 dark:text-cyan-400 mt-0.5 font-medium">Interviewer Account</p>
+            <div className="flex items-center gap-2 mt-1 flex-wrap">
+              <span className="text-xs text-cyan-600 dark:text-cyan-400 font-medium">Interviewer Account</span>
+              {user?.isVerified ? (
+                <span className="badge bg-emerald-900/40 text-emerald-300 border border-emerald-500/30 text-[10px] flex items-center gap-1 font-bold">
+                  <HiCheck className="w-3 h-3" /> Verified by Admin
+                </span>
+              ) : (
+                <span className="badge bg-amber-900/40 text-amber-300 border border-amber-500/30 text-[10px] flex items-center gap-1 font-bold">
+                  ⏳ Pending Admin Verification
+                </span>
+              )}
+            </div>
           </div>
         </div>
 

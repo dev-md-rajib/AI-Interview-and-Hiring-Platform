@@ -58,8 +58,8 @@ export default function RecruiterDashboard() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-white font-bold">{job.applicationCount || 0} <span className="text-gray-400 text-sm font-normal">apps</span></p>
-                  <Link to={`/recruiter/jobs/${job._id}/applications`} className="text-primary-400 text-sm hover:text-primary-300">View →</Link>
+                  <p className="text-gray-900 dark:text-white font-bold">{job.applicationCount || 0} <span className="text-gray-500 dark:text-gray-400 text-sm font-normal">apps</span></p>
+                  <Link to={`/recruiter/jobs/${job._id}/applications`} className="text-primary-600 dark:text-primary-400 text-sm hover:text-primary-700 dark:hover:text-primary-300 font-medium">View →</Link>
                 </div>
               </div>
             ))}

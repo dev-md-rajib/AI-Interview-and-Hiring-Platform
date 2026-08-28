@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { HiStar, HiClock, HiLockClosed, HiCheckCircle } from 'react-icons/hi';
+import { HiBuildingOffice2 } from 'react-icons/hi2';
 
 const STATUS_LABELS = {
   active: { label: 'Join Now', color: 'badge-success' },
@@ -42,7 +43,19 @@ export default function CandidateContests() {
                 <div className="flex items-start justify-between mb-3">
                   <div>
                     <h3 className="text-white font-bold text-lg">{c.title}</h3>
-                    <p className="text-gray-400 text-sm mt-1">{c.recruiter?.name}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Link
+                        to={`/candidate/recruiters/${c.recruiter?._id}`}
+                        className="text-primary-400 hover:underline text-xs font-semibold flex items-center gap-1"
+                        title="View Recruiter / Company Profile"
+                      >
+                        <HiBuildingOffice2 className="w-3.5 h-3.5" />
+                        <span>{c.recruiter?.recruiterProfile?.company || c.recruiter?.name}</span>
+                        {c.recruiter?.recruiterProfile?.position && (
+                          <span className="text-gray-400 font-normal">({c.recruiter.recruiterProfile.position})</span>
+                        )}
+                      </Link>
+                    </div>
                   </div>
                   <span className={`badge ${statusInfo.color || 'badge-gray'}`}>{statusInfo.label || c.status}</span>
                 </div>

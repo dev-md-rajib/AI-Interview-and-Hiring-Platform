@@ -17,6 +17,17 @@ const interviewerProfileSchema = new mongoose.Schema({
   hostEmail: { type: String, default: '', trim: true, lowercase: true }, // Zoom host email for hosting interviews
 }, { _id: false });
 
+const recruiterProfileSchema = new mongoose.Schema({
+  company: { type: String, default: '', trim: true },
+  position: { type: String, default: '', trim: true },
+  workDetails: { type: String, default: '', trim: true },
+  location: { type: String, default: '', trim: true },
+  companyWebsite: { type: String, default: '', trim: true },
+  companyLogo: { type: String, default: '' },
+  linkedin: { type: String, default: '', trim: true },
+  twitter: { type: String, default: '', trim: true },
+}, { _id: false });
+
 const userSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
@@ -44,6 +55,8 @@ const userSchema = new mongoose.Schema(
     teamInterviewCooldownUntil: { type: Date, default: null },
     // Interviewer-specific profile
     interviewerProfile: { type: interviewerProfileSchema, default: undefined },
+    // Recruiter-specific profile
+    recruiterProfile: { type: recruiterProfileSchema, default: () => ({}) },
   },
   { timestamps: true }
 );
