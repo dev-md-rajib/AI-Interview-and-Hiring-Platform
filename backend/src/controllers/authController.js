@@ -43,12 +43,23 @@ const register = async (req, res, next) => {
 
     // Initialize interviewer profile
     if (userRole === 'INTERVIEWER') {
+      userData.isVerified = false;
       userData.interviewerProfile = {
         expertise: [],
-        availabilitySlots: [],
+        sectors: [],
+        availabilitySlots: [
+          { dayOfWeek: 0, startTime: '09:00', endTime: '22:00' },
+          { dayOfWeek: 1, startTime: '09:00', endTime: '22:00' },
+          { dayOfWeek: 2, startTime: '09:00', endTime: '22:00' },
+          { dayOfWeek: 3, startTime: '09:00', endTime: '22:00' },
+          { dayOfWeek: 4, startTime: '09:00', endTime: '22:00' },
+          { dayOfWeek: 5, startTime: '09:00', endTime: '22:00' },
+          { dayOfWeek: 6, startTime: '09:00', endTime: '22:00' },
+        ],
         isActive: true,
         totalInterviewsConducted: 0,
         bio: '',
+        hostEmail: email,
       };
     }
 

@@ -10,7 +10,7 @@ const PASS_THRESHOLD = 50; // score >= 50 = passed
 const COOLDOWN_DAYS = 0;
 
 // ─────────────────────────────────────────────
-// Helper: find the earliest available interviewer with a 30-min rest gap
+// Helper: find the earliest available interviewer with a rest gap
 // ─────────────────────────────────────────────
 function formatBangladeshDateTime(date) {
   if (!date) return '';
@@ -25,9 +25,43 @@ function formatBangladeshDateTime(date) {
   }) + ' (BST, Bangladesh Time)';
 }
 
+function generateInAppMeetingData(topic, scheduledAt, candidateName) {
+  const randomSuffix = Math.random().toString(36).substring(2, 8).toUpperCase();
+  const meetingId = `INAPP-${Date.now().toString(36).toUpperCase()}-${randomSuffix}`;
+  const password = Math.floor(100000 + Math.random() * 900000).toString();
+  return {
+    meetingId,
+    joinUrl: '/candidate/interview/team',
+    startUrl: '/interviewer/assignments',
+    password,
+    isInAppFallback: true,
+  };
+}
+
+async function safeCreateMeeting({ topic, startTime, durationMinutes = 60, agenda = '', hostEmail = '', candidateName = '' }) {
+  try {
+    if (process.env.ZOOM_CLIENT_ID && process.env.ZOOM_CLIENT_SECRET && process.env.ZOOM_ACCOUNT_ID) {
+      const zoomData = await createMeeting({
+        topic,
+        startTime,
+        durationMinutes,
+        agenda,
+        hostEmail: hostEmail || 'rajibmiah978@gmail.com',
+      });
+      if (zoomData && zoomData.meetingId) {
+        return zoomData;
+      }
+    }
+  } catch (err) {
+    logger.warn(`Zoom meeting creation failed (${err.message}). Falling back to In-App WebRTC live room.`);
+  }
+
+  return generateInAppMeetingData(topic, startTime, candidateName);
+}
+
 async function findEarliestAvailableInterviewer(stack, excludeIds = [], interviewType = null) {
   const stackIsSector = (interviewType === 'business') || isSector(stack);
-  const escapedStack = stack.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const escapedStack = stack ? stack.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') : '';
   const stackRegex = new RegExp(`^${escapedStack}$`, 'i');
 
   const expertiseQuery = stackIsSector
@@ -44,18 +78,40 @@ async function findEarliestAvailableInterviewer(stack, excludeIds = [], intervie
         ],
       };
 
-  const interviewers = await User.find({
+  // Find matching active, verified interviewers (must be verified by admin)
+  let interviewers = await User.find({
     role: 'INTERVIEWER',
     isVerified: true,
     isBanned: false,
-    'interviewerProfile.isActive': true,
+    'interviewerProfile.isActive': { $ne: false },
     ...expertiseQuery,
     _id: { $nin: excludeIds },
   }).sort({ 'interviewerProfile.totalInterviewsConducted': -1 });
 
+  // If no specialized match found, fallback to any active, verified interviewer not in excludeIds
+  if (!interviewers || interviewers.length === 0) {
+    interviewers = await User.find({
+      role: 'INTERVIEWER',
+      isVerified: true,
+      isBanned: false,
+      'interviewerProfile.isActive': { $ne: false },
+      _id: { $nin: excludeIds },
+    }).sort({ 'interviewerProfile.totalInterviewsConducted': -1 });
+  }
+
   if (!interviewers || interviewers.length === 0) {
     return null;
   }
+
+  const defaultSlots = [
+    { dayOfWeek: 0, startTime: '09:00', endTime: '22:00' },
+    { dayOfWeek: 1, startTime: '09:00', endTime: '22:00' },
+    { dayOfWeek: 2, startTime: '09:00', endTime: '22:00' },
+    { dayOfWeek: 3, startTime: '09:00', endTime: '22:00' },
+    { dayOfWeek: 4, startTime: '09:00', endTime: '22:00' },
+    { dayOfWeek: 5, startTime: '09:00', endTime: '22:00' },
+    { dayOfWeek: 6, startTime: '09:00', endTime: '22:00' },
+  ];
 
   const now = new Date();
   const minStartTime = new Date(now.getTime() + 1 * 60 * 1000); // minimum 1 min buffer from now
@@ -74,7 +130,8 @@ async function findEarliestAvailableInterviewer(stack, excludeIds = [], intervie
     const bdDate = targetBdDate.getUTCDate();
 
     for (const interviewer of interviewers) {
-      const slots = interviewer.interviewerProfile?.availabilitySlots || [];
+      const configuredSlots = interviewer.interviewerProfile?.availabilitySlots || [];
+      const slots = configuredSlots.length > 0 ? configuredSlots : defaultSlots;
       const daySlots = slots.filter((s) => s.dayOfWeek === bdDayOfWeek);
       if (daySlots.length === 0) continue;
 
@@ -146,6 +203,12 @@ async function checkLevelPrerequisite(candidateId, level) {
   const prevLevel = level - 1;
   const Interview = require('../models/Interview');
   const AiAgentInterview = require('../models/AiAgentInterview');
+  const CandidateProfile = require('../models/CandidateProfile');
+
+  const profile = await CandidateProfile.findOne({ user: candidateId });
+  if (profile && profile.currentLevel >= level) {
+    return { eligible: true };
+  }
 
   const prevPassedStandard = await Interview.findOne({ candidate: candidateId, level: prevLevel, status: 'completed', passed: true });
   const prevPassedAi = await AiAgentInterview.findOne({ candidate: candidateId, level: prevLevel, status: 'completed', passed: true });
@@ -168,7 +231,7 @@ const checkEligibility = async (req, res, next) => {
 
     // Check cooldown
     const user = await User.findById(candidateId);
-    if (user.teamInterviewCooldownUntil && user.teamInterviewCooldownUntil > new Date()) {
+    if (user && user.teamInterviewCooldownUntil && user.teamInterviewCooldownUntil > new Date()) {
       return res.json({
         eligible: false,
         reason: `You must wait until ${user.teamInterviewCooldownUntil.toLocaleDateString()} before requesting a new team interview.`,
@@ -221,7 +284,7 @@ const requestInterview = async (req, res, next) => {
 
     // Eligibility checks
     const user = await User.findById(candidateId);
-    if (user.teamInterviewCooldownUntil && user.teamInterviewCooldownUntil > new Date()) {
+    if (user && user.teamInterviewCooldownUntil && user.teamInterviewCooldownUntil > new Date()) {
       return res.status(403).json({
         success: false,
         message: `You are on a cooldown until ${user.teamInterviewCooldownUntil.toLocaleDateString()}.`,
@@ -245,7 +308,7 @@ const requestInterview = async (req, res, next) => {
     const interviewMode = (interviewType === 'business' || isSector(stack)) ? 'business' : 'technical';
     const sector = interviewMode === 'business' ? stack : null;
 
-    // Search and auto-match the earliest available slot with 30-min gap
+    // Search and auto-match the earliest available slot with gap
     const match = await findEarliestAvailableInterviewer(stack, [], interviewType);
 
     if (!match) {
@@ -258,21 +321,16 @@ const requestInterview = async (req, res, next) => {
 
     const { interviewer, scheduledAt } = match;
 
-    // Create Zoom meeting
-    let zoomData;
-    try {
-      const hostEmail = interviewer.interviewerProfile?.hostEmail || 'rajibmiah978@gmail.com';
-      zoomData = await createMeeting({
-        topic: `AI Platform Interview — ${stack} Level ${level}`,
-        startTime: scheduledAt,
-        durationMinutes: 60,
-        agenda: `Technical interview for ${req.user.name} — ${stack} (Level ${level})`,
-        hostEmail,
-      });
-    } catch (zoomErr) {
-      logger.error(`Zoom meeting creation failed: ${zoomErr.message}`);
-      return res.status(500).json({ success: false, message: 'Failed to create Zoom meeting. Please try again.' });
-    }
+    // Create meeting (Zoom with seamless in-app WebRTC live room fallback)
+    const hostEmail = interviewer.interviewerProfile?.hostEmail || interviewer.email || 'rajibmiah978@gmail.com';
+    const meetingData = await safeCreateMeeting({
+      topic: `AI Platform Interview — ${stack} Level ${level}`,
+      startTime: scheduledAt,
+      durationMinutes: 60,
+      agenda: `Technical interview for ${req.user.name} — ${stack} (Level ${level})`,
+      hostEmail,
+      candidateName: req.user.name,
+    });
 
     // Create TeamInterview record
     const interview = await TeamInterview.create({
@@ -285,10 +343,10 @@ const requestInterview = async (req, res, next) => {
       preferredDateTime: scheduledAt,
       scheduledAt,
       status: 'scheduled',
-      zoomMeetingId: zoomData.meetingId,
-      zoomJoinUrl: zoomData.joinUrl,
-      zoomStartUrl: zoomData.startUrl,
-      zoomPassword: zoomData.password,
+      zoomMeetingId: meetingData.meetingId,
+      zoomJoinUrl: meetingData.joinUrl,
+      zoomStartUrl: meetingData.startUrl,
+      zoomPassword: meetingData.password,
     });
 
     const bdFormattedTime = formatBangladeshDateTime(scheduledAt);
@@ -300,7 +358,7 @@ const requestInterview = async (req, res, next) => {
       message: `Your ${stack} (Level ${level}) team interview has been automatically scheduled with ${interviewer.name} for ${bdFormattedTime}.`,
       data: {
         teamInterviewId: interview._id,
-        zoomJoinUrl: zoomData.joinUrl,
+        zoomJoinUrl: meetingData.joinUrl,
         scheduledAt,
         interviewer: { name: interviewer.name },
       },
@@ -313,8 +371,8 @@ const requestInterview = async (req, res, next) => {
       message: `You have been assigned to interview ${req.user.name} for ${stack} (Level ${level}) at ${bdFormattedTime}.`,
       data: {
         teamInterviewId: interview._id,
-        zoomStartUrl: zoomData.startUrl,
-        zoomJoinUrl: zoomData.joinUrl,
+        zoomStartUrl: meetingData.startUrl,
+        zoomJoinUrl: meetingData.joinUrl,
         scheduledAt,
         candidate: { name: req.user.name },
       },
@@ -323,7 +381,7 @@ const requestInterview = async (req, res, next) => {
     logger.info(`Team interview ${interview._id} scheduled: ${req.user.name} with ${interviewer.name} at ${scheduledAt.toISOString()}`);
 
     const populated = await TeamInterview.findById(interview._id)
-      .populate('interviewer', 'name profileImage');
+      .populate('interviewer', 'name profileImage interviewerProfile');
 
     res.status(201).json({
       success: true,
@@ -413,7 +471,10 @@ const cancelInterview = async (req, res, next) => {
 const getAssignedInterviews = async (req, res, next) => {
   try {
     const user = await User.findById(req.user._id);
-    if (!user?.isVerified) {
+    if (!user || user.isBanned) {
+      return res.status(403).json({ success: false, message: 'Account suspended or invalid.' });
+    }
+    if (!user.isVerified) {
       return res.json({
         success: true,
         interviews: [],
@@ -439,7 +500,10 @@ const getAssignedInterviews = async (req, res, next) => {
 const declineInterview = async (req, res, next) => {
   try {
     const user = await User.findById(req.user._id);
-    if (!user?.isVerified) {
+    if (!user || user.isBanned) {
+      return res.status(403).json({ success: false, message: 'Account suspended or invalid.' });
+    }
+    if (!user.isVerified) {
       return res.status(403).json({ success: false, message: 'You must be verified by an Admin to manage assignments.' });
     }
     const interview = await TeamInterview.findOne({
@@ -464,32 +528,32 @@ const declineInterview = async (req, res, next) => {
     if (replacementMatch) {
       const { interviewer: replacement, scheduledAt: newScheduledAt } = replacementMatch;
 
-      // Reassign to new interviewer — create a new Zoom meeting
-      let zoomData;
-      try {
-        // Delete old meeting
-        if (interview.zoomMeetingId) await deleteMeeting(interview.zoomMeetingId);
-
-        const hostEmail = replacement.interviewerProfile?.hostEmail || 'rajibmiah978@gmail.com';
-        zoomData = await createMeeting({
-          topic: `AI Platform Interview — ${interview.stack} Level ${interview.level}`,
-          startTime: newScheduledAt,
-          durationMinutes: 60,
-          agenda: `Technical interview for ${interview.candidate?.name} — ${interview.stack} (Level ${interview.level})`,
-          hostEmail,
-        });
-      } catch (zoomErr) {
-        logger.error(`Zoom re-creation failed: ${zoomErr.message}`);
-        return res.status(500).json({ success: false, message: 'Failed to create new Zoom meeting for reassignment.' });
+      // Reassign to new interviewer — create a new Zoom meeting (or In-App WebRTC fallback)
+      if (interview.zoomMeetingId && !interview.zoomMeetingId.startsWith('INAPP-')) {
+        try {
+          await deleteMeeting(interview.zoomMeetingId);
+        } catch {
+          // ignore cleanup error
+        }
       }
+
+      const hostEmail = replacement.interviewerProfile?.hostEmail || replacement.email || 'rajibmiah978@gmail.com';
+      const meetingData = await safeCreateMeeting({
+        topic: `AI Platform Interview — ${interview.stack} Level ${interview.level}`,
+        startTime: newScheduledAt,
+        durationMinutes: 60,
+        agenda: `Technical interview for ${interview.candidate?.name} — ${interview.stack} (Level ${interview.level})`,
+        hostEmail,
+        candidateName: interview.candidate?.name,
+      });
 
       interview.interviewer = replacement._id;
       interview.scheduledAt = newScheduledAt;
       interview.preferredDateTime = newScheduledAt;
-      interview.zoomMeetingId = zoomData.meetingId;
-      interview.zoomJoinUrl = zoomData.joinUrl;
-      interview.zoomStartUrl = zoomData.startUrl;
-      interview.zoomPassword = zoomData.password;
+      interview.zoomMeetingId = meetingData.meetingId;
+      interview.zoomJoinUrl = meetingData.joinUrl;
+      interview.zoomStartUrl = meetingData.startUrl;
+      interview.zoomPassword = meetingData.password;
       await interview.save();
 
       const bdReassignedTime = formatBangladeshDateTime(newScheduledAt);
@@ -501,7 +565,7 @@ const declineInterview = async (req, res, next) => {
         message: `You have been assigned to interview ${interview.candidate?.name} for ${interview.stack} (Level ${interview.level}) at ${bdReassignedTime}.`,
         data: {
           teamInterviewId: interview._id,
-          zoomStartUrl: zoomData.startUrl,
+          zoomStartUrl: meetingData.startUrl,
           scheduledAt: newScheduledAt,
         },
       });
@@ -513,7 +577,7 @@ const declineInterview = async (req, res, next) => {
         message: `Your interviewer changed. Your ${interview.stack} interview is scheduled with ${replacement.name} for ${bdReassignedTime}.`,
         data: {
           teamInterviewId: interview._id,
-          zoomJoinUrl: zoomData.joinUrl,
+          zoomJoinUrl: meetingData.joinUrl,
           scheduledAt: newScheduledAt,
         },
       });
@@ -522,7 +586,13 @@ const declineInterview = async (req, res, next) => {
     }
 
     // No replacement found — cancel the interview
-    if (interview.zoomMeetingId) await deleteMeeting(interview.zoomMeetingId);
+    if (interview.zoomMeetingId && !interview.zoomMeetingId.startsWith('INAPP-')) {
+      try {
+        await deleteMeeting(interview.zoomMeetingId);
+      } catch {
+        // ignore cleanup error
+      }
+    }
 
     interview.status = 'cancelled';
     interview.cancelledBy = 'system';
@@ -551,7 +621,10 @@ const declineInterview = async (req, res, next) => {
 const submitResult = async (req, res, next) => {
   try {
     const user = await User.findById(req.user._id);
-    if (!user?.isVerified) {
+    if (!user || user.isBanned) {
+      return res.status(403).json({ success: false, message: 'Account suspended or invalid.' });
+    }
+    if (!user.isVerified) {
       return res.status(403).json({ success: false, message: 'You must be verified by an Admin to submit interview results.' });
     }
 
