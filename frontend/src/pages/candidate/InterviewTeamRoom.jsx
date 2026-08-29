@@ -4,13 +4,14 @@ import toast from 'react-hot-toast';
 import {
   HiUserGroup, HiArrowLeft, HiCalendar, HiClock, HiExternalLink,
   HiX, HiCheck, HiChip, HiRefresh, HiLockClosed, HiStar, HiCode, HiBriefcase,
-  HiVideoCamera, HiClipboardCopy, HiArrowsExpand,
+  HiVideoCamera, HiClipboardCopy, HiArrowsExpand, HiShieldCheck, HiCheckCircle, HiPlay,
 } from 'react-icons/hi';
 import { io } from 'socket.io-client';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { SECTORS, TECH_STACKS, getSectorById, isSector } from '../../constants/sectors';
 import TrackerRequiredModal from '../../components/TrackerRequiredModal';
+import LiveWebRTCInterviewRoom from '../../components/interview/LiveWebRTCInterviewRoom';
 
 const LEVEL_LABELS = { 1: 'Junior', 2: 'Mid-level', 3: 'Senior' };
 
@@ -168,13 +169,11 @@ export default function InterviewTeamRoom() {
 
   if (inMeeting && activeInterview) {
     return (
-      <div className="max-w-5xl mx-auto animate-fade-in space-y-4">
-        <EmbeddedInterviewMeeting
-          interview={activeInterview}
-          user={user}
-          onLeave={() => setInMeeting(false)}
-        />
-      </div>
+      <LiveWebRTCInterviewRoom
+        interview={activeInterview}
+        user={user}
+        onLeave={() => setInMeeting(false)}
+      />
     );
   }
 
@@ -472,143 +471,6 @@ export default function InterviewTeamRoom() {
   );
 }
 
-// ── Embedded Native Fullscreen In-App Meeting Room for Candidate ──
-function EmbeddedInterviewMeeting({ interview, user, onLeave }) {
-  const [copied, setCopied] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const containerRef = useRef(null);
-
-  // Listen for tracker desktop app termination
-  useEffect(() => {
-    const socketUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
-    const socket = io(socketUrl, {
-      auth: { token: localStorage.getItem('token') },
-      transports: ['websocket', 'polling'],
-    });
-
-    socket.emit('tracker:join', { interviewId: interview._id });
-
-    socket.on('tracker:interview_ended', () => {
-      toast('Interview session ended from Interview Tracker app 🛑', { icon: '🛑' });
-      onLeave?.();
-    });
-
-    return () => {
-      socket.disconnect();
-    };
-  }, [interview._id, onLeave]);
-
-  const roomName = `ai-interview-${interview._id}`;
-  const displayName = user?.name || 'Candidate';
-  const jitsiUrl = `https://meet.jit.si/${encodeURIComponent(roomName)}#userInfo.displayName="${encodeURIComponent(displayName)}"&config.prejoinPageEnabled=false&config.disableDeepLinking=true&config.startWithAudioMuted=false&config.startWithVideoMuted=false&interfaceConfig.SHOW_JITSI_WATERMARK=false`;
-
-  const copyPassword = () => {
-    if (interview.zoomPassword) {
-      navigator.clipboard.writeText(interview.zoomPassword);
-      setCopied(true);
-      toast.success('Meeting password copied to clipboard!');
-      setTimeout(() => setCopied(false), 2000);
-    }
-  };
-
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen?.();
-      setIsFullscreen(true);
-    } else {
-      document.exitFullscreen?.();
-      setIsFullscreen(false);
-    }
-  };
-
-  return (
-    <div
-      ref={containerRef}
-      className="fixed inset-0 z-[100] w-screen h-screen bg-black flex flex-col overflow-hidden animate-fade-in"
-    >
-      {/* Top Meeting Control Bar */}
-      <div className="h-14 px-4 bg-dark-900/95 backdrop-blur-md border-b border-dark-border/80 flex items-center justify-between z-10 flex-shrink-0">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={onLeave}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-red-900/30 hover:bg-red-900/60 text-red-300 hover:text-white border border-red-500/30 text-xs font-semibold transition-all shadow-sm active:scale-95"
-            title="Leave Meeting and return to dashboard"
-          >
-            <HiArrowLeft className="w-4 h-4" />
-            <span>Leave Call</span>
-          </button>
-
-          <div className="h-4 w-[1px] bg-dark-border hidden sm:block" />
-
-          <div className="flex items-center gap-2">
-            <span className="flex h-2.5 w-2.5 relative">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-            </span>
-            <span className="text-white font-bold text-xs sm:text-sm tracking-wide truncate">
-              {interview.stack} · Level {interview.level} ({LEVEL_LABELS[interview.level] || `Level ${interview.level}`})
-            </span>
-          </div>
-
-          {interview.interviewer && (
-            <span className="hidden md:inline-flex items-center gap-1.5 text-xs text-gray-400 bg-dark-800 px-2.5 py-1 rounded-full border border-dark-border">
-              <span>Interviewer:</span>
-              <strong className="text-cyan-300 font-medium">{interview.interviewer.name}</strong>
-            </span>
-          )}
-        </div>
-
-        <div className="flex items-center gap-2">
-          {interview.zoomPassword && (
-            <button
-              onClick={copyPassword}
-              className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg bg-dark-800 hover:bg-dark-700 border border-dark-border text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-all"
-              title="Copy Meeting Password"
-            >
-              <HiClipboardCopy className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
-              <span className="hidden sm:inline">Password:</span>
-              <strong className="font-mono text-gray-900 dark:text-white font-bold">{interview.zoomPassword}</strong>
-              {copied && <span className="text-emerald-500 dark:text-emerald-400 ml-1">✓</span>}
-            </button>
-          )}
-
-          <button
-            onClick={toggleFullscreen}
-            className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg bg-dark-800 hover:bg-dark-700 border border-dark-border text-gray-300 hover:text-white transition-all"
-            title="Toggle Browser Fullscreen"
-          >
-            <HiArrowsExpand className="w-4 h-4 text-gray-400" />
-            <span className="hidden sm:inline">{isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}</span>
-          </button>
-
-          {interview.zoomJoinUrl && (
-            <a
-              href={interview.zoomJoinUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hidden lg:flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg bg-blue-600/20 hover:bg-blue-600/40 border border-blue-500/30 text-blue-300 hover:text-white transition-all"
-              title="Open External Zoom Link fallback"
-            >
-              <HiExternalLink className="w-3.5 h-3.5" />
-              <span>Zoom Fallback</span>
-            </a>
-          )}
-        </div>
-      </div>
-
-      {/* 100% Full-Screen Embedded Video Meeting Viewport */}
-      <div className="flex-1 w-full h-[calc(100vh-56px)] bg-black overflow-hidden relative">
-        <iframe
-          src={jitsiUrl}
-          title="In-App Video Interview"
-          className="w-full h-full border-none bg-black"
-          allow="camera; microphone; fullscreen; display-capture; autoplay; clipboard-write; ambient-light-sensor"
-        />
-      </div>
-    </div>
-  );
-}
-
 // ── Active Interview Card ──
 function ActiveInterviewCard({ interview, onCancel, onRefresh, onJoinMeeting }) {
   const statusCfg = STATUS_CONFIG[interview.status] || STATUS_CONFIG.pending;
@@ -693,16 +555,14 @@ function ActiveInterviewCard({ interview, onCancel, onRefresh, onJoinMeeting }) 
       )}
 
       {/* Embedded In-App Video Meeting Join */}
-      {interview.zoomJoinUrl && (
-        <button
-          type="button"
-          onClick={onJoinMeeting}
-          className="flex items-center justify-center gap-2 w-full py-3.5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-blue-600/20 active:scale-[0.99]"
-        >
-          <HiVideoCamera className="w-5 h-5" />
-          Join Zoom Meeting
-        </button>
-      )}
+      <button
+        type="button"
+        onClick={onJoinMeeting}
+        className="flex items-center justify-center gap-2 w-full py-3.5 bg-gradient-to-r from-blue-600 via-cyan-600 to-teal-500 hover:from-blue-500 hover:via-cyan-500 hover:to-teal-400 text-white rounded-xl font-bold transition-all shadow-lg shadow-cyan-600/20 active:scale-[0.99]"
+      >
+        <HiVideoCamera className="w-5 h-5" />
+        Join Live Interview (In-App Video)
+      </button>
 
       {interview.zoomPassword && (
         <p className="text-xs text-gray-500 dark:text-gray-400 text-center">

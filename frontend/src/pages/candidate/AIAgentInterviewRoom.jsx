@@ -5,11 +5,14 @@ import { io } from 'socket.io-client';
 import api from '../../services/api';
 import {
   HiMicrophone, HiVolumeUp, HiCode, HiCheckCircle, HiXCircle,
-  HiClock, HiChartBar, HiStop, HiPlay, HiRefresh, HiVideoCamera, HiShieldExclamation, HiBriefcase
+  HiClock, HiChartBar, HiStop, HiPlay, HiRefresh, HiVideoCamera, HiShieldExclamation, HiBriefcase,
+  HiExclamation, HiAdjustments
 } from 'react-icons/hi';
 import { FilesetResolver, FaceLandmarker } from '@mediapipe/tasks-vision';
 import { getSectorById, isSector } from '../../constants/sectors';
 import { handlePasteViolation } from '../../utils/proctoring';
+import { acquireMediaStream, checkMediaDevices, getMediaErrorMessage } from '../../utils/mediaPermissions';
+import MediaDeviceTroubleshootModal from '../../components/interview/MediaDeviceTroubleshootModal';
 
 /* ─── Proctoring Config & Math ────────────────────────────── */
 const YAW_THRESHOLD = 10;
@@ -141,7 +144,13 @@ function useSpeechRecognition({ onResult, onEnd }) {
     };
     recognition.onend = () => onEnd?.();
     recognition.onerror = (e) => {
-      if (e.error !== 'no-speech') toast.error(`Mic error: ${e.error}`);
+      if (e.error === 'not-allowed') {
+        toast.error('Microphone permission blocked. Please allow mic in browser URL bar 🎙️');
+      } else if (e.error === 'audio-capture') {
+        toast.error('No microphone hardware detected. Check your mic connection 🎙️');
+      } else if (e.error !== 'no-speech') {
+        toast.error(`Mic error: ${e.error}`);
+      }
       onEnd?.();
     };
     recognition.start();
@@ -276,6 +285,9 @@ export default function AIAgentInterviewRoom() {
   const alertUntilRef = useRef(0);
 
   const [proctorStatus, setProctorStatus] = useState('Initializing AI Proctor...');
+  const [mediaError, setMediaError] = useState(null);
+  const [showTroubleshootModal, setShowTroubleshootModal] = useState(false);
+  const [isReconnectingMedia, setIsReconnectingMedia] = useState(false);
   const [cheatCount, setCheatCount] = useState(0);
   const [lookingAway, setLookingAway] = useState(false);
   const [alertMsg, setAlertMsg] = useState('');
@@ -288,7 +300,7 @@ export default function AIAgentInterviewRoom() {
       reqAFRef.current = null;
     }
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach(t => t.stop());
+      streamRef.current.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
     }
     if (videoRef.current) {
@@ -300,48 +312,9 @@ export default function AIAgentInterviewRoom() {
     }
   }, []);
 
-  // Initialize MediaPipe and Webcam
-  useEffect(() => {
-    const setupProctoring = async () => {
-      try {
-        const vision = await FilesetResolver.forVisionTasks(
-          "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"
-        );
-        landmarkerRef.current = await FaceLandmarker.createFromOptions(vision, {
-          baseOptions: {
-            modelAssetPath: "/models/face_landmarker.task",
-            delegate: "GPU"
-          },
-          outputFaceBlendshapes: false,
-          outputFacialTransformationMatrixes: true,
-          numFaces: 4, // Allow detecting multiple faces for proctoring
-          runningMode: "VIDEO"
-        });
-
-        // Get Webcam
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 } });
-        streamRef.current = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          videoRef.current.onloadedmetadata = () => {
-            videoRef.current.play();
-            setProctorStatus('Active');
-            reqAFRef.current = requestAnimationFrame(detectFrames);
-          };
-        }
-      } catch (err) {
-        console.error("Proctoring setup error:", err);
-        setProctorStatus('Failed to start webcam/proctor');
-      }
-    };
-    setupProctoring();
-
-    return () => stopProctoring();
-  }, [stopProctoring]);
-
   // Frame processing loop
-  const detectFrames = () => {
-    if (!videoRef.current || !canvasRef.current || !landmarkerRef.current) return;
+  const detectFrames = useCallback(() => {
+    if (!videoRef.current || !canvasRef.current) return;
     
     const video = videoRef.current;
     if (video.readyState < 2) {
@@ -351,101 +324,189 @@ export default function AIAgentInterviewRoom() {
 
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    canvas.width = video.videoWidth || 320;
+    canvas.height = video.videoHeight || 240;
     const w = canvas.width;
     const h = canvas.height;
 
-    // Draw video (mirrored)
-    ctx.save();
-    ctx.scale(-1, 1);
-    ctx.translate(-w, 0);
-    ctx.drawImage(video, 0, 0, w, h);
-    ctx.restore();
+    // Clear previous overlay frame (video is rendered directly in <video>)
+    ctx.clearRect(0, 0, w, h);
 
-    const now = performance.now();
-    const results = landmarkerRef.current.detectForVideo(video, now);
-
-    let isAway = false;
-    let found = false;
-
-    if (results.faceLandmarks && results.faceLandmarks.length > 0) {
-      found = true;
-      const landmarks = results.faceLandmarks[0];
-
-      // Draw landmarks
-      ctx.fillStyle = 'rgba(0, 255, 0, 0.5)';
-      for (const pt of landmarks) {
-        ctx.beginPath();
-        ctx.arc(w - (pt.x * w), pt.y * h, 1, 0, 2 * Math.PI); // Mirrored X
-        ctx.fill();
-      }
-
-      let yaw = 0, pitch = 0;
-      
-      // Multi-face check
-      if (results.faceLandmarks.length > 1) {
-        const msNow = Date.now();
-        if (msNow > alertUntilRef.current) {
-          setCheatCount(prev => {
-            const next = prev + 10;
-            setAlertMsg(`MULTIPLE FACES DETECTED (+10 penalty)`);
-            alertUntilRef.current = msNow + 3000;
-            return next;
-          });
-        }
-      }
-
-      if (results.facialTransformationMatrixes && results.facialTransformationMatrixes.length > 0) {
-        const mat = results.facialTransformationMatrixes[0];
-        const angles = rotationMatrixToEuler(mat);
-        yaw = angles.yaw;
-        pitch = angles.pitch;
-      }
-
-      let gazeP = { x: 0, y: 0 };
+    // If landmarker model is ready, run facial analysis
+    if (landmarkerRef.current) {
+      const now = performance.now();
       try {
-        gazeP = getIrisGaze(landmarks);
-      } catch (e) { }
+        const results = landmarkerRef.current.detectForVideo(video, now);
+        let found = false;
 
-      const headDbg = Math.abs(yaw) > YAW_THRESHOLD || Math.abs(pitch) > PITCH_THRESHOLD;
-      const gazeDbg = Math.abs(gazeP.x) > GAZE_THRESHOLD || Math.abs(gazeP.y) > GAZE_THRESHOLD;
-      
-      isAway = headDbg || gazeDbg;
-    } else {
-      isAway = true;
-    }
+        if (results.faceLandmarks && results.faceLandmarks.length > 0) {
+          found = true;
+          const landmarks = results.faceLandmarks[0];
 
-    setFaceFound(found);
-    setLookingAway(isAway);
+          // Draw landmark dots
+          ctx.fillStyle = 'rgba(0, 255, 0, 0.6)';
+          for (const pt of landmarks) {
+            ctx.beginPath();
+            ctx.arc(w - (pt.x * w), pt.y * h, 1.5, 0, 2 * Math.PI);
+            ctx.fill();
+          }
 
-    // Cheat logic
-    const msNow = Date.now();
-    if (isAway) {
-      if (!lookAwayStartRef.current) {
-        lookAwayStartRef.current = msNow;
-      } else if ((msNow - lookAwayStartRef.current) >= LOOK_AWAY_TIME && !currentlyAwayRef.current) {
-        // Detected a cheat!
-        setCheatCount(prev => {
-          const next = prev + 1;
-          setAlertMsg(`Unusual Activity #${next} Detected!`);
-          alertUntilRef.current = msNow + 2000;
-          return next;
-        });
-        currentlyAwayRef.current = true;
+          // Multi-face detection check
+          if (results.faceLandmarks.length > 1) {
+            const msNow = Date.now();
+            if (msNow > alertUntilRef.current) {
+              setCheatCount((prev) => {
+                const next = prev + 10;
+                setAlertMsg(`MULTIPLE FACES DETECTED (+10 penalty)`);
+                alertUntilRef.current = msNow + 3000;
+                return next;
+              });
+            }
+          }
+
+          let yaw = 0, pitch = 0;
+          if (results.facialTransformationMatrixes && results.facialTransformationMatrixes.length > 0) {
+            const mat = results.facialTransformationMatrixes[0];
+            const euler = rotationMatrixToEuler(mat.data);
+            yaw = euler.yaw;
+            pitch = euler.pitch;
+          }
+
+          const gaze = getIrisGaze(landmarks);
+          const isYawOff = Math.abs(yaw) > YAW_THRESHOLD;
+          const isPitchOff = Math.abs(pitch) > PITCH_THRESHOLD;
+          const isGazeOff = Math.abs(gaze.x) > GAZE_THRESHOLD || Math.abs(gaze.y) > GAZE_THRESHOLD;
+          const isAway = isYawOff || isPitchOff || isGazeOff;
+
+          const msNow = Date.now();
+          if (isAway) {
+            if (!lookAwayStartRef.current) {
+              lookAwayStartRef.current = msNow;
+            } else {
+              const elapsed = msNow - lookAwayStartRef.current;
+              if (elapsed > LOOK_AWAY_TIME && !currentlyAwayRef.current) {
+                currentlyAwayRef.current = true;
+                setCheatCount((prev) => {
+                  const next = prev + 1;
+                  setAlertMsg(`LOOKING AWAY DETECTED (Cheat count: ${next})`);
+                  alertUntilRef.current = msNow + 3000;
+                  return next;
+                });
+              }
+            }
+            setLookingAway(true);
+          } else {
+            lookAwayStartRef.current = null;
+            currentlyAwayRef.current = false;
+            setLookingAway(false);
+          }
+        } else {
+          setFaceFound(false);
+        }
+
+        if (found) setFaceFound(true);
+      } catch (detectErr) {
+        console.warn('Frame detection error:', detectErr);
       }
-    } else {
-      lookAwayStartRef.current = null;
-      currentlyAwayRef.current = false;
     }
 
-    // Clear alert message after time
-    if (msNow > alertUntilRef.current) {
+    if (Date.now() > alertUntilRef.current) {
       setAlertMsg('');
     }
 
     reqAFRef.current = requestAnimationFrame(detectFrames);
-  };
+  }, []);
+
+  const setupCameraAndProctoring = useCallback(async () => {
+    setIsReconnectingMedia(true);
+    setProctorStatus('Starting Camera...');
+    setMediaError(null);
+
+    try {
+      const { stream, videoTrack, audioTrack, errors } = await acquireMediaStream({ video: true, audio: true });
+
+      if (stream && videoTrack) {
+        streamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          try {
+            await videoRef.current.play();
+          } catch (playErr) {
+            console.warn('Video autoplay waiting for metadata:', playErr);
+          }
+          setProctorStatus('Active');
+          reqAFRef.current = requestAnimationFrame(detectFrames);
+        }
+      } else if (stream && audioTrack) {
+        streamRef.current = stream;
+        setProctorStatus('Audio Mode (Webcam Offline)');
+        toast('Running in Audio Mode. Camera not detected or offline 🎙️', { icon: '🎙️', duration: 4000 });
+      } else {
+        const lastErr = errors.length > 0 ? errors[errors.length - 1].error : new Error('No media stream available');
+        const formattedErr = getMediaErrorMessage(lastErr);
+        setMediaError(formattedErr);
+        setProctorStatus('Device Offline / Blocked');
+        toast.error(formattedErr.title || 'Camera / Microphone unavailable');
+      }
+    } catch (err) {
+      console.error('Camera startup error in AI Agent Room:', err);
+      const formattedErr = getMediaErrorMessage(err);
+      setMediaError(formattedErr);
+      setProctorStatus('Camera Access Error');
+      toast.error(formattedErr.title || 'Could not access camera');
+    } finally {
+      setIsReconnectingMedia(false);
+    }
+  }, [detectFrames]);
+
+  // Initialize Webcam and MediaPipe
+  useEffect(() => {
+    let isCancelled = false;
+
+    const initialize = async () => {
+      await setupCameraAndProctoring();
+
+      // Load MediaPipe in Background (non-blocking)
+      try {
+        const vision = await FilesetResolver.forVisionTasks(
+          "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"
+        );
+        if (isCancelled) return;
+
+        landmarkerRef.current = await FaceLandmarker.createFromOptions(vision, {
+          baseOptions: {
+            modelAssetPath: "/models/face_landmarker.task",
+            delegate: "GPU",
+          },
+          outputFaceBlendshapes: false,
+          outputFacialTransformationMatrixes: true,
+          numFaces: 4,
+          runningMode: "VIDEO",
+        }).catch(async (gpuErr) => {
+          console.warn('MediaPipe GPU delegate failed, trying CPU fallback:', gpuErr);
+          return await FaceLandmarker.createFromOptions(vision, {
+            baseOptions: {
+              modelAssetPath: "/models/face_landmarker.task",
+              delegate: "CPU",
+            },
+            outputFaceBlendshapes: false,
+            outputFacialTransformationMatrixes: true,
+            numFaces: 4,
+            runningMode: "VIDEO",
+          });
+        });
+      } catch (mpErr) {
+        console.warn('MediaPipe Face Landmarker background load warning:', mpErr);
+      }
+    };
+
+    initialize();
+
+    return () => {
+      isCancelled = true;
+      stopProctoring();
+    };
+  }, [stopProctoring, setupCameraAndProctoring]);
 
   // Auto-scroll transcript
   useEffect(() => {
@@ -620,26 +681,92 @@ export default function AIAgentInterviewRoom() {
             <HiShieldExclamation className={lookingAway ? 'text-danger-500 animate-pulse' : 'text-success-500'} />
             <span className="text-xs font-semibold text-gray-200">AI Proctor</span>
           </div>
-          <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full ${proctorStatus === 'Active' ? 'bg-success-500/20 text-success-400' : 'bg-yellow-500/20 text-yellow-500'}`}>
-            {proctorStatus}
-          </span>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => setupCameraAndProctoring()}
+              title="Reconnect Camera / Mic"
+              disabled={isReconnectingMedia}
+              className="p-1 rounded bg-dark-700 hover:bg-violet-600 text-gray-300 hover:text-white transition-colors cursor-pointer"
+            >
+              <HiRefresh className={`w-3.5 h-3.5 ${isReconnectingMedia ? 'animate-spin' : ''}`} />
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowTroubleshootModal(true)}
+              title="Camera & Mic Settings"
+              className="p-1 rounded bg-dark-700 hover:bg-cyan-600 text-gray-300 hover:text-white transition-colors cursor-pointer"
+            >
+              <HiAdjustments className="w-3.5 h-3.5" />
+            </button>
+            <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full ${proctorStatus === 'Active' ? 'bg-success-500/20 text-success-400' : 'bg-yellow-500/20 text-yellow-500'}`}>
+              {proctorStatus}
+            </span>
+          </div>
         </div>
         
-        <div className="relative w-full h-[240px] bg-black">
-          <video ref={videoRef} playsInline muted className="hidden" />
-          <canvas ref={canvasRef} className="absolute inset-0 w-full h-full object-cover" />
+        <div className="relative w-full h-[240px] bg-black overflow-hidden">
+          {/* Native Hardware-Accelerated Video Feed */}
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
+            className="w-full h-full object-cover transform -scale-x-100"
+          />
+          {/* Transparent Canvas Overlay for Facial Landmark Tracking */}
+          <canvas
+            ref={canvasRef}
+            className="absolute inset-0 w-full h-full pointer-events-none"
+          />
           
-          {/* Overlay UI elements drawn in React instead of Canvas text for sharper rendering */}
-          <div className="absolute top-2 left-2 text-[10px] font-mono font-bold space-y-1 drop-shadow-md">
-            <div className="text-danger-400 bg-black/50 px-1 rounded">WARNINGS: {cheatCount}</div>
-            <div className={lookingAway ? 'text-danger-400 bg-black/50 px-1 rounded' : 'text-success-400 bg-black/50 px-1 rounded'}>
-              {lookingAway ? 'LOOKING AWAY' : 'OK - FOCUSED'}
+          {/* Fallback Overlay when Camera is Offline */}
+          {proctorStatus !== 'Active' && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-gray-950/90 text-center gap-2 z-10">
+              <div className="p-3 rounded-full bg-yellow-500/10 text-yellow-400 border border-yellow-500/30">
+                <HiVideoCamera className="w-6 h-6" />
+              </div>
+              <p className="text-xs font-semibold text-gray-200">
+                {mediaError?.title || proctorStatus}
+              </p>
+              <p className="text-[10px] text-gray-400 max-w-[240px]">
+                {mediaError?.action || 'Check camera permissions or reconnect.'}
+              </p>
+              <div className="flex gap-2 mt-1">
+                <button
+                  type="button"
+                  onClick={() => setupCameraAndProctoring()}
+                  disabled={isReconnectingMedia}
+                  className="px-3 py-1 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-[11px] font-semibold flex items-center gap-1 cursor-pointer transition-all shadow-md shadow-violet-900/40"
+                >
+                  <HiRefresh className={`w-3.5 h-3.5 ${isReconnectingMedia ? 'animate-spin' : ''}`} />
+                  Reconnect
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowTroubleshootModal(true)}
+                  className="px-3 py-1 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-200 text-[11px] font-semibold flex items-center gap-1 cursor-pointer transition-all border border-gray-700"
+                >
+                  <HiAdjustments className="w-3.5 h-3.5" />
+                  Fix Help
+                </button>
+              </div>
             </div>
-            {!faceFound && <div className="text-danger-400 bg-black/50 px-1 rounded animate-pulse">NO FACE DETECTED!</div>}
-          </div>
+          )}
+
+          {/* Overlay UI elements drawn in React instead of Canvas text for sharper rendering */}
+          {proctorStatus === 'Active' && (
+            <div className="absolute top-2 left-2 text-[10px] font-mono font-bold space-y-1 drop-shadow-md z-10">
+              <div className="text-danger-400 bg-black/60 px-1.5 py-0.5 rounded backdrop-blur-sm">WARNINGS: {cheatCount}</div>
+              <div className={lookingAway ? 'text-danger-400 bg-black/60 px-1.5 py-0.5 rounded backdrop-blur-sm' : 'text-success-400 bg-black/60 px-1.5 py-0.5 rounded backdrop-blur-sm'}>
+                {lookingAway ? 'LOOKING AWAY' : 'OK - FOCUSED'}
+              </div>
+              {!faceFound && <div className="text-danger-400 bg-black/60 px-1.5 py-0.5 rounded animate-pulse backdrop-blur-sm">NO FACE DETECTED!</div>}
+            </div>
+          )}
 
           {alertMsg && (
-            <div className="absolute inset-0 flex items-center justify-center bg-danger-900/60 backdrop-blur-sm animate-fade-in">
+            <div className="absolute inset-0 flex items-center justify-center bg-danger-900/60 backdrop-blur-sm animate-fade-in z-20">
               <div className="bg-danger-600 text-white text-sm font-bold py-2 px-4 rounded shadow-xl uppercase border border-red-400">
                 {alertMsg}
               </div>
@@ -887,6 +1014,16 @@ export default function AIAgentInterviewRoom() {
           </button>
         </div>
       )}
+
+      {/* Media Device Troubleshoot Modal */}
+      <MediaDeviceTroubleshootModal
+        isOpen={showTroubleshootModal}
+        onClose={() => setShowTroubleshootModal(false)}
+        onDevicesReady={() => {
+          setupCameraAndProctoring();
+          setShowTroubleshootModal(false);
+        }}
+      />
     </div>
   );
 }

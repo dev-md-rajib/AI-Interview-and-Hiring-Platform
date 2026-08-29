@@ -157,17 +157,19 @@ export default function NotificationBell() {
   const handleNotificationClick = async (notification) => {
     if (!notification.read) await markRead(notification._id);
 
-    // Navigate to in-app room for candidates, or external zoom for others
+    // Navigate to in-app room for candidates and interviewers
     if (notification.type === 'interview_2min' || notification.type === 'interview_scheduled') {
       if (user?.role === 'CANDIDATE') {
         navigate('/candidate/interview/team', { state: { openMeeting: true } });
         setOpen(false);
-      } else {
-        const zoomUrl = notification.data?.zoomStartUrl || notification.data?.zoomJoinUrl;
-        if (zoomUrl) {
-          window.open(zoomUrl, '_blank', 'noopener,noreferrer');
-          setOpen(false);
+      } else if (user?.role === 'INTERVIEWER') {
+        const interviewId = notification.data?.teamInterviewId;
+        if (interviewId) {
+          navigate(`/interviewer/interview/${interviewId}`);
+        } else {
+          navigate('/interviewer/assignments');
         }
+        setOpen(false);
       }
     }
   };

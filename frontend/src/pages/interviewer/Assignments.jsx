@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   HiCalendar, HiClock, HiExternalLink, HiX, HiCheck, HiStar,
@@ -56,10 +57,10 @@ function FeedbackModal({ interview, onClose, onSubmit }) {
       <div className="bg-dark-card border border-dark-border rounded-2xl w-full max-w-lg shadow-2xl animate-fade-in" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between p-5 border-b border-dark-border">
           <div>
-            <h2 className="text-lg font-bold text-white">Submit Interview Feedback</h2>
-            <p className="text-gray-400 text-xs mt-0.5">{interview.candidate?.name} · {interview.stack} · Level {interview.level}</p>
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white">Submit Interview Feedback</h2>
+            <p className="text-gray-600 dark:text-gray-400 text-xs mt-0.5">{interview.candidate?.name} · {interview.stack} · Level {interview.level}</p>
           </div>
-          <button onClick={onClose} className="text-gray-500 hover:text-white"><HiX className="w-5 h-5" /></button>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-900 dark:hover:text-white"><HiX className="w-5 h-5" /></button>
         </div>
 
         <div className="p-5 space-y-4 max-h-[70vh] overflow-y-auto">
@@ -252,10 +253,10 @@ export default function InterviewerAssignments() {
     <div className="max-w-4xl mx-auto animate-fade-in space-y-6">
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-            <HiCalendar className="text-cyan-400" /> My Assignments
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <HiCalendar className="text-cyan-600 dark:text-cyan-400" /> My Assignments
           </h1>
-          <p className="text-gray-400 mt-1 text-sm">Manage all your assigned live interviews.</p>
+          <p className="text-gray-600 dark:text-gray-400 mt-1 text-sm">Manage all your assigned live interviews.</p>
         </div>
 
         {isVerified ? (
@@ -352,25 +353,13 @@ export default function InterviewerAssignments() {
 
                 {/* Action buttons */}
                 <div className="flex gap-2 mt-3 flex-wrap">
-                  {interview.zoomJoinUrl && isUpcoming && (
-                    <a
-                      href={interview.zoomStartUrl || interview.zoomJoinUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold transition-colors"
+                  {isUpcoming && (
+                    <Link
+                      to={`/interviewer/interview/${interview._id}`}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white rounded-lg text-xs font-bold shadow-sm transition-all"
                     >
-                      <HiPlay className="w-3.5 h-3.5" /> Start Meeting
-                    </a>
-                  )}
-                  {interview.zoomJoinUrl && (
-                    <a
-                      href={interview.zoomJoinUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-dark-800 hover:bg-dark-700 text-cyan-300 rounded-lg text-xs font-medium border border-cyan-500/20 transition-colors"
-                    >
-                      <HiExternalLink className="w-3.5 h-3.5" /> Join Link
-                    </a>
+                      <HiPlay className="w-3.5 h-3.5" /> Start In-App Meeting
+                    </Link>
                   )}
                   {isUpcoming && !interview.feedbackSubmittedAt && (
                     <button

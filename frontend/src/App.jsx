@@ -56,6 +56,7 @@ const NotFound = lazy(() => import('./pages/NotFound'));
 const InterviewerDashboard = lazy(() => import('./pages/interviewer/Dashboard'));
 const InterviewerProfile = lazy(() => import('./pages/interviewer/Profile'));
 const InterviewerAssignments = lazy(() => import('./pages/interviewer/Assignments'));
+const InterviewerInterviewRoom = lazy(() => import('./pages/interviewer/InterviewerInterviewRoom'));
 
 const LoadingSpinner = () => (
   <div className="min-h-screen flex items-center justify-center bg-dark-900">
@@ -162,8 +163,10 @@ export default function App() {
               {/* Interviewer routes */}
               <Route path="/interviewer" element={<ProtectedRoute allowedRoles={['INTERVIEWER']}><DashboardLayout /></ProtectedRoute>}>
                 <Route index element={<InterviewerDashboard />} />
+                <Route path="dashboard" element={<InterviewerDashboard />} />
                 <Route path="assignments" element={<InterviewerAssignments />} />
                 <Route path="profile" element={<InterviewerProfile />} />
+                <Route path="interview/:id" element={<InterviewerInterviewRoom />} />
               </Route>
 
               <Route path="*" element={<NotFound />} />

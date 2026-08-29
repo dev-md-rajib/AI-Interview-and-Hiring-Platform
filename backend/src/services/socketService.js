@@ -121,8 +121,167 @@ function initSocket(httpServer) {
       }
     });
 
+    // ──────────────────────────────────────────────
+    // 🎥 IN-APP WEBRTC VIDEO CALL SIGNALING
+    // ──────────────────────────────────────────────
+    const activeVideoRooms = global.activeVideoRooms || new Map();
+    global.activeVideoRooms = activeVideoRooms;
+
+    socket.on('webrtc:join', ({ interviewId, user, mediaState }) => {
+      const normId = String(interviewId || '').trim();
+      if (!normId) return;
+
+      const room = `interview_video_${normId}`;
+      socket.join(room);
+      socket.interviewVideoRoom = room;
+      socket.interviewId = normId;
+      socket.userData = user || socket.user || { name: 'Participant' };
+      socket.mediaState = mediaState || { isMuted: false, isVideoOff: false, isScreenSharing: false };
+
+      if (!activeVideoRooms.has(normId)) {
+        activeVideoRooms.set(normId, {
+          code: '// Live Collaborative Code Pad\n// Start typing code here...\n\nfunction solution() {\n  \n}\n',
+          language: 'javascript',
+          messages: [],
+          users: new Map(),
+        });
+      }
+
+      const roomData = activeVideoRooms.get(normId);
+      roomData.users.set(socket.id, {
+        socketId: socket.id,
+        user: socket.userData,
+        mediaState: socket.mediaState,
+      });
+
+      // Get all other sockets currently in the room
+      const otherUsers = [];
+      for (const [sId, uData] of roomData.users.entries()) {
+        if (sId !== socket.id) {
+          otherUsers.push(uData);
+        }
+      }
+
+      logger.info(`[WebRTC] User joined room ${room}: ${socket.id} (${socket.userData?.name || 'Anonymous'}), total in room: ${roomData.users.size}`);
+
+      // Send initial room state (cached code, language, chat history)
+      socket.emit('webrtc:room_state', {
+        code: roomData.code,
+        language: roomData.language,
+        messages: roomData.messages || [],
+      });
+
+      // Send existing peers to newly joined user
+      socket.emit('webrtc:existing_users', otherUsers);
+
+      // Notify others that this user joined
+      socket.to(room).emit('webrtc:user_joined', {
+        socketId: socket.id,
+        user: socket.userData,
+        mediaState: socket.mediaState,
+      });
+    });
+
+    socket.on('webrtc:offer', ({ targetSocketId, sdp, senderUser }) => {
+      io.to(targetSocketId).emit('webrtc:offer', {
+        senderSocketId: socket.id,
+        sdp,
+        senderUser: senderUser || socket.userData || socket.user,
+      });
+    });
+
+    socket.on('webrtc:answer', ({ targetSocketId, sdp }) => {
+      io.to(targetSocketId).emit('webrtc:answer', {
+        senderSocketId: socket.id,
+        sdp,
+      });
+    });
+
+    socket.on('webrtc:ice_candidate', ({ targetSocketId, candidate }) => {
+      io.to(targetSocketId).emit('webrtc:ice_candidate', {
+        senderSocketId: socket.id,
+        candidate,
+      });
+    });
+
+    socket.on('webrtc:media_state', ({ interviewId, isMuted, isVideoOff, isScreenSharing }) => {
+      const normId = String(interviewId || socket.interviewId || '').trim();
+      const room = `interview_video_${normId}`;
+      socket.mediaState = { isMuted, isVideoOff, isScreenSharing };
+
+      const roomData = activeVideoRooms.get(normId);
+      if (roomData && roomData.users.has(socket.id)) {
+        const u = roomData.users.get(socket.id);
+        u.mediaState = socket.mediaState;
+      }
+
+      socket.to(room).emit('webrtc:peer_media_state', {
+        socketId: socket.id,
+        isMuted,
+        isVideoOff,
+        isScreenSharing,
+      });
+    });
+
+    socket.on('webrtc:chat_message', ({ interviewId, text, sender }) => {
+      const normId = String(interviewId || socket.interviewId || '').trim();
+      if (!normId || !text) return;
+
+      const room = `interview_video_${normId}`;
+      const chatMsg = {
+        id: `${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        text: String(text).trim(),
+        sender: sender || socket.userData || { name: 'User' },
+        timestamp: new Date().toISOString(),
+      };
+
+      const roomData = activeVideoRooms.get(normId);
+      if (roomData) {
+        if (!roomData.messages) roomData.messages = [];
+        roomData.messages.push(chatMsg);
+        if (roomData.messages.length > 200) roomData.messages.shift();
+      }
+
+      logger.info(`[WebRTC Chat] Message in ${room} from ${chatMsg.sender?.name}: ${chatMsg.text}`);
+      io.to(room).emit('webrtc:chat_message', chatMsg);
+    });
+
+    socket.on('webrtc:code_change', ({ interviewId, code, language }) => {
+      const normId = String(interviewId || socket.interviewId || '').trim();
+      if (!normId) return;
+
+      const room = `interview_video_${normId}`;
+      const roomData = activeVideoRooms.get(normId);
+      if (roomData) {
+        if (code !== undefined) roomData.code = code;
+        if (language) roomData.language = language;
+      }
+      socket.to(room).emit('webrtc:code_change', { code, language });
+    });
+
+    socket.on('webrtc:leave', ({ interviewId }) => {
+      const normId = String(interviewId || socket.interviewId || '').trim();
+      const room = `interview_video_${normId}`;
+      socket.leave(room);
+
+      const roomData = activeVideoRooms.get(normId);
+      if (roomData) {
+        roomData.users.delete(socket.id);
+      }
+
+      socket.to(room).emit('webrtc:user_left', { socketId: socket.id });
+    });
+
     socket.on('disconnect', () => {
       logger.info(`Socket disconnected: ${socket.id}`);
+      if (socket.interviewVideoRoom) {
+        const normId = socket.interviewId;
+        if (normId && activeVideoRooms.has(normId)) {
+          const roomData = activeVideoRooms.get(normId);
+          roomData.users.delete(socket.id);
+        }
+        socket.to(socket.interviewVideoRoom).emit('webrtc:user_left', { socketId: socket.id });
+      }
     });
   });
 

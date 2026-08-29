@@ -119,20 +119,20 @@ export default function InterviewerDashboard() {
       <div className="card space-y-4">
         <div className="flex items-center justify-between pb-3 border-b border-dark-border">
           <div>
-            <h2 className="text-lg font-bold text-white flex items-center gap-2">
-              <HiCalendar className="text-cyan-400" /> Upcoming & Active Interviews ({upcoming.length})
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+              <HiCalendar className="text-cyan-600 dark:text-cyan-400" /> Upcoming & Active Interviews ({upcoming.length})
             </h2>
-            <p className="text-xs text-gray-400 mt-0.5">Live sessions scheduled or ready to launch.</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">Live sessions scheduled or ready to launch.</p>
           </div>
-          <Link to="/interviewer/assignments" className="btn-secondary text-xs px-3 py-1.5 flex items-center gap-1 text-cyan-400 hover:text-white">
+          <Link to="/interviewer/assignments" className="btn-secondary text-xs px-3 py-1.5 flex items-center gap-1 text-cyan-600 dark:text-cyan-400 hover:text-cyan-700 dark:hover:text-white">
             View All Assignments <HiArrowRight />
           </Link>
         </div>
 
         {upcoming.length === 0 ? (
           <div className="text-center py-12 border border-dashed border-dark-border rounded-xl">
-            <HiCalendar className="w-12 h-12 mx-auto mb-3 text-gray-600 opacity-40" />
-            <p className="text-sm text-gray-300 font-medium">No upcoming interviews scheduled right now.</p>
+            <HiCalendar className="w-12 h-12 mx-auto mb-3 text-gray-400 dark:text-gray-600 opacity-40" />
+            <p className="text-sm text-gray-700 dark:text-gray-300 font-medium">No upcoming interviews scheduled right now.</p>
             <p className="text-xs text-gray-500 mt-1">When candidates book an interview during your active availability slots, they will appear here.</p>
             {!hasProfile && (
               <Link to="/interviewer/profile" className="btn-primary text-xs px-4 py-2 mt-4 inline-flex items-center gap-1.5">
@@ -194,26 +194,12 @@ export default function InterviewerDashboard() {
                   {/* Actions Row */}
                   <div className="flex items-center justify-between pt-2 border-t border-dark-border/60 flex-wrap gap-2">
                     <div className="flex items-center gap-2 flex-wrap">
-                      {(interview.zoomStartUrl || interview.zoomJoinUrl) && (
-                        <a
-                          href={interview.zoomStartUrl || interview.zoomJoinUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold shadow-sm transition-colors"
-                        >
-                          <HiPlay className="w-3.5 h-3.5" /> Start Meeting (Host)
-                        </a>
-                      )}
-                      {interview.zoomJoinUrl && (
-                        <a
-                          href={interview.zoomJoinUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1.5 px-3 py-1.5 bg-dark-900 hover:bg-dark-700 text-cyan-300 rounded-lg text-xs font-medium border border-cyan-500/20 transition-colors"
-                        >
-                          <HiExternalLink className="w-3.5 h-3.5" /> Join Link
-                        </a>
-                      )}
+                      <Link
+                        to={`/interviewer/interview/${interview._id}`}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white rounded-lg text-xs font-bold shadow-sm transition-all"
+                      >
+                        <HiPlay className="w-3.5 h-3.5" /> Start In-App Meeting
+                      </Link>
                     </div>
 
                     <Link

@@ -394,6 +394,44 @@
     background-color: #f8fafc !important;
   }
 
+  /* Modals, Cards, and Inputs in Light Mode */
+  .light .card,
+  .light [class*="bg-dark-card"] {
+    background-color: #ffffff !important;
+    border-color: #e2e8f0 !important;
+    color: #1e293b;
+  }
+
+  .light .card h1, .light .card h2, .light .card h3,
+  .light [class*="bg-dark-card"] h1, .light [class*="bg-dark-card"] h2, .light [class*="bg-dark-card"] h3 {
+    color: #0f172a !important;
+  }
+
+  .light .card p:not([class*="text-cyan-"]):not([class*="text-emerald-"]):not([class*="text-red-"]):not([class*="text-amber-"]):not([class*="text-blue-"]):not([class*="text-primary-"]),
+  .light [class*="bg-dark-card"] p:not([class*="text-cyan-"]):not([class*="text-emerald-"]):not([class*="text-red-"]):not([class*="text-amber-"]):not([class*="text-blue-"]):not([class*="text-primary-"]) {
+    color: #475569;
+  }
+
+  .light input:not([type="checkbox"]):not([type="radio"]),
+  .light textarea,
+  .light select {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    border-color: #cbd5e1 !important;
+  }
+
+  .light input::placeholder,
+  .light textarea::placeholder {
+    color: #94a3b8 !important;
+  }
+
+  .light input:focus,
+  .light textarea:focus,
+  .light select:focus {
+    border-color: #6366f1 !important;
+    box-shadow: 0 0 0 1px #6366f1;
+  }
+
   /* Light mode gradient cards/banners */
   .light [class*="from-primary-900"] {
     --tw-gradient-from: #eef2ff var(--tw-gradient-from-position) !important;

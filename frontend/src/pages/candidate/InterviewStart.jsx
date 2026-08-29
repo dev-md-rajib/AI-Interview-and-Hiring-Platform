@@ -5,11 +5,12 @@ import api from '../../services/api';
 import {
   HiAcademicCap, HiClock, HiCheckCircle, HiXCircle, HiChip,
   HiUserGroup, HiLightningBolt, HiInformationCircle, HiCode, HiBriefcase,
-  HiDownload, HiExternalLink, HiLockClosed
+  HiDownload, HiExternalLink, HiLockClosed, HiCamera, HiAdjustments
 } from 'react-icons/hi';
 import { SECTORS, TECH_STACKS, getSectorById, isSector, SECTOR_LEVEL_DESCRIPTIONS } from '../../constants/sectors';
 import { TRACKER_DOWNLOAD_URL } from '../../constants/tracker';
 import TrackerRequiredModal from '../../components/TrackerRequiredModal';
+import MediaDeviceTroubleshootModal from '../../components/interview/MediaDeviceTroubleshootModal';
 
 // ─── Tech Level Descriptions ────────────────────────────────
 const TECH_LEVEL_DESCRIPTIONS = {
@@ -91,6 +92,7 @@ export default function InterviewStart() {
   const [levels, setLevels] = useState([]);
   const [loading, setLoading] = useState(false);
   const [starting, setStarting] = useState(false);
+  const [showDeviceModal, setShowDeviceModal] = useState(false);
 
   useEffect(() => {
     api.get('/admin/levels').then(({ data }) => setLevels(data.levels || []));
@@ -585,38 +587,50 @@ export default function InterviewStart() {
               </a>
             </p>
           </div>
-          <button
-            onClick={handleStart}
-            disabled={
-              starting ||
-              (mode !== 'interview_team' && !stack) ||
-              (eligibility && !eligibility.eligible)
-            }
-            className={`px-8 py-3 text-base rounded-xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
-              eligibility && !eligibility.eligible
-                ? 'bg-gray-700 text-gray-400 border border-gray-600'
-                : mode === 'ai_agent'
-                ? 'bg-violet-600 hover:bg-violet-700 text-white'
-                : mode === 'interview_team'
-                ? 'bg-cyan-700 hover:bg-cyan-600 text-white'
-                : 'btn-primary'
-            }`}
-          >
-            {starting ? (
-              <span className="flex items-center gap-2">
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                {mode === 'ai_agent' ? 'Connecting...' : 'Preparing...'}
-              </span>
-            ) : eligibility && !eligibility.eligible ? (
-              <span className="flex items-center gap-2">🔒 Level {level} Locked</span>
-            ) : mode === 'ai_agent' ? (
-              <span className="flex items-center gap-2"><HiLightningBolt /> Start AI Interview</span>
-            ) : mode === 'interview_team' ? (
-              <span className="flex items-center gap-2">🎥 Schedule Team Interview</span>
-            ) : (
-              '🚀 Start Interview'
-            )}
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setShowDeviceModal(true)}
+              className="px-4 py-3 text-sm rounded-xl font-semibold bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 transition-all flex items-center gap-2 cursor-pointer shadow-sm hover:text-white"
+              title="Test Webcam and Microphone Permissions"
+            >
+              <HiCamera className="w-4 h-4 text-violet-400" />
+              <span>Test Camera &amp; Mic</span>
+            </button>
+
+            <button
+              onClick={handleStart}
+              disabled={
+                starting ||
+                (mode !== 'interview_team' && !stack) ||
+                (eligibility && !eligibility.eligible)
+              }
+              className={`px-8 py-3 text-base rounded-xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ${
+                eligibility && !eligibility.eligible
+                  ? 'bg-gray-700 text-gray-400 border border-gray-600'
+                  : mode === 'ai_agent'
+                  ? 'bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-900/40'
+                  : mode === 'interview_team'
+                  ? 'bg-cyan-700 hover:bg-cyan-600 text-white shadow-lg shadow-cyan-900/40'
+                  : 'btn-primary'
+              }`}
+            >
+              {starting ? (
+                <span className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  {mode === 'ai_agent' ? 'Connecting...' : 'Preparing...'}
+                </span>
+              ) : eligibility && !eligibility.eligible ? (
+                <span className="flex items-center gap-2">🔒 Level {level} Locked</span>
+              ) : mode === 'ai_agent' ? (
+                <span className="flex items-center gap-2"><HiLightningBolt /> Start AI Interview</span>
+              ) : mode === 'interview_team' ? (
+                <span className="flex items-center gap-2">🎥 Schedule Team Interview</span>
+              ) : (
+                '🚀 Start Interview'
+              )}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -625,6 +639,12 @@ export default function InterviewStart() {
         isOpen={showTrackerModal}
         onClose={() => setShowTrackerModal(false)}
         onSuccess={executeStart}
+      />
+
+      {/* Camera & Microphone Diagnostic Modal */}
+      <MediaDeviceTroubleshootModal
+        isOpen={showDeviceModal}
+        onClose={() => setShowDeviceModal(false)}
       />
     </div>
   );
